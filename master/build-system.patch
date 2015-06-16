@@ -1,0 +1,103 @@
+diff --git a/mk/Makefile b/mk/Makefile
+new file mode 100644
+index 0000000..d93abff
+--- /dev/null
++++ b/mk/Makefile
+@@ -0,0 +1,41 @@
++MOCKRPMBUILD := yes
++include $(B_BASE)/common.mk
++include $(B_BASE)/rpmbuild.mk
++
++REPO_NAME := qemu-upstream
++REPO_LOC := $(call git_loc,$(REPO_NAME))
++
++QEMU_VERSION := $(shell cat ../VERSION)
++QEMU_RELEASE := $(shell $(shell $(call git_cset_number,$(REPO_NAME))); echo $$CSET_NUMBER)
++
++RPM_BUILD_COOKIE := $(MY_OBJ_DIR)/.rpm_build_cookie
++
++SOURCES := $(RPM_SOURCESDIR)/qemu-xen-$(QEMU_VERSION).tar.bz2 \
++	  $(RPM_SOURCESDIR)/qemu-xen-development.patch \
++	  $(RPM_SPECSDIR)/qemu-xen.spec
++
++.PHONY: build
++build: $(RPM_BUILD_COOKIE)
++
++.PHONY: clean
++clean:
++	rm -f $(RPM_BUILD_COOKIE)
++	rm -f $(SOURCES)
++
++$(RPM_SOURCESDIR)/qemu-xen-$(QEMU_VERSION).tar.bz2: $(RPM_DIRECTORIES) $(REPO_LOC)
++	set -e; set -o pipefail ;\
++	cd $(REPO_LOC) ;\
++	git archive --prefix=qemu-xen-$(QEMU_VERSION)/ HEAD | bzip2 -c > $@
++
++$(RPM_SOURCESDIR)/qemu-xen-development.patch: $(RPM_DIRECTORIES) $(REPO_LOC)
++	cd $(REPO_LOC) && git diff > $@
++
++$(RPM_SPECSDIR)/qemu-xen.spec: qemu-xen.spec.in $(RPM_DIRECTORIES)
++	sed -e s\,@QEMU_VERSION@,$(QEMU_VERSION),g \
++	    -e s\,@QEMU_RELEASE@,$(QEMU_RELEASE),g \
++	    < $< > $@
++
++$(RPM_BUILD_COOKIE): $(RPM_DIRECTORIES) $(SOURCES)
++	$(RPMBUILD) --target $(DOMAIN0_ARCH_OPTIMIZED) -ba $(RPM_SPECSDIR)/qemu-xen.spec
++	@touch $@
++
+diff --git a/mk/qemu-xen.spec.in b/mk/qemu-xen.spec.in
+new file mode 100644
+index 0000000..680b33e
+--- /dev/null
++++ b/mk/qemu-xen.spec.in
+@@ -0,0 +1,50 @@
++Summary: qemu-dm device model
++Name: qemu-xen
++Version: @QEMU_VERSION@
++Release: @QEMU_RELEASE@
++License: GPL
++Group: System/Hypervisor
++Source0: qemu-xen-%{version}.tar.bz2
++Patch0: qemu-xen-development.patch
++BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
++BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel
++BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
++BuildRequires: xen-dom0-devel xen-libs-devel
++
++%description
++This package contains qemu-xen, the Xen device model based on Qemu upstream.
++
++%prep
++%setup -q
++%patch0 -p1
++
++%build
++./configure --enable-xen --target-list=i386-softmmu --source-path=. \
++	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
++	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
++	--disable-kvm --disable-docs --disable-guest-agent --disable-glx --disable-sdl \
++	--disable-smartcard-nss --disable-curses --disable-curl
++%{__make} all
++
++%install
++rm -rf $RPM_BUILD_ROOT
++%{__make} install DESTDIR=$RPM_BUILD_ROOT
++rm -rf $RPM_BUILD_ROOT/usr/include $RPM_BUILD_ROOT%{_libdir}/pkgconfig $RPM_BUILD_ROOT%{_libdir}/libcacard.*a
++
++%clean
++rm -rf $RPM_BUILD_ROOT
++
++%files
++%defattr(-,root,root,-)
++%{_sysconfdir}/qemu/target-x86_64.conf
++%{_libdir}/xen/bin
++%{_datarootdir}/qemu-xen
++%{_libexecdir}/*
++
++%changelog
++* Tue Jun 16 2015 Ross Lagerwall <ross.lagerwall@citrix.com>
++- Update for Xen 4.5.
++
++* Tue Apr 8 2014 Frediano Ziglio <frediano.ziglio@citrix.com>
++- First packaging
++
