@@ -1,10 +1,9 @@
 diff --git a/mk/Makefile b/mk/Makefile
 new file mode 100644
-index 0000000..d93abff
+index 0000000..1c4dda6
 --- /dev/null
 +++ b/mk/Makefile
-@@ -0,0 +1,41 @@
-+MOCKRPMBUILD := yes
+@@ -0,0 +1,40 @@
 +include $(B_BASE)/common.mk
 +include $(B_BASE)/rpmbuild.mk
 +
@@ -47,10 +46,10 @@ index 0000000..d93abff
 +
 diff --git a/mk/qemu-xen.spec.in b/mk/qemu-xen.spec.in
 new file mode 100644
-index 0000000..680b33e
+index 0000000..ca983ef
 --- /dev/null
 +++ b/mk/qemu-xen.spec.in
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,51 @@
 +Summary: qemu-dm device model
 +Name: qemu-xen
 +Version: @QEMU_VERSION@
@@ -72,17 +71,18 @@ index 0000000..680b33e
 +%patch0 -p1
 +
 +%build
-+./configure --enable-xen --target-list=i386-softmmu --source-path=. \
++./configure --cc=gcc --enable-xen --target-list=i386-softmmu --source-path=. \
 +	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
 +	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 +	--disable-kvm --disable-docs --disable-guest-agent --disable-glx --disable-sdl \
 +	--disable-smartcard-nss --disable-curses --disable-curl
-+%{__make} all
++%{?cov_wrap} %{__make} all
 +
 +%install
 +rm -rf $RPM_BUILD_ROOT
 +%{__make} install DESTDIR=$RPM_BUILD_ROOT
-+rm -rf $RPM_BUILD_ROOT/usr/include $RPM_BUILD_ROOT%{_libdir}/pkgconfig $RPM_BUILD_ROOT%{_libdir}/libcacard.*a
++rm -rf $RPM_BUILD_ROOT/usr/include $RPM_BUILD_ROOT%{_libdir}/pkgconfig $RPM_BUILD_ROOT%{_libdir}/libcacard.*a \
++       $RPM_BUILD_ROOT/usr/share/locale
 +
 +%clean
 +rm -rf $RPM_BUILD_ROOT
