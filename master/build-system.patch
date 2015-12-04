@@ -46,10 +46,10 @@ index 0000000..2ecc582
 +
 diff --git a/mk/qemu-xen.spec.in b/mk/qemu-xen.spec.in
 new file mode 100644
-index 0000000..2f8f3ea
+index 0000000..67aba8d
 --- /dev/null
 +++ b/mk/qemu-xen.spec.in
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,51 @@
 +Summary: qemu-dm device model
 +Name: qemu-xen
 +Version: @QEMU_VERSION@
@@ -74,8 +74,8 @@ index 0000000..2f8f3ea
 +./configure --cc=gcc --enable-xen --target-list=i386-softmmu --source-path=. \
 +	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
 +	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
-+	--disable-kvm --disable-docs --disable-guest-agent --disable-glx --disable-sdl \
-+	--disable-smartcard-nss --disable-curses --disable-curl --disable-strip \
++	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
++	--disable-smartcard-nss --disable-curses --disable-curl \
 +	--enable-trace-backends=stderr
 +%{?cov_wrap} %{__make} all
 +
@@ -90,7 +90,6 @@ index 0000000..2f8f3ea
 +
 +%files
 +%defattr(-,root,root,-)
-+%{_sysconfdir}/qemu/target-x86_64.conf
 +%{_libdir}/xen/bin
 +%{_datarootdir}/qemu-xen
 +%{_libexecdir}/*
