@@ -1,0 +1,310 @@
+From 8efc183e140817951961d7f541e13cd6252d7540 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 23 Sep 2015 17:30:15 +0100
+Subject: [PATCH] xen: Switch to libxenevtchn interface for compat shims.
+
+In Xen 4.7 we are refactoring parts libxenctrl into a number of
+separate libraries which will provide backward and forward API and ABI
+compatiblity.
+
+One such library will be libxenevtchn which provides access to event
+channels.
+
+In preparation for this switch the compatibility layer in xen_common.h
+(which support building with older versions of Xen) to use what will
+be the new library API. This means that the evtchn shim will disappear
+for versions of Xen which include libxenevtchn.
+
+To simplify things for the <= 4.0.0 support we wrap the int fd in a
+malloc(sizeof int) such that the handle is always a pointer. This
+leads to less typedef headaches and the need for
+XC_HANDLER_INITIAL_VALUE etc for these interfaces.
+
+Note that this patch does not add any support for actually using
+libxenevtchn, it just adjusts the existing shims.
+
+Note that xc_evtchn_alloc_unbound functionality remains in libxenctrl,
+since that functionality is not exposed by /dev/xen/evtchn.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+diff --git a/hw/xen/xen_backend.c b/hw/xen/xen_backend.c
+index 2510e2e..ae2a1f0 100644
+--- a/hw/xen/xen_backend.c
++++ b/hw/xen/xen_backend.c
+@@ -243,19 +243,19 @@ static struct XenDevice *xen_be_get_xendev(const char *type, int dom, int dev,
+     xendev->debug      = debug;
+     xendev->local_port = -1;
+ 
+-    xendev->evtchndev = xen_xc_evtchn_open(NULL, 0);
+-    if (xendev->evtchndev == XC_HANDLER_INITIAL_VALUE) {
++    xendev->evtchndev = xenevtchn_open(NULL, 0);
++    if (xendev->evtchndev == NULL) {
+         xen_be_printf(NULL, 0, "can't open evtchn device\n");
+         g_free(xendev);
+         return NULL;
+     }
+-    fcntl(xc_evtchn_fd(xendev->evtchndev), F_SETFD, FD_CLOEXEC);
++    fcntl(xenevtchn_fd(xendev->evtchndev), F_SETFD, FD_CLOEXEC);
+ 
+     if (ops->flags & DEVOPS_FLAG_NEED_GNTDEV) {
+         xendev->gnttabdev = xen_xc_gnttab_open(NULL, 0);
+         if (xendev->gnttabdev == XC_HANDLER_INITIAL_VALUE) {
+             xen_be_printf(NULL, 0, "can't open gnttab device\n");
+-            xc_evtchn_close(xendev->evtchndev);
++            xenevtchn_close(xendev->evtchndev);
+             g_free(xendev);
+             return NULL;
+         }
+@@ -306,8 +306,8 @@ static struct XenDevice *xen_be_del_xendev(int dom, int dev)
+             g_free(xendev->fe);
+         }
+ 
+-        if (xendev->evtchndev != XC_HANDLER_INITIAL_VALUE) {
+-            xc_evtchn_close(xendev->evtchndev);
++        if (xendev->evtchndev != NULL) {
++            xenevtchn_close(xendev->evtchndev);
+         }
+         if (xendev->gnttabdev != XC_HANDLER_INITIAL_VALUE) {
+             xc_gnttab_close(xendev->gnttabdev);
+@@ -691,13 +691,14 @@ static void xen_be_evtchn_event(void *opaque)
+     struct XenDevice *xendev = opaque;
+     evtchn_port_t port;
+ 
+-    port = xc_evtchn_pending(xendev->evtchndev);
++    port = xenevtchn_pending(xendev->evtchndev);
+     if (port != xendev->local_port) {
+-        xen_be_printf(xendev, 0, "xc_evtchn_pending returned %d (expected %d)\n",
++        xen_be_printf(xendev, 0,
++                      "xenevtchn_pending returned %d (expected %d)\n",
+                       port, xendev->local_port);
+         return;
+     }
+-    xc_evtchn_unmask(xendev->evtchndev, port);
++    xenevtchn_unmask(xendev->evtchndev, port);
+ 
+     if (xendev->ops->event) {
+         xendev->ops->event(xendev);
+@@ -740,14 +741,14 @@ int xen_be_bind_evtchn(struct XenDevice *xendev)
+     if (xendev->local_port != -1) {
+         return 0;
+     }
+-    xendev->local_port = xc_evtchn_bind_interdomain
++    xendev->local_port = xenevtchn_bind_interdomain
+         (xendev->evtchndev, xendev->dom, xendev->remote_port);
+     if (xendev->local_port == -1) {
+-        xen_be_printf(xendev, 0, "xc_evtchn_bind_interdomain failed\n");
++        xen_be_printf(xendev, 0, "xenevtchn_bind_interdomain failed\n");
+         return -1;
+     }
+     xen_be_printf(xendev, 2, "bind evtchn port %d\n", xendev->local_port);
+-    qemu_set_fd_handler(xc_evtchn_fd(xendev->evtchndev),
++    qemu_set_fd_handler(xenevtchn_fd(xendev->evtchndev),
+                         xen_be_evtchn_event, NULL, xendev);
+     return 0;
+ }
+@@ -757,15 +758,15 @@ void xen_be_unbind_evtchn(struct XenDevice *xendev)
+     if (xendev->local_port == -1) {
+         return;
+     }
+-    qemu_set_fd_handler(xc_evtchn_fd(xendev->evtchndev), NULL, NULL, NULL);
+-    xc_evtchn_unbind(xendev->evtchndev, xendev->local_port);
++    qemu_set_fd_handler(xenevtchn_fd(xendev->evtchndev), NULL, NULL, NULL);
++    xenevtchn_unbind(xendev->evtchndev, xendev->local_port);
+     xen_be_printf(xendev, 2, "unbind evtchn port %d\n", xendev->local_port);
+     xendev->local_port = -1;
+ }
+ 
+ int xen_be_send_notify(struct XenDevice *xendev)
+ {
+-    return xc_evtchn_notify(xendev->evtchndev, xendev->local_port);
++    return xenevtchn_notify(xendev->evtchndev, xendev->local_port);
+ }
+ 
+ /*
+diff --git a/include/hw/xen/xen_backend.h b/include/hw/xen/xen_backend.h
+index 3b4125e..a90314f 100644
+--- a/include/hw/xen/xen_backend.h
++++ b/include/hw/xen/xen_backend.h
+@@ -46,7 +46,7 @@ struct XenDevice {
+     int                remote_port;
+     int                local_port;
+ 
+-    XenEvtchn          evtchndev;
++    xenevtchn_handle   *evtchndev;
+     XenGnttab          gnttabdev;
+ 
+     struct XenDevOps   *ops;
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index 4ac0c6f..5c51b44 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -39,17 +39,38 @@ static inline void *xc_map_foreign_bulk(int xc_handle, uint32_t dom, int prot,
+ #if CONFIG_XEN_CTRL_INTERFACE_VERSION < 410
+ 
+ typedef int XenXC;
+-typedef int XenEvtchn;
++typedef int xenevtchn_handle;
+ typedef int XenGnttab;
+ 
+ #  define XC_INTERFACE_FMT "%i"
+ #  define XC_HANDLER_INITIAL_VALUE    -1
+ 
+-static inline XenEvtchn xen_xc_evtchn_open(void *logger,
+-                                           unsigned int open_flags)
++static inline xenevtchn_handle *xenevtchn_open(void *logger,
++                                               unsigned int open_flags)
+ {
+-    return xc_evtchn_open();
++    xenevtchn_handle *h = malloc(sizeof(*h));
++    if (!h) {
++        return NULL;
++    }
++    *h = xc_evtchn_open();
++    if (*h == -1) {
++        free(h);
++        h = NULL;
++    }
++    return h;
+ }
++static inline int xenevtchn_close(xenevtchn_handle *h)
++{
++    int rc = xc_evtchn_close(*h);
++    free(h);
++    return rc;
++}
++#define xenevtchn_fd(h) xc_evtchn_fd(*h)
++#define xenevtchn_pending(h) xc_evtchn_pending(*h)
++#define xenevtchn_notify(h, p) xc_evtchn_notify(*h, p)
++#define xenevtchn_bind_interdomain(h, d, p) xc_evtchn_bind_interdomain(*h, d, p)
++#define xenevtchn_unmask(h, p) xc_evtchn_unmask(*h, p)
++#define xenevtchn_unbind(h, p) xc_evtchn_unmask(*h, p)
+ 
+ static inline XenGnttab xen_xc_gnttab_open(void *logger,
+                                            unsigned int open_flags)
+@@ -108,17 +129,20 @@ static inline void xs_close(struct xs_handle *xsh)
+ #else
+ 
+ typedef xc_interface *XenXC;
+-typedef xc_evtchn *XenEvtchn;
++typedef xc_evtchn xenevtchn_handle;
+ typedef xc_gnttab *XenGnttab;
+ 
+ #  define XC_INTERFACE_FMT "%p"
+ #  define XC_HANDLER_INITIAL_VALUE    NULL
+ 
+-static inline XenEvtchn xen_xc_evtchn_open(void *logger,
+-                                           unsigned int open_flags)
+-{
+-    return xc_evtchn_open(logger, open_flags);
+-}
++#define xenevtchn_open(l, f) xc_evtchn_open(l, f);
++#define xenevtchn_close(h) xc_evtchn_close(h)
++#define xenevtchn_fd(h) xc_evtchn_fd(h)
++#define xenevtchn_pending(h) xc_evtchn_pending(h)
++#define xenevtchn_notify(h, p) xc_evtchn_notify(h, p)
++#define xenevtchn_bind_interdomain(h, d, p) xc_evtchn_bind_interdomain(h, d, p)
++#define xenevtchn_unmask(h, p) xc_evtchn_unmask(h, p)
++#define xenevtchn_unbind(h, p) xc_evtchn_unbind(h, p)
+ 
+ static inline XenGnttab xen_xc_gnttab_open(void *logger,
+                                            unsigned int open_flags)
+diff --git a/xen-hvm.c b/xen-hvm.c
+index 3371c4e..b0e34d9 100644
+--- a/xen-hvm.c
++++ b/xen-hvm.c
+@@ -109,7 +109,7 @@ typedef struct XenIOState {
+     /* evtchn local port for buffered io */
+     evtchn_port_t bufioreq_local_port;
+     /* the evtchn fd for polling */
+-    XenEvtchn xce_handle;
++    xenevtchn_handle *xce_handle;
+     /* which vcpu we are serving */
+     int send_vcpu;
+ 
+@@ -715,7 +715,7 @@ static ioreq_t *cpu_get_ioreq(XenIOState *state)
+     int i;
+     evtchn_port_t port;
+ 
+-    port = xc_evtchn_pending(state->xce_handle);
++    port = xenevtchn_pending(state->xce_handle);
+     if (port == state->bufioreq_local_port) {
+         timer_mod(state->buffered_io_timer,
+                 BUFFER_IO_MAX_DELAY + qemu_clock_get_ms(QEMU_CLOCK_REALTIME));
+@@ -734,7 +734,7 @@ static ioreq_t *cpu_get_ioreq(XenIOState *state)
+         }
+ 
+         /* unmask the wanted port again */
+-        xc_evtchn_unmask(state->xce_handle, port);
++        xenevtchn_unmask(state->xce_handle, port);
+ 
+         /* get the io packet from shared memory */
+         state->send_vcpu = i;
+@@ -1041,7 +1041,7 @@ static void handle_buffered_io(void *opaque)
+                 BUFFER_IO_MAX_DELAY + qemu_clock_get_ms(QEMU_CLOCK_REALTIME));
+     } else {
+         timer_del(state->buffered_io_timer);
+-        xc_evtchn_unmask(state->xce_handle, state->bufioreq_local_port);
++        xenevtchn_unmask(state->xce_handle, state->bufioreq_local_port);
+     }
+ }
+ 
+@@ -1085,7 +1085,8 @@ static void cpu_handle_ioreq(void *opaque)
+         }
+ 
+         req->state = STATE_IORESP_READY;
+-        xc_evtchn_notify(state->xce_handle, state->ioreq_local_port[state->send_vcpu]);
++        xenevtchn_notify(state->xce_handle,
++                         state->ioreq_local_port[state->send_vcpu]);
+     }
+ }
+ 
+@@ -1093,8 +1094,8 @@ static void xen_main_loop_prepare(XenIOState *state)
+ {
+     int evtchn_fd = -1;
+ 
+-    if (state->xce_handle != XC_HANDLER_INITIAL_VALUE) {
+-        evtchn_fd = xc_evtchn_fd(state->xce_handle);
++    if (state->xce_handle != NULL) {
++        evtchn_fd = xenevtchn_fd(state->xce_handle);
+     }
+ 
+     state->buffered_io_timer = timer_new_ms(QEMU_CLOCK_REALTIME, handle_buffered_io,
+@@ -1132,7 +1133,7 @@ static void xen_exit_notifier(Notifier *n, void *data)
+ {
+     XenIOState *state = container_of(n, XenIOState, exit);
+ 
+-    xc_evtchn_close(state->xce_handle);
++    xenevtchn_close(state->xce_handle);
+     xs_daemon_close(state->xenstore);
+ }
+ 
+@@ -1201,8 +1202,8 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+ 
+     state = g_malloc0(sizeof (XenIOState));
+ 
+-    state->xce_handle = xen_xc_evtchn_open(NULL, 0);
+-    if (state->xce_handle == XC_HANDLER_INITIAL_VALUE) {
++    state->xce_handle = xenevtchn_open(NULL, 0);
++    if (state->xce_handle == NULL) {
+         perror("xen: event channel open");
+         return -1;
+     }
+@@ -1282,7 +1283,7 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+ 
+     /* FIXME: how about if we overflow the page here? */
+     for (i = 0; i < max_cpus; i++) {
+-        rc = xc_evtchn_bind_interdomain(state->xce_handle, xen_domid,
++        rc = xenevtchn_bind_interdomain(state->xce_handle, xen_domid,
+                                         xen_vcpu_eport(state->shared_page, i));
+         if (rc == -1) {
+             fprintf(stderr, "shared evtchn %d bind error %d\n", i, errno);
+@@ -1291,7 +1292,7 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+         state->ioreq_local_port[i] = rc;
+     }
+ 
+-    rc = xc_evtchn_bind_interdomain(state->xce_handle, xen_domid,
++    rc = xenevtchn_bind_interdomain(state->xce_handle, xen_domid,
+                                     bufioreq_evtchn);
+     if (rc == -1) {
+         fprintf(stderr, "buffered evtchn bind error %d\n", errno);

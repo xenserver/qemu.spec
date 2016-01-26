@@ -1,0 +1,373 @@
+From e830442136183690daeb6a96aa13c0429240a8af Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 23 Sep 2015 17:30:15 +0100
+Subject: [PATCH] xen: Switch to libxengnttab interface for compat shims.
+
+In Xen 4.7 we are refactoring parts libxenctrl into a number of
+separate libraries which will provide backward and forward API and ABI
+compatiblity.
+
+One such library will be libxengnttab which provides access to grant
+tables.
+
+In preparation for this switch the compatibility layer in xen_common.h
+(which support building with older versions of Xen) to use what will
+be the new library API. This means that the gnttab shim will disappear
+for versions of Xen which include libxengnttab.
+
+To simplify things for the <= 4.0.0 support we wrap the int fd in a
+malloc(sizeof int) such that the handle is always a pointer. This
+leads to less typedef headaches and the need for
+XC_HANDLER_INITIAL_VALUE etc for these interfaces.
+
+Note that this patch does not add any support for actually using
+libxengnttab, it just adjusts the existing shims.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+diff --git a/hw/block/xen_disk.c b/hw/block/xen_disk.c
+index 37e14d1..6364d5d 100644
+--- a/hw/block/xen_disk.c
++++ b/hw/block/xen_disk.c
+@@ -174,11 +174,11 @@ static gint int_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
+ static void destroy_grant(gpointer pgnt)
+ {
+     PersistentGrant *grant = pgnt;
+-    XenGnttab gnt = grant->blkdev->xendev.gnttabdev;
++    xengnttab_handle *gnt = grant->blkdev->xendev.gnttabdev;
+ 
+-    if (xc_gnttab_munmap(gnt, grant->page, 1) != 0) {
++    if (xengnttab_unmap(gnt, grant->page, 1) != 0) {
+         xen_be_printf(&grant->blkdev->xendev, 0,
+-                      "xc_gnttab_munmap failed: %s\n",
++                      "xengnttab_unmap failed: %s\n",
+                       strerror(errno));
+     }
+     grant->blkdev->persistent_gnt_count--;
+@@ -191,11 +191,11 @@ static void remove_persistent_region(gpointer data, gpointer dev)
+ {
+     PersistentRegion *region = data;
+     struct XenBlkDev *blkdev = dev;
+-    XenGnttab gnt = blkdev->xendev.gnttabdev;
++    xengnttab_handle *gnt = blkdev->xendev.gnttabdev;
+ 
+-    if (xc_gnttab_munmap(gnt, region->addr, region->num) != 0) {
++    if (xengnttab_unmap(gnt, region->addr, region->num) != 0) {
+         xen_be_printf(&blkdev->xendev, 0,
+-                      "xc_gnttab_munmap region %p failed: %s\n",
++                      "xengnttab_unmap region %p failed: %s\n",
+                       region->addr, strerror(errno));
+     }
+     xen_be_printf(&blkdev->xendev, 3,
+@@ -330,7 +330,7 @@ err:
+ 
+ static void ioreq_unmap(struct ioreq *ioreq)
+ {
+-    XenGnttab gnt = ioreq->blkdev->xendev.gnttabdev;
++    xengnttab_handle *gnt = ioreq->blkdev->xendev.gnttabdev;
+     int i;
+ 
+     if (ioreq->num_unmap == 0 || ioreq->mapped == 0) {
+@@ -340,8 +340,9 @@ static void ioreq_unmap(struct ioreq *ioreq)
+         if (!ioreq->pages) {
+             return;
+         }
+-        if (xc_gnttab_munmap(gnt, ioreq->pages, ioreq->num_unmap) != 0) {
+-            xen_be_printf(&ioreq->blkdev->xendev, 0, "xc_gnttab_munmap failed: %s\n",
++        if (xengnttab_unmap(gnt, ioreq->pages, ioreq->num_unmap) != 0) {
++            xen_be_printf(&ioreq->blkdev->xendev, 0,
++                          "xengnttab_unmap failed: %s\n",
+                           strerror(errno));
+         }
+         ioreq->blkdev->cnt_map -= ioreq->num_unmap;
+@@ -351,8 +352,9 @@ static void ioreq_unmap(struct ioreq *ioreq)
+             if (!ioreq->page[i]) {
+                 continue;
+             }
+-            if (xc_gnttab_munmap(gnt, ioreq->page[i], 1) != 0) {
+-                xen_be_printf(&ioreq->blkdev->xendev, 0, "xc_gnttab_munmap failed: %s\n",
++            if (xengnttab_unmap(gnt, ioreq->page[i], 1) != 0) {
++                xen_be_printf(&ioreq->blkdev->xendev, 0,
++                              "xengnttab_unmap failed: %s\n",
+                               strerror(errno));
+             }
+             ioreq->blkdev->cnt_map--;
+@@ -364,7 +366,7 @@ static void ioreq_unmap(struct ioreq *ioreq)
+ 
+ static int ioreq_map(struct ioreq *ioreq)
+ {
+-    XenGnttab gnt = ioreq->blkdev->xendev.gnttabdev;
++    xengnttab_handle *gnt = ioreq->blkdev->xendev.gnttabdev;
+     uint32_t domids[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+     uint32_t refs[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+     void *page[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+@@ -415,7 +417,7 @@ static int ioreq_map(struct ioreq *ioreq)
+     }
+ 
+     if (batch_maps && new_maps) {
+-        ioreq->pages = xc_gnttab_map_grant_refs
++        ioreq->pages = xengnttab_map_grant_refs
+             (gnt, new_maps, domids, refs, ioreq->prot);
+         if (ioreq->pages == NULL) {
+             xen_be_printf(&ioreq->blkdev->xendev, 0,
+@@ -431,7 +433,7 @@ static int ioreq_map(struct ioreq *ioreq)
+         ioreq->blkdev->cnt_map += new_maps;
+     } else if (new_maps)  {
+         for (i = 0; i < new_maps; i++) {
+-            ioreq->page[i] = xc_gnttab_map_grant_ref
++            ioreq->page[i] = xengnttab_map_grant_ref
+                 (gnt, domids[i], refs[i], ioreq->prot);
+             if (ioreq->page[i] == NULL) {
+                 xen_be_printf(&ioreq->blkdev->xendev, 0,
+@@ -764,9 +766,9 @@ static void blk_alloc(struct XenDevice *xendev)
+     if (xen_mode != XEN_EMULATE) {
+         batch_maps = 1;
+     }
+-    if (xc_gnttab_set_max_grants(xendev->gnttabdev,
++    if (xengnttab_set_max_grants(xendev->gnttabdev,
+             MAX_GRANTS(max_requests, BLKIF_MAX_SEGMENTS_PER_REQUEST)) < 0) {
+-        xen_be_printf(xendev, 0, "xc_gnttab_set_max_grants failed: %s\n",
++        xen_be_printf(xendev, 0, "xengnttab_set_max_grants failed: %s\n",
+                       strerror(errno));
+     }
+ }
+@@ -974,7 +976,7 @@ static int blk_connect(struct XenDevice *xendev)
+         }
+     }
+ 
+-    blkdev->sring = xc_gnttab_map_grant_ref(blkdev->xendev.gnttabdev,
++    blkdev->sring = xengnttab_map_grant_ref(blkdev->xendev.gnttabdev,
+                                             blkdev->xendev.dom,
+                                             blkdev->ring_ref,
+                                             PROT_READ | PROT_WRITE);
+@@ -1039,7 +1041,7 @@ static void blk_disconnect(struct XenDevice *xendev)
+     xen_be_unbind_evtchn(&blkdev->xendev);
+ 
+     if (blkdev->sring) {
+-        xc_gnttab_munmap(blkdev->xendev.gnttabdev, blkdev->sring, 1);
++        xengnttab_unmap(blkdev->xendev.gnttabdev, blkdev->sring, 1);
+         blkdev->cnt_map--;
+         blkdev->sring = NULL;
+     }
+diff --git a/hw/char/xen_console.c b/hw/char/xen_console.c
+index 63ade33..ac1b324 100644
+--- a/hw/char/xen_console.c
++++ b/hw/char/xen_console.c
+@@ -233,7 +233,7 @@ static int con_initialise(struct XenDevice *xendev)
+                                           PROT_READ|PROT_WRITE,
+                                           con->ring_ref);
+     } else {
+-        con->sring = xc_gnttab_map_grant_ref(xendev->gnttabdev, con->xendev.dom,
++        con->sring = xengnttab_map_grant_ref(xendev->gnttabdev, con->xendev.dom,
+                                              con->ring_ref,
+                                              PROT_READ|PROT_WRITE);
+     }
+@@ -275,7 +275,7 @@ static void con_disconnect(struct XenDevice *xendev)
+         if (!xendev->dev) {
+             munmap(con->sring, XC_PAGE_SIZE);
+         } else {
+-            xc_gnttab_munmap(xendev->gnttabdev, con->sring, 1);
++            xengnttab_unmap(xendev->gnttabdev, con->sring, 1);
+         }
+         con->sring = NULL;
+     }
+diff --git a/hw/net/xen_nic.c b/hw/net/xen_nic.c
+index d7cbfc1..de03bdd 100644
+--- a/hw/net/xen_nic.c
++++ b/hw/net/xen_nic.c
+@@ -169,7 +169,7 @@ static void net_tx_packets(struct XenNetDev *netdev)
+                           (txreq.flags & NETTXF_more_data)      ? " more_data"      : "",
+                           (txreq.flags & NETTXF_extra_info)     ? " extra_info"     : "");
+ 
+-            page = xc_gnttab_map_grant_ref(netdev->xendev.gnttabdev,
++            page = xengnttab_map_grant_ref(netdev->xendev.gnttabdev,
+                                            netdev->xendev.dom,
+                                            txreq.gref, PROT_READ);
+             if (page == NULL) {
+@@ -191,7 +191,7 @@ static void net_tx_packets(struct XenNetDev *netdev)
+                 qemu_send_packet(qemu_get_queue(netdev->nic),
+                                  page + txreq.offset, txreq.size);
+             }
+-            xc_gnttab_munmap(netdev->xendev.gnttabdev, page, 1);
++            xengnttab_unmap(netdev->xendev.gnttabdev, page, 1);
+             net_tx_response(netdev, &txreq, NETIF_RSP_OKAY);
+         }
+         if (!netdev->tx_work) {
+@@ -261,7 +261,7 @@ static ssize_t net_rx_packet(NetClientState *nc, const uint8_t *buf, size_t size
+     memcpy(&rxreq, RING_GET_REQUEST(&netdev->rx_ring, rc), sizeof(rxreq));
+     netdev->rx_ring.req_cons = ++rc;
+ 
+-    page = xc_gnttab_map_grant_ref(netdev->xendev.gnttabdev,
++    page = xengnttab_map_grant_ref(netdev->xendev.gnttabdev,
+                                    netdev->xendev.dom,
+                                    rxreq.gref, PROT_WRITE);
+     if (page == NULL) {
+@@ -271,7 +271,7 @@ static ssize_t net_rx_packet(NetClientState *nc, const uint8_t *buf, size_t size
+         return -1;
+     }
+     memcpy(page + NET_IP_ALIGN, buf, size);
+-    xc_gnttab_munmap(netdev->xendev.gnttabdev, page, 1);
++    xengnttab_unmap(netdev->xendev.gnttabdev, page, 1);
+     net_rx_response(netdev, &rxreq, NETIF_RSP_OKAY, NET_IP_ALIGN, size, 0);
+ 
+     return size;
+@@ -343,19 +343,19 @@ static int net_connect(struct XenDevice *xendev)
+         return -1;
+     }
+ 
+-    netdev->txs = xc_gnttab_map_grant_ref(netdev->xendev.gnttabdev,
++    netdev->txs = xengnttab_map_grant_ref(netdev->xendev.gnttabdev,
+                                           netdev->xendev.dom,
+                                           netdev->tx_ring_ref,
+                                           PROT_READ | PROT_WRITE);
+     if (!netdev->txs) {
+         return -1;
+     }
+-    netdev->rxs = xc_gnttab_map_grant_ref(netdev->xendev.gnttabdev,
++    netdev->rxs = xengnttab_map_grant_ref(netdev->xendev.gnttabdev,
+                                           netdev->xendev.dom,
+                                           netdev->rx_ring_ref,
+                                           PROT_READ | PROT_WRITE);
+     if (!netdev->rxs) {
+-        xc_gnttab_munmap(netdev->xendev.gnttabdev, netdev->txs, 1);
++        xengnttab_unmap(netdev->xendev.gnttabdev, netdev->txs, 1);
+         netdev->txs = NULL;
+         return -1;
+     }
+@@ -380,11 +380,11 @@ static void net_disconnect(struct XenDevice *xendev)
+     xen_be_unbind_evtchn(&netdev->xendev);
+ 
+     if (netdev->txs) {
+-        xc_gnttab_munmap(netdev->xendev.gnttabdev, netdev->txs, 1);
++        xengnttab_unmap(netdev->xendev.gnttabdev, netdev->txs, 1);
+         netdev->txs = NULL;
+     }
+     if (netdev->rxs) {
+-        xc_gnttab_munmap(netdev->xendev.gnttabdev, netdev->rxs, 1);
++        xengnttab_unmap(netdev->xendev.gnttabdev, netdev->rxs, 1);
+         netdev->rxs = NULL;
+     }
+ }
+diff --git a/hw/xen/xen_backend.c b/hw/xen/xen_backend.c
+index ae2a1f0..966e34f 100644
+--- a/hw/xen/xen_backend.c
++++ b/hw/xen/xen_backend.c
+@@ -252,15 +252,15 @@ static struct XenDevice *xen_be_get_xendev(const char *type, int dom, int dev,
+     fcntl(xenevtchn_fd(xendev->evtchndev), F_SETFD, FD_CLOEXEC);
+ 
+     if (ops->flags & DEVOPS_FLAG_NEED_GNTDEV) {
+-        xendev->gnttabdev = xen_xc_gnttab_open(NULL, 0);
+-        if (xendev->gnttabdev == XC_HANDLER_INITIAL_VALUE) {
++        xendev->gnttabdev = xengnttab_open(NULL, 0);
++        if (xendev->gnttabdev == NULL) {
+             xen_be_printf(NULL, 0, "can't open gnttab device\n");
+             xenevtchn_close(xendev->evtchndev);
+             g_free(xendev);
+             return NULL;
+         }
+     } else {
+-        xendev->gnttabdev = XC_HANDLER_INITIAL_VALUE;
++        xendev->gnttabdev = NULL;
+     }
+ 
+     QTAILQ_INSERT_TAIL(&xendevs, xendev, next);
+@@ -309,8 +309,8 @@ static struct XenDevice *xen_be_del_xendev(int dom, int dev)
+         if (xendev->evtchndev != NULL) {
+             xenevtchn_close(xendev->evtchndev);
+         }
+-        if (xendev->gnttabdev != XC_HANDLER_INITIAL_VALUE) {
+-            xc_gnttab_close(xendev->gnttabdev);
++        if (xendev->gnttabdev != NULL) {
++            xengnttab_close(xendev->gnttabdev);
+         }
+ 
+         QTAILQ_REMOVE(&xendevs, xendev, next);
+diff --git a/include/hw/xen/xen_backend.h b/include/hw/xen/xen_backend.h
+index a90314f..8e8857b 100644
+--- a/include/hw/xen/xen_backend.h
++++ b/include/hw/xen/xen_backend.h
+@@ -47,7 +47,7 @@ struct XenDevice {
+     int                local_port;
+ 
+     xenevtchn_handle   *evtchndev;
+-    XenGnttab          gnttabdev;
++    xengnttab_handle   *gnttabdev;
+ 
+     struct XenDevOps   *ops;
+     QTAILQ_ENTRY(XenDevice) next;
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index 5c51b44..8f38310 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -40,7 +40,7 @@ static inline void *xc_map_foreign_bulk(int xc_handle, uint32_t dom, int prot,
+ 
+ typedef int XenXC;
+ typedef int xenevtchn_handle;
+-typedef int XenGnttab;
++typedef int xengnttab_handle;
+ 
+ #  define XC_INTERFACE_FMT "%i"
+ #  define XC_HANDLER_INITIAL_VALUE    -1
+@@ -72,11 +72,31 @@ static inline int xenevtchn_close(xenevtchn_handle *h)
+ #define xenevtchn_unmask(h, p) xc_evtchn_unmask(*h, p)
+ #define xenevtchn_unbind(h, p) xc_evtchn_unmask(*h, p)
+ 
+-static inline XenGnttab xen_xc_gnttab_open(void *logger,
+-                                           unsigned int open_flags)
++static inline xengnttab_handle *xengnttab_open(void *logger,
++                                               unsigned int open_flags)
+ {
+-    return xc_gnttab_open();
++    xengnttab_handle *h = malloc(sizeof(*h));
++    if (!h) {
++        return NULL;
++    }
++    *h = xc_gnttab_open();
++    if (*h == -1) {
++        free(h);
++        h = NULL;
++    }
++    return h;
+ }
++static inline int xengnttab_close(xengnttab_handle *h)
++{
++    int rc = xc_gnttab_close(*h);
++    free(h);
++    return rc;
++}
++#define xengnttab_set_max_grants(h, n) xc_gnttab_set_max_grants(*h, n)
++#define xengnttab_map_grant_ref(h, d, r, p) xc_gnttab_map_grant_ref(*h, d, r, p)
++#define xengnttab_map_grant_refs(h, c, d, r, p) \
++    xc_gnttab_map_grant_refs(*h, c, d, r, p)
++#define xengnttab_unmap(h, a, n) xc_gnttab_munmap(*h, a, n)
+ 
+ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+                                           unsigned int open_flags)
+@@ -130,7 +150,7 @@ static inline void xs_close(struct xs_handle *xsh)
+ 
+ typedef xc_interface *XenXC;
+ typedef xc_evtchn xenevtchn_handle;
+-typedef xc_gnttab *XenGnttab;
++typedef xc_gnttab xengnttab_handle;
+ 
+ #  define XC_INTERFACE_FMT "%p"
+ #  define XC_HANDLER_INITIAL_VALUE    NULL
+@@ -144,11 +164,13 @@ typedef xc_gnttab *XenGnttab;
+ #define xenevtchn_unmask(h, p) xc_evtchn_unmask(h, p)
+ #define xenevtchn_unbind(h, p) xc_evtchn_unbind(h, p)
+ 
+-static inline XenGnttab xen_xc_gnttab_open(void *logger,
+-                                           unsigned int open_flags)
+-{
+-    return xc_gnttab_open(logger, open_flags);
+-}
++#define xengnttab_open(l, f) xc_gnttab_open(l, f)
++#define xengnttab_close(h) xc_gnttab_close(h)
++#define xengnttab_set_max_grants(h, n) xc_gnttab_set_max_grants(h, n)
++#define xengnttab_map_grant_ref(h, d, r, p) xc_gnttab_map_grant_ref(h, d, r, p)
++#define xengnttab_unmap(h, a, n) xc_gnttab_munmap(h, a, n)
++#define xengnttab_map_grant_refs(h, c, d, r, p) \
++    xc_gnttab_map_grant_refs(h, c, d, r, p)
+ 
+ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+                                           unsigned int open_flags)

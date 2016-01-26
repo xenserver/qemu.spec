@@ -1,0 +1,306 @@
+From 47a533680dec66e9bf36f5f5e027094a6a1183fe Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 23 Sep 2015 17:30:15 +0100
+Subject: [PATCH] xen: Switch uses of xc_map_foreign_{pages,bulk} to use
+ libxenforeignmemory API.
+
+In Xen 4.7 we are refactoring parts libxenctrl into a number of
+separate libraries which will provide backward and forward API and ABI
+compatiblity.
+
+One such library will be libxenforeignmemory which provides access to
+privileged foreign mappings and which will provide an interface
+equivalent to xc_map_foreign_{pages,bulk}.
+
+The new xenforeignmemory_map() function behaves like
+xc_map_foreign_pages() when the err argument is NULL and like
+xc_map_foreign_bulk() when err is non-NULL, which maps into the shim
+here onto checking err == NULL and calling the appropriate old
+function.
+
+Note that xenforeignmemory_map() takes the number of pages before the
+arrays themselves, in order to support potentially future use of
+variable-length-arrays in the prototype (in the future, when Xen's
+baseline toolchain requirements are new enough to ensure VLAs are
+supported).
+
+In preparation for adding support for libxenforeignmemory add support
+to the <=4.0 and <=4.6 compat code in xen_common.h to allow us to
+switch to using the new API. These shims will disappear for versions
+of Xen which include libxenforeignmemory.
+
+Since libxenforeignmemory will have its own handle type but for <= 4.6
+the functionality is provided by using a libxenctrl handle we
+introduce a new global xen_fmem alongside the existing xen_xc. In fact
+we make xen_fmem a pointer to the existing xen_xc, which then works
+correctly with both <=4.0 (xc handle is an int) and <=4.6 (xc handle
+is a pointer). In the latter case xen_fmem is actually a double
+indirect pointer, but it all falls out in the wash.
+
+Unlike libxenctrl libxenforeignmemory has an explicit unmap function,
+rather than just specifying that munmap should be used, so the unmap
+paths are updated to use xenforeignmemory_unmap, which is a shim for
+munmap on these versions of xen. The mappings in xen-hvm.c do not
+appear to be unmapped (which makes sense for a qemu-dm process)
+
+In fb_disconnect this results in a change from simply mmap over the
+existing mapping (with an implicit munmap) to expliclty unmapping with
+xenforeignmemory_unmap and then mapping the required anonymous memory
+in the same hole. I don't think this is a problem since any other
+thread which was racily touching this region would already be running
+the risk of hitting the mapping halfway through the call. If this is
+thought to be a problem then we could consider adding an extra API to
+the libxenforeignmemory interface to replace a foreign mapping with
+anonymous shared memory, but I'd prefer not to.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/hw/char/xen_console.c b/hw/char/xen_console.c
+index 3e8a57b..b92d0c6 100644
+--- a/hw/char/xen_console.c
++++ b/hw/char/xen_console.c
+@@ -229,9 +229,9 @@ static int con_initialise(struct XenDevice *xendev)
+ 
+     if (!xendev->dev) {
+         xen_pfn_t mfn = con->ring_ref;
+-        con->sring = xc_map_foreign_pages(xen_xc, con->xendev.dom,
+-                                         PROT_READ|PROT_WRITE,
+-                                         &mfn, 1);
++        con->sring = xenforeignmemory_map(xen_fmem, con->xendev.dom,
++                                          PROT_READ|PROT_WRITE,
++                                          1, &mfn, NULL);
+     } else {
+         con->sring = xengnttab_map_grant_ref(xendev->gnttabdev, con->xendev.dom,
+                                              con->ring_ref,
+@@ -273,7 +273,7 @@ static void con_disconnect(struct XenDevice *xendev)
+ 
+     if (con->sring) {
+         if (!xendev->dev) {
+-            munmap(con->sring, XC_PAGE_SIZE);
++            xenforeignmemory_unmap(xen_fmem, con->sring, 1);
+         } else {
+             xengnttab_unmap(xendev->gnttabdev, con->sring, 1);
+         }
+diff --git a/hw/display/xenfb.c b/hw/display/xenfb.c
+index aa38803..1676660 100644
+--- a/hw/display/xenfb.c
++++ b/hw/display/xenfb.c
+@@ -106,8 +106,8 @@ static int common_bind(struct common *c)
+     if (xenstore_read_fe_int(&c->xendev, "event-channel", &c->xendev.remote_port) == -1)
+ 	return -1;
+ 
+-    c->page = xc_map_foreign_pages(xen_xc, c->xendev.dom,
+-                                   PROT_READ | PROT_WRITE, &mfn, 1);
++    c->page = xenforeignmemory_map(xen_fmem, c->xendev.dom,
++                                   PROT_READ | PROT_WRITE, 1, &mfn, NULL);
+     if (c->page == NULL)
+ 	return -1;
+ 
+@@ -122,7 +122,7 @@ static void common_unbind(struct common *c)
+ {
+     xen_be_unbind_evtchn(&c->xendev);
+     if (c->page) {
+-	munmap(c->page, XC_PAGE_SIZE);
++        xenforeignmemory_unmap(xen_fmem, c->page, 1);
+ 	c->page = NULL;
+     }
+ }
+@@ -495,15 +495,15 @@ static int xenfb_map_fb(struct XenFB *xenfb)
+     fbmfns = g_malloc0(sizeof(xen_pfn_t) * xenfb->fbpages);
+ 
+     xenfb_copy_mfns(mode, n_fbdirs, pgmfns, pd);
+-    map = xc_map_foreign_pages(xen_xc, xenfb->c.xendev.dom,
+-			       PROT_READ, pgmfns, n_fbdirs);
++    map = xenforeignmemory_map(xen_fmem, xenfb->c.xendev.dom,
++                               PROT_READ, n_fbdirs, pgmfns, NULL);
+     if (map == NULL)
+ 	goto out;
+     xenfb_copy_mfns(mode, xenfb->fbpages, fbmfns, map);
+-    munmap(map, n_fbdirs * XC_PAGE_SIZE);
++    xenforeignmemory_unmap(xen_fmem, map, n_fbdirs);
+ 
+-    xenfb->pixels = xc_map_foreign_pages(xen_xc, xenfb->c.xendev.dom,
+-            PROT_READ, fbmfns, xenfb->fbpages);
++    xenfb->pixels = xenforeignmemory_map(xen_fmem, xenfb->c.xendev.dom,
++            PROT_READ, xenfb->fbpages, fbmfns, NULL);
+     if (xenfb->pixels == NULL)
+ 	goto out;
+ 
+@@ -913,6 +913,7 @@ static void fb_disconnect(struct XenDevice *xendev)
+      *   Replacing the framebuffer with anonymous shared memory
+      *   instead.  This releases the guest pages and keeps qemu happy.
+      */
++    xenforeignmemory_unmap(xen_fmem, fb->pixels, fb->fbpages);
+     fb->pixels = mmap(fb->pixels, fb->fbpages * XC_PAGE_SIZE,
+                       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON,
+                       -1, 0);
+diff --git a/hw/xen/xen_backend.c b/hw/xen/xen_backend.c
+index 966e34f..caa459c 100644
+--- a/hw/xen/xen_backend.c
++++ b/hw/xen/xen_backend.c
+@@ -45,6 +45,7 @@
+ 
+ /* public */
+ XenXC xen_xc = XC_HANDLER_INITIAL_VALUE;
++xenforeignmemory_handle *xen_fmem = NULL;
+ struct xs_handle *xenstore = NULL;
+ const char *xen_protocol;
+ 
+@@ -717,7 +718,7 @@ int xen_be_init(void)
+ 
+     qemu_set_fd_handler(xs_fileno(xenstore), xenstore_update, NULL, NULL);
+ 
+-    if (xen_xc == XC_HANDLER_INITIAL_VALUE) {
++    if (xen_xc == XC_HANDLER_INITIAL_VALUE || xen_fmem == NULL) {
+         /* Check if xen_init() have been called */
+         goto err;
+     }
+diff --git a/include/hw/xen/xen_backend.h b/include/hw/xen/xen_backend.h
+index 8e8857b..e0d52ee 100644
+--- a/include/hw/xen/xen_backend.h
++++ b/include/hw/xen/xen_backend.h
+@@ -57,6 +57,7 @@ struct XenDevice {
+ 
+ /* variables */
+ extern XenXC xen_xc;
++extern xenforeignmemory_handle *xen_fmem;
+ extern struct xs_handle *xenstore;
+ extern const char *xen_protocol;
+ 
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index 8f38310..95275b3 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -41,6 +41,7 @@ static inline void *xc_map_foreign_bulk(int xc_handle, uint32_t dom, int prot,
+ typedef int XenXC;
+ typedef int xenevtchn_handle;
+ typedef int xengnttab_handle;
++typedef int xenforeignmemory_handle;
+ 
+ #  define XC_INTERFACE_FMT "%i"
+ #  define XC_HANDLER_INITIAL_VALUE    -1
+@@ -104,6 +105,8 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+     return xc_interface_open();
+ }
+ 
++/* See below for xenforeignmemory_* APIs */
++
+ static inline int xc_fd(int xen_xc)
+ {
+     return xen_xc;
+@@ -149,6 +152,7 @@ static inline void xs_close(struct xs_handle *xsh)
+ #else
+ 
+ typedef xc_interface *XenXC;
++typedef xc_interface *xenforeignmemory_handle;
+ typedef xc_evtchn xenevtchn_handle;
+ typedef xc_gnttab xengnttab_handle;
+ 
+@@ -178,6 +182,8 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+     return xc_interface_open(logger, dombuild_logger, open_flags);
+ }
+ 
++/* See below for xenforeignmemory_* APIs */
++
+ /* FIXME There is now way to have the xen fd */
+ static inline int xc_fd(xc_interface *xen_xc)
+ {
+@@ -501,4 +507,23 @@ static inline int xen_domain_create(XenXC xc, uint32_t ssidref,
+ }
+ #endif
+ 
++#if CONFIG_XEN_CTRL_INTERFACE_VERSION < 471
++
++#define xenforeignmemory_open(l, f) &xen_xc
++
++static inline void *xenforeignmemory_map(XenXC *h, uint32_t dom,
++                                         int prot, size_t pages,
++                                         const xen_pfn_t arr[/*pages*/],
++                                         int err[/*pages*/])
++{
++    if (err)
++        return xc_map_foreign_bulk(*h, dom, prot, arr, err, pages);
++    else
++        return xc_map_foreign_pages(*h, dom, prot, arr, pages);
++}
++
++#define xenforeignmemory_unmap(h, p, s) munmap(p, s * XC_PAGE_SIZE)
++
++#endif
++
+ #endif /* QEMU_HW_XEN_COMMON_H */
+diff --git a/xen-common.c b/xen-common.c
+index 0dcdbc3..6cd2959 100644
+--- a/xen-common.c
++++ b/xen-common.c
+@@ -118,6 +118,12 @@ static int xen_init(MachineState *ms)
+         xen_be_printf(NULL, 0, "can't open xen interface\n");
+         return -1;
+     }
++    xen_fmem = xenforeignmemory_open(0, 0);
++    if (xen_fmem == NULL) {
++        xen_be_printf(NULL, 0, "can't open xen fmem interface\n");
++        xc_interface_close(xen_xc);
++        return -1;
++    }
+     qemu_add_vm_change_state_handler(xen_change_state_handler, NULL);
+ 
+     global_state_set_optional();
+diff --git a/xen-hvm.c b/xen-hvm.c
+index ce5c172..6486eae 100644
+--- a/xen-hvm.c
++++ b/xen-hvm.c
+@@ -1241,9 +1241,9 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+     DPRINTF("buffered io page at pfn %lx\n", bufioreq_pfn);
+     DPRINTF("buffered io evtchn is %x\n", bufioreq_evtchn);
+ 
+-    state->shared_page = xc_map_foreign_pages(xen_xc, xen_domid,
++    state->shared_page = xenforeignmemory_map(xen_fmem, xen_domid,
+                                               PROT_READ|PROT_WRITE,
+-                                              &ioreq_pfn, 1);
++                                              1, &ioreq_pfn, NULL);
+     if (state->shared_page == NULL) {
+         hw_error("map shared IO page returned error %d handle=" XC_INTERFACE_FMT,
+                  errno, xen_xc);
+@@ -1253,8 +1253,8 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+     if (!rc) {
+         DPRINTF("shared vmport page at pfn %lx\n", ioreq_pfn);
+         state->shared_vmport_page =
+-            xc_map_foreign_pages(xen_xc, xen_domid, PROT_READ|PROT_WRITE,
+-                                 &ioreq_pfn, 1);
++            xenforeignmemory_map(xen_fmem, xen_domid, PROT_READ|PROT_WRITE,
++                                 1, &ioreq_pfn, NULL);
+         if (state->shared_vmport_page == NULL) {
+             hw_error("map shared vmport IO page returned error %d handle="
+                      XC_INTERFACE_FMT, errno, xen_xc);
+@@ -1263,9 +1263,9 @@ int xen_hvm_init(ram_addr_t *below_4g_mem_size, ram_addr_t *above_4g_mem_size,
+         hw_error("get vmport regs pfn returned error %d, rc=%d", errno, rc);
+     }
+ 
+-    state->buffered_io_page = xc_map_foreign_pages(xen_xc, xen_domid,
++    state->buffered_io_page = xenforeignmemory_map(xen_fmem, xen_domid,
+                                                    PROT_READ|PROT_WRITE,
+-                                                   &bufioreq_pfn, 1);
++                                                   1, &bufioreq_pfn, NULL);
+     if (state->buffered_io_page == NULL) {
+         hw_error("map buffered IO page returned error %d", errno);
+     }
+diff --git a/xen-mapcache.c b/xen-mapcache.c
+index 8cefd0c..02380fd 100644
+--- a/xen-mapcache.c
++++ b/xen-mapcache.c
+@@ -178,10 +178,10 @@ static void xen_remap_bucket(MapCacheEntry *entry,
+         pfns[i] = (address_index << (MCACHE_BUCKET_SHIFT-XC_PAGE_SHIFT)) + i;
+     }
+ 
+-    vaddr_base = xc_map_foreign_bulk(xen_xc, xen_domid, PROT_READ|PROT_WRITE,
+-                                     pfns, err, nb_pfn);
++    vaddr_base = xenforeignmemory_map(xen_fmem, xen_domid, PROT_READ|PROT_WRITE,
++                                      nb_pfn, pfns, err);
+     if (vaddr_base == NULL) {
+-        perror("xc_map_foreign_bulk");
++        perror("xenforeignmemory_map");
+         exit(-1);
+     }
+ 

@@ -1,0 +1,79 @@
+From 3e65244b3a56aaeba8f4fae38500620056897ab6 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 24 Sep 2015 13:13:02 +0100
+Subject: [PATCH] xen: domainbuild: reopen libxenctrl interface after forking
+ for domain watcher.
+
+Using an existing libxenctrl handle after a fork was never
+particularly safe (especially if foreign mappings existed at the time
+of the fork) and the xc fd has been unavailable for many releases.
+
+Reopen the handle after fork and therefore do away with xc_fd().
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+diff --git a/hw/xenpv/xen_domainbuild.c b/hw/xenpv/xen_domainbuild.c
+index ac0e5ac..f9be029 100644
+--- a/hw/xenpv/xen_domainbuild.c
++++ b/hw/xenpv/xen_domainbuild.c
+@@ -174,12 +174,15 @@ static int xen_domain_watcher(void)
+     for (i = 3; i < n; i++) {
+         if (i == fd[0])
+             continue;
+-        if (i == xc_fd(xen_xc)) {
+-            continue;
+-        }
+         close(i);
+     }
+ 
++    /*
++     * Reopen xc interface, since the original is unsafe after fork
++     * and was closed above.
++     */
++    xen_xc = xc_interface_open(0, 0, 0);
++
+     /* ignore term signals */
+     signal(SIGINT,  SIG_IGN);
+     signal(SIGTERM, SIG_IGN);
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index 19f1577..be7a915 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -116,12 +116,6 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+ 
+ /* See below for xenforeignmemory_* APIs */
+ 
+-static inline int xc_fd(int xen_xc)
+-{
+-    return xen_xc;
+-}
+-
+-
+ static inline int xc_domain_populate_physmap_exact
+     (XenXC xc_handle, uint32_t domid, unsigned long nr_extents,
+      unsigned int extent_order, unsigned int mem_flags, xen_pfn_t *extent_start)
+@@ -193,11 +187,6 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+ 
+ /* See below for xenforeignmemory_* APIs */
+ 
+-/* FIXME There is no way to have the xen fd */
+-static inline int xc_fd(xc_interface *xen_xc)
+-{
+-    return -1;
+-}
+ #else /* CONFIG_XEN_CTRL_INTERFACE_VERSION >= 471 */
+ 
+ typedef xc_interface *XenXC;
+@@ -214,12 +203,6 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+ {
+     return xc_interface_open(logger, dombuild_logger, open_flags);
+ }
+-
+-/* FIXME There is now way to have the xen fd */
+-static inline int xc_fd(xc_interface *xen_xc)
+-{
+-    return -1;
+-}
+ #endif
+ 
+ /* Xen before 4.2 */

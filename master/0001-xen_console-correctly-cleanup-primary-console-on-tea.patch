@@ -1,0 +1,49 @@
+From 602a8eac1dcb5f1626d9b288ffb5caeaa61472c7 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 14 Oct 2015 16:49:25 +0100
+Subject: [PATCH] xen_console: correctly cleanup primary console on teardown.
+
+All of the work in con_disconnect applies to the primary console case
+(when xendev->dev is NULL). Therefore remove the early check and bail
+and allow it to fall through. All of the existing code is correctly
+conditional already.
+
+The ->dev and ->gnttabdev handles are either both set or neither. For
+consistency with con_initialise() with to the former here too.
+
+With this con_initialise and con_disconnect now mirror each other.
+
+Fix up a hard tab in the function while editing.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/hw/char/xen_console.c b/hw/char/xen_console.c
+index eb7f450..63ade33 100644
+--- a/hw/char/xen_console.c
++++ b/hw/char/xen_console.c
+@@ -265,9 +265,6 @@ static void con_disconnect(struct XenDevice *xendev)
+ {
+     struct XenConsole *con = container_of(xendev, struct XenConsole, xendev);
+ 
+-    if (!xendev->dev) {
+-        return;
+-    }
+     if (con->chr) {
+         qemu_chr_add_handlers(con->chr, NULL, NULL, NULL, NULL);
+         qemu_chr_fe_release(con->chr);
+@@ -275,12 +272,12 @@ static void con_disconnect(struct XenDevice *xendev)
+     xen_be_unbind_evtchn(&con->xendev);
+ 
+     if (con->sring) {
+-        if (!xendev->gnttabdev) {
++        if (!xendev->dev) {
+             munmap(con->sring, XC_PAGE_SIZE);
+         } else {
+             xc_gnttab_munmap(xendev->gnttabdev, con->sring, 1);
+         }
+-	con->sring = NULL;
++        con->sring = NULL;
+     }
+ }
+ 

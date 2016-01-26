@@ -1,0 +1,156 @@
+From 9118077ae1a5d38bd60cead58e0212eafaff136f Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 24 Sep 2015 13:37:57 +0100
+Subject: [PATCH] xen: make it possible to build without the Xen PV domain
+ builder
+
+Until the previous patch this relied on xc_fd(), which was only
+implemented for Xen 4.0 and earlier.
+
+Given this wasn't working since Xen 4.0 I have marked this as disabled
+by default.
+
+Removing this support drops the use of a bunch of symbols from
+libxenctrl, specifically:
+
+  - xc_domain_create
+  - xc_domain_destroy
+  - xc_domain_getinfo
+  - xc_domain_max_vcpus
+  - xc_domain_setmaxmem
+  - xc_domain_unpause
+  - xc_evtchn_alloc_unbound
+  - xc_linux_build
+
+This is another step towards only using Xen libraries which provide a
+stable inteface.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+diff --git a/configure b/configure
+index a3ed20f..8ce4077 100755
+--- a/configure
++++ b/configure
+@@ -248,6 +248,7 @@ vnc_jpeg=""
+ vnc_png=""
+ xen=""
+ xen_ctrl_version=""
++xen_pv_domain_build="no"
+ xen_pci_passthrough=""
+ linux_aio=""
+ cap_ng=""
+@@ -918,6 +919,10 @@ for opt do
+   ;;
+   --enable-xen-pci-passthrough) xen_pci_passthrough="yes"
+   ;;
++  --disable-xen-pv-domain-build) xen_pv_domain_build="no"
++  ;;
++  --enable-xen-pv-domain-build) xen_pv_domain_build="yes"
++  ;;
+   --disable-brlapi) brlapi="no"
+   ;;
+   --enable-brlapi) brlapi="yes"
+@@ -2135,6 +2140,12 @@ if test "$xen_pci_passthrough" != "no"; then
+   fi
+ fi
+ 
++if test "$xen_pv_domain_build" = "yes" &&
++   test "$xen" != "yes"; then
++    error_exit "User requested Xen PV domain builder support" \
++	       "which requires Xen support."
++fi
++
+ ##########################################
+ # libtool probe
+ 
+@@ -4628,6 +4639,7 @@ fi
+ echo "xen support       $xen"
+ if test "$xen" = "yes" ; then
+   echo "xen ctrl version  $xen_ctrl_version"
++  echo "pv dom build      $xen_pv_domain_build"
+ fi
+ echo "brlapi support    $brlapi"
+ echo "bluez  support    $bluez"
+@@ -4983,6 +4995,9 @@ fi
+ if test "$xen" = "yes" ; then
+   echo "CONFIG_XEN_BACKEND=y" >> $config_host_mak
+   echo "CONFIG_XEN_CTRL_INTERFACE_VERSION=$xen_ctrl_version" >> $config_host_mak
++  if test "$xen_pv_domain_build" = "yes" ; then
++    echo "CONFIG_XEN_PV_DOMAIN_BUILD=y" >> $config_host_mak
++  fi
+ fi
+ if test "$linux_aio" = "yes" ; then
+   echo "CONFIG_LINUX_AIO=y" >> $config_host_mak
+diff --git a/hw/xenpv/Makefile.objs b/hw/xenpv/Makefile.objs
+index 49f6e9e..bbf5873 100644
+--- a/hw/xenpv/Makefile.objs
++++ b/hw/xenpv/Makefile.objs
+@@ -1,2 +1,4 @@
+ # Xen PV machine support
+-obj-$(CONFIG_XEN) += xen_domainbuild.o xen_machine_pv.o
++obj-$(CONFIG_XEN) += xen_machine_pv.o
++# Xen PV machine builder support
++obj-$(CONFIG_XEN_PV_DOMAIN_BUILD) += xen_domainbuild.o
+diff --git a/hw/xenpv/xen_machine_pv.c b/hw/xenpv/xen_machine_pv.c
+index 2e545d2..cbd0167 100644
+--- a/hw/xenpv/xen_machine_pv.c
++++ b/hw/xenpv/xen_machine_pv.c
+@@ -30,9 +30,6 @@
+ 
+ static void xen_init_pv(MachineState *machine)
+ {
+-    const char *kernel_filename = machine->kernel_filename;
+-    const char *kernel_cmdline = machine->kernel_cmdline;
+-    const char *initrd_filename = machine->initrd_filename;
+     DriveInfo *dinfo;
+     int i;
+ 
+@@ -46,17 +43,27 @@ static void xen_init_pv(MachineState *machine)
+     case XEN_ATTACH:
+         /* nothing to do, xend handles everything */
+         break;
+-    case XEN_CREATE:
++#ifdef CONFIG_XEN_PV_DOMAIN_BUILD
++    case XEN_CREATE: {
++        const char *kernel_filename = machine->kernel_filename;
++        const char *kernel_cmdline = machine->kernel_cmdline;
++        const char *initrd_filename = machine->initrd_filename;
+         if (xen_domain_build_pv(kernel_filename, initrd_filename,
+                                 kernel_cmdline) < 0) {
+             fprintf(stderr, "xen pv domain creation failed\n");
+             exit(1);
+         }
+         break;
++    }
++#endif
+     case XEN_EMULATE:
+         fprintf(stderr, "xen emulation not implemented (yet)\n");
+         exit(1);
+         break;
++    default:
++        fprintf(stderr, "unhandled xen_mode %d\n", xen_mode);
++        exit(1);
++        break;
+     }
+ 
+     xen_be_register("console", &xen_console_ops);
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index be7a915..0d83891 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -505,6 +505,7 @@ static inline int xen_xc_domain_add_to_physmap(XenXC xch, uint32_t domid,
+ }
+ #endif
+ 
++#ifdef CONFIG_XEN_PV_DOMAIN_BUILD
+ #if CONFIG_XEN_CTRL_INTERFACE_VERSION < 470
+ static inline int xen_domain_create(XenXC xc, uint32_t ssidref,
+                                     xen_domain_handle_t handle, uint32_t flags,
+@@ -520,6 +521,7 @@ static inline int xen_domain_create(XenXC xc, uint32_t ssidref,
+     return xc_domain_create(xc, ssidref, handle, flags, pdomid, NULL);
+ }
+ #endif
++#endif
+ 
+ #if CONFIG_XEN_CTRL_INTERFACE_VERSION < 471
+ 

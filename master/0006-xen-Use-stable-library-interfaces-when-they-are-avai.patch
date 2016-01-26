@@ -1,0 +1,172 @@
+From b653fe012f16cec1053792c32bf1afbb0a2780f5 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 24 Sep 2015 13:08:51 +0100
+Subject: [PATCH] xen: Use stable library interfaces when they are available.
+
+In Xen 4.7 we are refactoring parts libxenctrl into a number of
+separate libraries which will provide backward and forward API and ABI
+compatiblity.
+
+Specifically libxenevtchn, libxengnttab and libxenforeignmemory.
+
+Previous patches have already laid the groundwork for using these by
+switching the existing compatibility shims to reflect the intefaces to
+these libraries.
+
+So all which remains is to update configure to detect the libraries
+and enable their use. Although they are notionally independent we take
+an all or nothing approach to the three libraries since they were
+added at the same time.
+
+The only non-obvious bit is that we now open a proper xenforeignmemory
+handle for xen_fmem instead of reusing the xen_xc handle.
+
+Build tested with 4.0 .. 4.6 (inclusive) and the patches targetting
+4.7 which adds these libraries.
+
+This uses CONFIG_XEN_CTRL_INTERFACE_VERSION == 471 to cover the
+introduction of these new interfaces.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/configure b/configure
+index e41876a..a3ed20f 100755
+--- a/configure
++++ b/configure
+@@ -1844,6 +1844,7 @@ fi
+ 
+ if test "$xen" != "no" ; then
+   xen_libs="-lxenstore -lxenctrl -lxenguest"
++  xen_stable_libs="-lxenforeignmemory -lxengnttab -lxenevtchn"
+ 
+   # First we test whether Xen headers and libraries are available.
+   # If no, we are done and there is no Xen support.
+@@ -1866,6 +1867,57 @@ EOF
+   # Xen unstable
+   elif
+       cat > $TMPC <<EOF &&
++/*
++ * If we have stable libs the we don't want the libxc compat
++ * layers, regardless of what CFLAGS we may have been given.
++ */
++#undef XC_WANT_COMPAT_EVTCHN_API
++#undef XC_WANT_COMPAT_GNTTAB_API
++#undef XC_WANT_COMPAT_MAP_FOREIGN_API
++#include <xenctrl.h>
++#include <xenstore.h>
++#include <xenevtchn.h>
++#include <xengnttab.h>
++#include <xenforeignmemory.h>
++#include <stdint.h>
++#include <xen/hvm/hvm_info_table.h>
++#if !defined(HVM_MAX_VCPUS)
++# error HVM_MAX_VCPUS not defined
++#endif
++int main(void) {
++  xc_interface *xc = NULL;
++  xenforeignmemory_handle *xfmem;
++  xenevtchn_handle *xe;
++  xengnttab_handle *xg;
++  xen_domain_handle_t handle;
++
++  xs_daemon_open();
++
++  xc = xc_interface_open(0, 0, 0);
++  xc_hvm_set_mem_type(0, 0, HVMMEM_ram_ro, 0, 0);
++  xc_domain_add_to_physmap(0, 0, XENMAPSPACE_gmfn, 0, 0);
++  xc_hvm_inject_msi(xc, 0, 0xf0000000, 0x00000000);
++  xc_hvm_create_ioreq_server(xc, 0, HVM_IOREQSRV_BUFIOREQ_ATOMIC, NULL);
++  xc_domain_create(xc, 0, handle, 0, NULL, NULL);
++
++  xfmem = xenforeignmemory_open(0, 0);
++  xenforeignmemory_map(xfmem, 0, 0, 0, 0, 0);
++
++  xe = xenevtchn_open(0, 0);
++  xenevtchn_fd(xe);
++
++  xg = xengnttab_open(0, 0);
++  xengnttab_map_grant_ref(xg, 0, 0, 0);
++
++  return 0;
++}
++EOF
++      compile_prog "" "$xen_libs $xen_stable_libs"
++    then
++    xen_ctrl_version=471
++    xen=yes
++  elif
++      cat > $TMPC <<EOF &&
+ #include <xenctrl.h>
+ #include <stdint.h>
+ int main(void) {
+@@ -2059,6 +2111,9 @@ EOF
+   fi
+ 
+   if test "$xen" = yes; then
++    if test $xen_ctrl_version -ge 471  ; then
++      libs_softmmu="$xen_stable_libs $libs_softmmu"
++    fi
+     libs_softmmu="$xen_libs $libs_softmmu"
+   fi
+ fi
+diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
+index 95275b3..19f1577 100644
+--- a/include/hw/xen/xen_common.h
++++ b/include/hw/xen/xen_common.h
+@@ -6,6 +6,15 @@
+ #include <stddef.h>
+ #include <inttypes.h>
+ 
++/*
++ * If we have new enough libxenctrl then we do not want/need these compat
++ * interfaces, despite what the user supplied cflags might say. They
++ * must be undefined before including xenctrl.h
++ */
++#undef XC_WANT_COMPAT_EVTCHN_API
++#undef XC_WANT_COMPAT_GNTTAB_API
++#undef XC_WANT_COMPAT_MAP_FOREIGN_API
++
+ #include <xenctrl.h>
+ #if CONFIG_XEN_CTRL_INTERFACE_VERSION < 420
+ #  include <xs.h>
+@@ -148,8 +157,8 @@ static inline void xs_close(struct xs_handle *xsh)
+ }
+ 
+ 
+-/* Xen 4.1 */
+-#else
++/* Xen 4.1 thru 4.6 */
++#elif CONFIG_XEN_CTRL_INTERFACE_VERSION < 471
+ 
+ typedef xc_interface *XenXC;
+ typedef xc_interface *xenforeignmemory_handle;
+@@ -184,6 +193,28 @@ static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
+ 
+ /* See below for xenforeignmemory_* APIs */
+ 
++/* FIXME There is no way to have the xen fd */
++static inline int xc_fd(xc_interface *xen_xc)
++{
++    return -1;
++}
++#else /* CONFIG_XEN_CTRL_INTERFACE_VERSION >= 471 */
++
++typedef xc_interface *XenXC;
++
++#  define XC_INTERFACE_FMT "%p"
++#  define XC_HANDLER_INITIAL_VALUE    NULL
++
++#include <xenevtchn.h>
++#include <xengnttab.h>
++#include <xenforeignmemory.h>
++
++static inline XenXC xen_xc_interface_open(void *logger, void *dombuild_logger,
++                                          unsigned int open_flags)
++{
++    return xc_interface_open(logger, dombuild_logger, open_flags);
++}
++
+ /* FIXME There is now way to have the xen fd */
+ static inline int xc_fd(xc_interface *xen_xc)
+ {
