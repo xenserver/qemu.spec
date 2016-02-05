@@ -1,13 +1,13 @@
 diff --git a/mk/Makefile b/mk/Makefile
 new file mode 100644
-index 0000000..1c4dda6
+index 0000000..28399c5
 --- /dev/null
 +++ b/mk/Makefile
 @@ -0,0 +1,40 @@
 +include $(B_BASE)/common.mk
 +include $(B_BASE)/rpmbuild.mk
 +
-+REPO_NAME := qemu-upstream
++REPO_NAME := qemu-xen-4.6
 +REPO_LOC := $(call git_loc,$(REPO_NAME))
 +
 +QEMU_VERSION := $(shell cat ../VERSION)
