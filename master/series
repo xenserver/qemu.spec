@@ -1,1 +1,9 @@
+#
+# Build system integration
+#
 build-system.patch
+
+#
+# Compatability with qemu trad
+#
+xen-platform-add-device-id-property.patch
