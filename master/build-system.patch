@@ -46,7 +46,7 @@ index 0000000..2ecc582
 +
 diff --git a/mk/qemu-xen.spec.in b/mk/qemu-xen.spec.in
 new file mode 100644
-index 0000000..ca983ef
+index 0000000..d1e5eac
 --- /dev/null
 +++ b/mk/qemu-xen.spec.in
 @@ -0,0 +1,51 @@
@@ -75,7 +75,7 @@ index 0000000..ca983ef
 +	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
 +	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 +	--disable-kvm --disable-docs --disable-guest-agent --disable-glx --disable-sdl \
-+	--disable-smartcard-nss --disable-curses --disable-curl
++	--disable-smartcard-nss --disable-curses --disable-curl --disable-strip
 +%{?cov_wrap} %{__make} all
 +
 +%install
