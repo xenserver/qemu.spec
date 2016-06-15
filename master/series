@@ -7,3 +7,8 @@ build-system.patch
 # Compatability with qemu trad
 #
 xen-platform-add-device-id-property.patch
+
+#
+# Temporary hacks for qemu-trad compatability.
+#
+hack-disable-option-ROMs.patch

@@ -1,0 +1,39 @@
+diff --git a/hw/display/cirrus_vga.c b/hw/display/cirrus_vga.c
+index 2725264..31f5703 100644
+--- a/hw/display/cirrus_vga.c
++++ b/hw/display/cirrus_vga.c
+@@ -3053,7 +3053,7 @@ static void cirrus_vga_class_init(ObjectClass *klass, void *data)
+     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+ 
+     k->init = pci_cirrus_vga_initfn;
+-    k->romfile = VGABIOS_CIRRUS_FILENAME;
++    k->romfile = NULL; //VGABIOS_CIRRUS_FILENAME;
+     k->vendor_id = PCI_VENDOR_ID_CIRRUS;
+     k->device_id = CIRRUS_ID_CLGD5446;
+     k->class_id = PCI_CLASS_DISPLAY_VGA;
+diff --git a/hw/display/vga-pci.c b/hw/display/vga-pci.c
+index db922f1..7be475e 100644
+--- a/hw/display/vga-pci.c
++++ b/hw/display/vga-pci.c
+@@ -299,7 +299,7 @@ static void vga_class_init(ObjectClass *klass, void *data)
+     PCIDeviceClass *k = PCI_DEVICE_CLASS(klass);
+ 
+     k->init = pci_std_vga_initfn;
+-    k->romfile = "vgabios-stdvga.bin";
++    k->romfile = NULL; //"vgabios-stdvga.bin";
+     k->vendor_id = PCI_VENDOR_ID_QEMU;
+     k->device_id = PCI_DEVICE_ID_QEMU_VGA;
+     k->class_id = PCI_CLASS_DISPLAY_VGA;
+diff --git a/hw/net/rtl8139.c b/hw/net/rtl8139.c
+index 2df4a51..63d76f6 100644
+--- a/hw/net/rtl8139.c
++++ b/hw/net/rtl8139.c
+@@ -3583,7 +3583,7 @@ static void rtl8139_class_init(ObjectClass *klass, void *data)
+ 
+     k->init = pci_rtl8139_init;
+     k->exit = pci_rtl8139_uninit;
+-    k->romfile = "efi-rtl8139.rom";
++    k->romfile = NULL; //"efi-rtl8139.rom";
+     k->vendor_id = PCI_VENDOR_ID_REALTEK;
+     k->device_id = PCI_DEVICE_ID_REALTEK_8139;
+     k->revision = RTL8139_PCI_REVID; /* >=0x20 is for 8139C+ */
