@@ -1,0 +1,17 @@
+diff --git a/hw/pci/pci.c b/hw/pci/pci.c
+index 371699c..7ebfb8d 100644
+--- a/hw/pci/pci.c
++++ b/hw/pci/pci.c
+@@ -632,9 +632,9 @@ static void pci_init_cmask(PCIDevice *dev)
+     pci_set_word(dev->cmask + PCI_VENDOR_ID, 0xffff);
+     pci_set_word(dev->cmask + PCI_DEVICE_ID, 0xffff);
+     dev->cmask[PCI_STATUS] = PCI_STATUS_CAP_LIST;
+-    dev->cmask[PCI_REVISION_ID] = 0xff;
+-    dev->cmask[PCI_CLASS_PROG] = 0xff;
+-    pci_set_word(dev->cmask + PCI_CLASS_DEVICE, 0xffff);
++    //dev->cmask[PCI_REVISION_ID] = 0xff;
++    //dev->cmask[PCI_CLASS_PROG] = 0xff;
++    //pci_set_word(dev->cmask + PCI_CLASS_DEVICE, 0xffff);
+     dev->cmask[PCI_HEADER_TYPE] = 0xff;
+     dev->cmask[PCI_CAPABILITY_LIST] = 0xff;
+ }
