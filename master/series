@@ -16,6 +16,13 @@ build-system.patch
 0008-xen-make-it-possible-to-build-without-the-Xen-PV-dom.patch
 
 #
+# ABI Changes
+#
+# These MUST be upstreamed before a release can be made.
+#
+rtl8139-load-save-rxokmul-counter.patch
+
+#
 # Compatability with qemu trad
 #
 pci-add-subsystem-id-properties.patch
