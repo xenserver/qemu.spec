@@ -18,6 +18,7 @@ build-system.patch
 #
 # Compatability with qemu trad
 #
+pci-add-subsystem-id-properties.patch
 xen-platform-add-device-id-property.patch
 
 #
