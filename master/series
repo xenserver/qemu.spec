@@ -20,6 +20,7 @@ build-system.patch
 #
 pci-add-subsystem-id-properties.patch
 xen-platform-add-device-id-property.patch
+xen-platform-add-class_id-property.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
