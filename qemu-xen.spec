@@ -3,7 +3,7 @@ Name: qemu-xen
 Version: 2.2.1
 Release: 4.36786
 License: GPL
-Source0: http://hg.uk.xensource.com/git/carbon/trunk-ring0/%{name}-4.6.git/snapshot/refs/heads/master#/%{name}-%{version}.tar.gz
+Source0: http://hg.uk.xensource.com/git/carbon/%{branch}/%{name}-4.6.git/snapshot/refs/heads/master#/%{name}-%{version}.tar.gz
 #Patch0: qemu-xen-development.patch
 BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel
 BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
