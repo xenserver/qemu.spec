@@ -5,7 +5,7 @@ Release: 4.36786
 License: GPL
 Source0: http://hg.uk.xensource.com/git/carbon/%{branch}/%{name}-4.6.git/snapshot/refs/heads/master#/%{name}-%{version}.tar.gz
 #Patch0: qemu-xen-development.patch
-BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel
+BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
 BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
 BuildRequires: xen-dom0-devel xen-libs-devel
 
@@ -20,7 +20,7 @@ This package contains qemu-xen, the Xen device model based on Qemu upstream.
 	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
 	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
-	--disable-smartcard-nss --disable-curses --disable-curl \
+	--disable-smartcard-nss --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
 	--enable-trace-backends=stderr
 %{?cov_wrap} %{__make} all
 

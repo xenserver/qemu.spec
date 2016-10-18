@@ -46,7 +46,7 @@ index 0000000..2ecc582
 +
 diff --git a/mk/qemu-xen.spec.in b/mk/qemu-xen.spec.in
 new file mode 100644
-index 0000000..67aba8d
+index 0000000..353f15f
 --- /dev/null
 +++ b/mk/qemu-xen.spec.in
 @@ -0,0 +1,51 @@
@@ -59,7 +59,7 @@ index 0000000..67aba8d
 +Source0: qemu-xen-%{version}.tar.bz2
 +Patch0: qemu-xen-development.patch
 +BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-+BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel
++BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
 +BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
 +BuildRequires: xen-dom0-devel xen-libs-devel
 +
@@ -75,7 +75,7 @@ index 0000000..67aba8d
 +	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu-xen \
 +	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 +	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
-+	--disable-smartcard-nss --disable-curses --disable-curl \
++	--disable-smartcard-nss --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
 +	--enable-trace-backends=stderr
 +%{?cov_wrap} %{__make} all
 +
