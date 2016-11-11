@@ -33,3 +33,4 @@ xen-platform-add-class_id-property.patch
 # Temporary hacks for qemu-trad compatability.
 #
 hack-relax-pci-config-checks-on-load.patch
+add-qemu-wrapper.patch

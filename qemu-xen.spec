@@ -29,6 +29,7 @@ rm -rf %{buildroot}
 %{__make} install DESTDIR=%{buildroot}
 rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_libdir}/libcacard.*a \
        %{buildroot}/usr/share/locale
+install mk/qemu-wrapper $RPM_BUILD_ROOT%{_libdir}/xen/bin/qemu-wrapper
 
 %files
 %{_libdir}/xen/bin
