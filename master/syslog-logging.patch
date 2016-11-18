@@ -1,0 +1,134 @@
+diff --git a/Makefile.objs b/Makefile.objs
+index f094eff..756ff92 100644
+--- a/Makefile.objs
++++ b/Makefile.objs
+@@ -3,7 +3,7 @@
+ stub-obj-y = stubs/
+ util-obj-y = util/ qobject/ qapi/ qapi-types.o qapi-visit.o qapi-event.o
+ util-obj-y += crypto/
+-
++util-obj-y += logging.o
+ #######################################################################
+ # block-obj-y is code used by both qemu system emulation and qemu-img
+ 
+diff --git a/include/qemu-common.h b/include/qemu-common.h
+index fb3da6c..605c36c 100644
+--- a/include/qemu-common.h
++++ b/include/qemu-common.h
+@@ -543,6 +543,8 @@ uint64_t pow2ceil(uint64_t value);
+ int uleb128_encode_small(uint8_t *out, uint32_t n);
+ int uleb128_decode_small(const uint8_t *in, uint32_t *n);
+ 
++#include "logging.h"
++
+ /* unicode.c */
+ int mod_utf8_codepoint(const char *s, size_t n, char **end);
+ 
+diff --git a/logging.c b/logging.c
+new file mode 100644
+index 0000000..6fe08cf
+--- /dev/null
++++ b/logging.c
+@@ -0,0 +1,45 @@
++#include <stdarg.h>
++#include <stdio.h>
++#include <syslog.h>
++#include "logging.h"
++
++/* the use of logging_set_prefix() is optional */
++void logging_set_prefix(const char *ident)
++{
++    closelog();
++    openlog(ident, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
++}
++
++static inline void __syslog_vfprintf(const char *format, va_list ap)
++{
++    vsyslog(LOG_DAEMON | LOG_NOTICE, format, ap);
++}
++
++int qemu_log_vfprintf(FILE *stream, const char *format, va_list ap)
++{
++    __syslog_vfprintf(format, ap);
++
++    return 0;
++}
++
++int qemu_log_printf(const char *format, ...)
++{
++    va_list ap;
++
++    va_start(ap, format);
++    __syslog_vfprintf(format, ap);
++    va_end(ap);
++
++    return 0;
++}
++
++int qemu_log_fprintf(FILE *stream, const char *format, ...)
++{
++    va_list ap;
++
++    va_start(ap, format);
++    __syslog_vfprintf(format, ap);
++    va_end(ap);
++
++    return 0;
++}
+diff --git a/logging.h b/logging.h
+new file mode 100644
+index 0000000..b0b2025
+--- /dev/null
++++ b/logging.h
+@@ -0,0 +1,29 @@
++#ifndef LOGGING_H_
++# define LOGGING_H_
++
++# include <stdarg.h>
++# include <stdio.h>
++
++#ifdef printf
++# undef printf
++#endif
++#ifdef vfprintf
++# undef vfprintf
++#endif
++#ifdef fprintf
++# undef fprintf
++#endif
++
++# define printf(...) qemu_log_printf(__VA_ARGS__)
++# define vfprintf(...) qemu_log_vfprintf(__VA_ARGS__)
++# define fprintf(...) qemu_log_fprintf(__VA_ARGS__)
++
++void logging_set_prefix(const char *ident);
++int qemu_log_vfprintf(FILE *stream, const char *format, va_list ap);
++int qemu_log_printf(const char *format, ...)
++  __attribute__ ((format (printf, 1, 2)));
++int qemu_log_fprintf(FILE *stream, const char *format, ...)
++  __attribute__ ((format (printf, 2, 3)));
++
++
++#endif /* !LOGGING_H_ */
+diff --git a/vl.c b/vl.c
+index 88fdbf1..294bb66 100644
+--- a/vl.c
++++ b/vl.c
+@@ -122,7 +122,7 @@ int main(int argc, char **argv)
+ #include "qapi-event.h"
+ #include "exec/semihost.h"
+ #include "crypto/init.h"
+-
++#include "logging.h"
+ #define MAX_VIRTIO_CONSOLES 1
+ #define MAX_SCLP_CONSOLES 1
+ 
+@@ -3797,6 +3797,8 @@ int main(int argc, char **argv, char **envp)
+             case QEMU_OPTION_name:
+                 opts = qemu_opts_parse_noisily(qemu_find_opts("name"),
+                                                optarg, true);
++                /* get qemu_name */
++                logging_set_prefix(qemu_opt_get(opts, "guest"));
+                 if (!opts) {
+                     exit(1);
+                 }

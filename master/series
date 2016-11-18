@@ -23,6 +23,13 @@ build-system.patch
 rtl8139-load-save-rxokmul-counter.patch
 
 #
+# New features
+#
+# These should be upstreamed.
+#
+syslog-logging.patch
+
+#
 # Compatability with qemu trad
 #
 pci-add-subsystem-id-properties.patch
