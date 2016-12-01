@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..037a689
+index 0000000..213f259
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,190 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -38,9 +38,7 @@ index 0000000..037a689
 +            return xenstore_read("/local/domain/0/backend/vbd3/" + dom + "/" + num + "/params")
 +
 +def main(argv):
-+    f = open('/root/qemu_out.txt', 'w')
-+    os.dup2(f.fileno(), 1)
-+    os.dup2(1, 2)
++    f = sys.stdout
 +
 +    f.write("Arguments: %s\n" % " ".join(argv[1:]))
 +
