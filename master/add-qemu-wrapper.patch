@@ -1,6 +1,6 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..213f259
+index 0000000..61b8f2d
 --- /dev/null
 +++ b/mk/qemu-wrapper
 @@ -0,0 +1,190 @@
@@ -51,7 +51,7 @@ index 0000000..213f259
 +    diskim = get_drive_file('%d' % domid)
 +    qemu_args = ['qemu-dm-%d' % domid]
 +
-+    qemu_args.extend(['-machine', 'pc,accel=xen', '-display', 'none',
++    qemu_args.extend(['-machine', 'pc-0.10,accel=xen', '-display', 'none',
 +                      '-nodefaults'])
 +
 +    platform_device = True
@@ -87,7 +87,7 @@ index 0000000..213f259
 +
 +    vga_type = 'cirrus-vga'
 +    vgamem_mb = 4
-+    vga_extra_props = []
++    vga_extra_props = ["rombar=1,romfile="]
 +
 +    while n < len(qemu_args):
 +        p = qemu_args[n]
