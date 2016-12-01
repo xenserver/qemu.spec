@@ -30,6 +30,7 @@ rm -rf %{buildroot}
 rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_libdir}/libcacard.*a \
        %{buildroot}/usr/share/locale
 install mk/qemu-wrapper $RPM_BUILD_ROOT%{_libdir}/xen/bin/qemu-wrapper
+install mk/qemu_trad_image.py $RPM_BUILD_ROOT%{_libdir}/xen/bin/qemu_trad_image.py
 
 %files
 %{_libdir}/xen/bin
