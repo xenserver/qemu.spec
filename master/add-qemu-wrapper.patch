@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..6ac47f9
+index 0000000..0c10037
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,224 @@
+@@ -0,0 +1,226 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -211,6 +211,8 @@ index 0000000..6ac47f9
 +    qemu_args += ["-drive", "if=ide,index=3,media=cdrom"]
 +
 +    #qemu_args += ["-trace", "events=/root/trace"]
++
++    xenstore_write("/libxl/%d/dm-version" % domid, "qemu_xen")
 +
 +    #
 +    # If we're restoring from a qemu-trad image, create the physmap
