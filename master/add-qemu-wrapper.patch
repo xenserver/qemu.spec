@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..0c10037
+index 0000000..c642f5d
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,226 @@
+@@ -0,0 +1,236 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -25,6 +25,13 @@ index 0000000..0c10037
 +import xen.lowlevel.xs as xs
 +
 +import qemu_trad_image
++
++#
++# Constants from Xen's public/hvm/e820.h
++#
++HVM_BELOW_4G_RAM_END = 0xf0000000
++HVM_BELOW_4G_MMIO_START = HVM_BELOW_4G_RAM_END
++HVM_BELOW_4G_MMIO_LENGTH = (1 << 32) - HVM_BELOW_4G_MMIO_START
 +
 +xenstore = xs.xs()
 +
@@ -219,7 +226,10 @@ index 0000000..0c10037
 +    # xenstore keys as they won't have been migrated by the toolstack.
 +    #
 +    if upgraded_save_image:
-+        set_physmap(domid, ram_size_mb * 1024 * 1024,
++        start = ram_size_mb * 1024 * 1024
++        if start > HVM_BELOW_4G_RAM_END:
++            start += HVM_BELOW_4G_MMIO_LENGTH
++        set_physmap(domid, start,
 +                    upgraded_save_image.vram_phys_addr,
 +                    upgraded_save_image.vram_size, "vga.vram")
 +
