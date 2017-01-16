@@ -35,6 +35,7 @@ syslog-logging.patch
 pci-add-subsystem-id-properties.patch
 xen-platform-add-device-id-property.patch
 xen-platform-add-class_id-property.patch
+force-lba-geometry.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
