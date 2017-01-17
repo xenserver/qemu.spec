@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..c642f5d
+index 0000000..9e938ae
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,236 @@
+@@ -0,0 +1,256 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -44,11 +44,31 @@ index 0000000..c642f5d
 +def xenstore_ls(path):
 +    return xenstore.ls("", path)
 +
-+def get_drive_file(dom):
-+    medialist = xenstore_ls("/local/domain/0/backend/vbd3/" + dom)
++def get_drive_args(dom):
++    args = []
++    index_map = dict(('xvd' + chr(ord('a') + i), i) for i in range(4))
++    vbd3 = "/local/domain/0/backend/vbd3/" + dom
++
++    medialist = xenstore_ls(vbd3)
 +    for num in medialist:
-+        if xenstore_read("/local/domain/0/backend/vbd3/" + dom + "/" + num + "/mode") == "w":
-+            return xenstore_read("/local/domain/0/backend/vbd3/" + dom + "/" + num + "/params")
++        dev = xenstore_read("%s/%s/dev" % (vbd3, num))
++        if dev not in index_map:
++            continue
++
++        path = ''
++        keys = xenstore_ls("%s/%s" % (vbd3, num))
++        if "params" in keys:
++            path = 'file=%s,' % (xenstore_read("%s/%s/params" % (vbd3, num)),)
++
++        # XXX This is a heuristic to determine if the disk is a CD. We should be told
++        # by the toolstack.
++        mode = xenstore_read("%s/%s/mode" % (vbd3, num))
++        media = 'cdrom' if dev == 'xvdd' and mode == 'r' else 'disk'
++
++        # XXX What should cache=... be set to?
++        args.extend(["-drive", "%sif=ide,index=%d,media=%s,format=raw" % (path, index_map[dev], media)])
++
++    return args
 +
 +def set_physmap(domain, address, start, size, name):
 +    path = "/local/domain/0/device-model/%d/physmap/%x/" % (domain, address)
@@ -67,7 +87,7 @@ index 0000000..c642f5d
 +            break
 +
 +    qemu_dm = '/usr/lib64/xen/bin/qemu-system-i386'
-+    diskim = get_drive_file('%d' % domid)
++    drive_args = get_drive_args('%d' % domid)
 +    qemu_args = ['qemu-dm-%d' % domid]
 +
 +    qemu_args.extend(['-machine', 'pc-0.10,accel=xen', '-display', 'none',
@@ -99,7 +119,8 @@ index 0000000..c642f5d
 +    # enable parallel for legacy reasons
 +    qemu_args.extend(['-parallel'] + ['/dev/null'])
 +
-+    qemu_args.extend(argv[1:] + [diskim])
++    qemu_args.extend(argv[1:])
++    qemu_args.extend(drive_args)
 +
 +    n = 0
 +    netaddr = 4
@@ -215,7 +236,6 @@ index 0000000..c642f5d
 +    for driver in ["piix3-ide-xen", "piix3-usb-uhci", "rtl8139"]:
 +        qemu_args += ["-global", "%s.subvendor_id=0x5853" % driver,
 +                      "-global", "%s.subsystem_id=0x0001" % driver]
-+    qemu_args += ["-drive", "if=ide,index=3,media=cdrom"]
 +
 +    #qemu_args += ["-trace", "events=/root/trace"]
 +
