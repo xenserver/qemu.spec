@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..9e938ae
+index 0000000..2f10ca5
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,256 @@
+@@ -0,0 +1,272 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -129,6 +129,8 @@ index 0000000..9e938ae
 +    vgamem_mb = 4
 +    vga_extra_props = ["rombar=1,romfile="]
 +    upgraded_save_image = None
++    serial_c = ''
++    tmp_serial_c = ''
 +
 +    while n < len(qemu_args):
 +        p = qemu_args[n]
@@ -185,6 +187,20 @@ index 0000000..9e938ae
 +            ram_size_mb = int(qemu_args[n+1])
 +            qemu_args[n+1] = "size=%d" % ram_size_mb
 +            n += 2
++            continue
++
++	if p == "-serial":
++            try:
++                 serial_c = xenstore_read("/local/logconsole/@")
++            except:
++                 pass
++            if serial_c:
++                if '%d' in serial_c:
++                    tmp_serial_c = serial_c  % (domid)
++                    qemu_args[n+1] = "file:" + tmp_serial_c
++                else:
++                    qemu_args[n+1] = "file:" + serial_c
++            n+=2
 +            continue
 +
 +        if p == "-boot":
