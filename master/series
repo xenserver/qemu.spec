@@ -15,6 +15,8 @@ build-system.patch
 0007-xen-domainbuild-reopen-libxenctrl-interface-after-fo.patch
 0008-xen-make-it-possible-to-build-without-the-Xen-PV-dom.patch
 
+xsa208-qemuu.patch
+
 #
 # ABI Changes
 #
