@@ -3,7 +3,7 @@ Name: qemu-xen
 Version: 4.7.0
 Release: 4.36786
 License: GPL
-Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}-4.6/archive?at=qemu-xen-%{version}&format=tar.gz#/%{name}.tar.gz
+Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=qemu-xen-%{version}&format=tar.gz#/%{name}.tar.gz
 #Patch0: qemu-xen-development.patch
 BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
 BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
