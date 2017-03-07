@@ -1,7 +1,7 @@
 Summary: qemu-dm device model
 Name: qemu-xen
 Version: 4.7.0
-Release: 4.36786
+Release: 1.0.1
 License: GPL
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=qemu-xen-%{version}&format=tar.gz#/%{name}.tar.gz
 #Patch0: qemu-xen-development.patch
