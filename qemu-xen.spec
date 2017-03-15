@@ -21,7 +21,7 @@ This package contains qemu-xen, the Xen device model based on Qemu upstream.
 	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
 	--disable-smartcard-nss --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
-	--enable-trace-backends=stderr
+	--disable-strip --enable-trace-backends=stderr
 %{?cov_wrap} %{__make} all
 
 %install
