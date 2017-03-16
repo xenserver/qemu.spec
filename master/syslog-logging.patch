@@ -1,29 +1,27 @@
 diff --git a/Makefile.objs b/Makefile.objs
-index f094eff..756ff92 100644
+index 06f74b8..98effff 100644
 --- a/Makefile.objs
 +++ b/Makefile.objs
-@@ -3,7 +3,7 @@
- stub-obj-y = stubs/
- util-obj-y = util/ qobject/ qapi/ qapi-types.o qapi-visit.o qapi-event.o
- util-obj-y += crypto/
--
+@@ -3,6 +3,7 @@
+ stub-obj-y = stubs/ crypto/
+ util-obj-y = util/ qobject/ qapi/
+ util-obj-y += qmp-introspect.o qapi-types.o qapi-visit.o qapi-event.o
 +util-obj-y += logging.o
+ 
  #######################################################################
  # block-obj-y is code used by both qemu system emulation and qemu-img
- 
 diff --git a/include/qemu-common.h b/include/qemu-common.h
-index fb3da6c..605c36c 100644
+index 1430390..a951308 100644
 --- a/include/qemu-common.h
 +++ b/include/qemu-common.h
-@@ -543,6 +543,8 @@ uint64_t pow2ceil(uint64_t value);
- int uleb128_encode_small(uint8_t *out, uint32_t n);
- int uleb128_decode_small(const uint8_t *in, uint32_t *n);
+@@ -17,6 +17,7 @@
+ #define TFR(expr) do { if ((expr) != -1) break; } while (errno == EINTR)
  
+ #include "qemu/option.h"
 +#include "logging.h"
-+
- /* unicode.c */
- int mod_utf8_codepoint(const char *s, size_t n, char **end);
  
+ /* Copyright string for -version arguments, About dialogs, etc */
+ #define QEMU_COPYRIGHT "Copyright (c) 2003-2016 " \
 diff --git a/logging.c b/logging.c
 new file mode 100644
 index 0000000..6fe08cf
@@ -111,19 +109,18 @@ index 0000000..b0b2025
 +
 +#endif /* !LOGGING_H_ */
 diff --git a/vl.c b/vl.c
-index 88fdbf1..294bb66 100644
+index d77dd86..75b788f 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -122,7 +122,7 @@ int main(int argc, char **argv)
- #include "qapi-event.h"
- #include "exec/semihost.h"
- #include "crypto/init.h"
--
+@@ -123,6 +123,7 @@ int main(int argc, char **argv)
+ #include "sysemu/replay.h"
+ #include "qapi/qmp/qerror.h"
+ #include "sysemu/iothread.h"
 +#include "logging.h"
+ 
  #define MAX_VIRTIO_CONSOLES 1
  #define MAX_SCLP_CONSOLES 1
- 
-@@ -3797,6 +3797,8 @@ int main(int argc, char **argv, char **envp)
+@@ -3864,6 +3865,8 @@ int main(int argc, char **argv, char **envp)
              case QEMU_OPTION_name:
                  opts = qemu_opts_parse_noisily(qemu_find_opts("name"),
                                                 optarg, true);

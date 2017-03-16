@@ -1,17 +1,17 @@
 diff --git a/hw/pci/pci.c b/hw/pci/pci.c
-index 7ebfb8d..e90ff71 100644
+index 24fae16..eeabebf 100644
 --- a/hw/pci/pci.c
 +++ b/hw/pci/pci.c
-@@ -57,6 +57,8 @@ static Property pci_props[] = {
+@@ -60,6 +60,8 @@ static Property pci_props[] = {
+     DEFINE_PROP_UINT32("rombar",  PCIDevice, rom_bar, 1),
+     DEFINE_PROP_BIT("multifunction", PCIDevice, cap_present,
                      QEMU_PCI_CAP_MULTIFUNCTION_BITNR, false),
-     DEFINE_PROP_BIT("command_serr_enable", PCIDevice, cap_present,
-                     QEMU_PCI_CAP_SERR_BITNR, true),
 +    DEFINE_PROP_UINT32("subvendor_id", PCIDevice, subvendor_id, 0),
 +    DEFINE_PROP_UINT32("subsystem_id", PCIDevice, subsystem_id, 0),
-     DEFINE_PROP_END_OF_LIST()
- };
- 
-@@ -846,7 +848,12 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+     DEFINE_PROP_BIT("command_serr_enable", PCIDevice, cap_present,
+                     QEMU_PCI_CAP_SERR_BITNR, true),
+     DEFINE_PROP_BIT("x-pcie-lnksta-dllla", PCIDevice, cap_present,
+@@ -1005,7 +1007,12 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
      pci_config_set_class(pci_dev->config, pc->class_id);
  
      if (!pc->is_bridge) {
@@ -26,10 +26,10 @@ index 7ebfb8d..e90ff71 100644
                           pc->subsystem_vendor_id);
              pci_set_word(pci_dev->config + PCI_SUBSYSTEM_ID,
 diff --git a/include/hw/pci/pci.h b/include/hw/pci/pci.h
-index c352c7b..639939f 100644
+index 772692f..9233bac 100644
 --- a/include/hw/pci/pci.h
 +++ b/include/hw/pci/pci.h
-@@ -301,6 +301,9 @@ struct PCIDevice {
+@@ -341,6 +341,9 @@ struct PCIDevice {
      MSIVectorUseNotifier msix_vector_use_notifier;
      MSIVectorReleaseNotifier msix_vector_release_notifier;
      MSIVectorPollNotifier msix_vector_poll_notifier;

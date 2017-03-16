@@ -1,19 +1,6 @@
 #
-# Build system integration
-#
-build-system.patch
-
-#
 # Backports from upstream
 #
-0001-xen_console-correctly-cleanup-primary-console-on-tea.patch
-0002-xen-Switch-to-libxenevtchn-interface-for-compat-shim.patch
-0003-xen-Switch-to-libxengnttab-interface-for-compat-shim.patch
-0004-xen-Switch-uses-of-xc_map_foreign_range-into-xc_map_.patch
-0005-xen-Switch-uses-of-xc_map_foreign_-pages-bulk-to-use.patch
-0006-xen-Use-stable-library-interfaces-when-they-are-avai.patch
-0007-xen-domainbuild-reopen-libxenctrl-interface-after-fo.patch
-0008-xen-make-it-possible-to-build-without-the-Xen-PV-dom.patch
 
 xsa208-qemuu.patch
 
@@ -22,7 +9,6 @@ xsa208-qemuu.patch
 #
 # These MUST be upstreamed before a release can be made.
 #
-rtl8139-load-save-rxokmul-counter.patch
 
 #
 # New features
@@ -37,10 +23,11 @@ syslog-logging.patch
 pci-add-subsystem-id-properties.patch
 xen-platform-add-device-id-property.patch
 xen-platform-add-class_id-property.patch
-force-lba-geometry.patch
+
+# Below patch should be rebased.
+#force-lba-geometry.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
 #
 hack-relax-pci-config-checks-on-load.patch
-add-qemu-wrapper.patch
