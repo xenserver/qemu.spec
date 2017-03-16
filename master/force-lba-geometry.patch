@@ -1,105 +1,70 @@
-Don't guess the disk geometry from the partition table
-
-Instead, always use standard physical disk geometry with:
-  sectors = 63
-  heads = 16
-  cylinders is set based on the disk size with a max of 16383
-
+diff --git a/blockdev.c b/blockdev.c
+index 245e1e1..1c1b42c 100644
+--- a/blockdev.c
++++ b/blockdev.c
+@@ -768,8 +768,11 @@ QemuOptsList qemu_legacy_drive_opts = {
+             .name = "copy-on-read",
+             .type = QEMU_OPT_BOOL,
+             .help = "copy read data from backing file into image file",
++        },{
++            .name = "force-lba",
++            .type = QEMU_OPT_BOOL,
++            .help = "XenServer hack to force lba geometry",
+         },
+-
+         { /* end of list */ }
+     },
+ };
+@@ -789,6 +792,7 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type)
+     const char *werror, *rerror;
+     bool read_only = false;
+     bool copy_on_read;
++    bool force_lba;
+     const char *serial;
+     const char *filename;
+     Error *local_err = NULL;
+@@ -963,6 +967,11 @@ DriveInfo *drive_new(QemuOpts *all_opts, BlockInterfaceType block_default_type)
+         }
+     }
+ 
++    force_lba = qemu_opt_get_bool(legacy_opts, "force-lba", false);
++    if (force_lba) {
++        translation = BIOS_ATA_TRANSLATION_FORCELBA;
++    }
++
+     if (media == MEDIA_CDROM) {
+         if (cyls || secs || heads) {
+             error_report("CHS can't be set with media=cdrom");
 diff --git a/hw/block/hd-geometry.c b/hw/block/hd-geometry.c
-index b187878..882f1a6 100644
+index 57ad501..cd67c0e 100644
 --- a/hw/block/hd-geometry.c
 +++ b/hw/block/hd-geometry.c
-@@ -47,56 +47,6 @@ struct partition {
-         uint32_t nr_sects;          /* nr of sectors in partition */
- } QEMU_PACKED;
- 
--/* try to guess the disk logical geometry from the MSDOS partition table.
--   Return 0 if OK, -1 if could not guess */
--static int guess_disk_lchs(BlockBackend *blk,
--                           int *pcylinders, int *pheads, int *psectors)
--{
--    uint8_t buf[BDRV_SECTOR_SIZE];
--    int i, heads, sectors, cylinders;
--    struct partition *p;
--    uint32_t nr_sects;
--    uint64_t nb_sectors;
--
--    blk_get_geometry(blk, &nb_sectors);
--
--    /**
--     * The function will be invoked during startup not only in sync I/O mode,
--     * but also in async I/O mode. So the I/O throttling function has to
--     * be disabled temporarily here, not permanently.
--     */
--    if (blk_read_unthrottled(blk, 0, buf, 1) < 0) {
--        return -1;
--    }
--    /* test msdos magic */
--    if (buf[510] != 0x55 || buf[511] != 0xaa) {
--        return -1;
--    }
--    for (i = 0; i < 4; i++) {
--        p = ((struct partition *)(buf + 0x1be)) + i;
--        nr_sects = le32_to_cpu(p->nr_sects);
--        if (nr_sects && p->end_head) {
--            /* We make the assumption that the partition terminates on
--               a cylinder boundary */
--            heads = p->end_head + 1;
--            sectors = p->end_sector & 63;
--            if (sectors == 0) {
--                continue;
--            }
--            cylinders = nb_sectors / (heads * sectors);
--            if (cylinders < 1 || cylinders > 16383) {
--                continue;
--            }
--            *pheads = heads;
--            *psectors = sectors;
--            *pcylinders = cylinders;
--            trace_hd_geometry_lchs_guess(blk, cylinders, heads, sectors);
--            return 0;
--        }
--    }
--    return -1;
--}
--
- static void guess_chs_for_size(BlockBackend *blk,
-                 uint32_t *pcyls, uint32_t *pheads, uint32_t *psecs)
- {
-@@ -120,7 +70,7 @@ void hd_geometry_guess(BlockBackend *blk,
-                        uint32_t *pcyls, uint32_t *pheads, uint32_t *psecs,
-                        int *ptrans)
- {
--    int cylinders, heads, secs, translation;
-+    int translation;
-     HDGeometry geo;
- 
-     /* Try to probe the backing device geometry, otherwise fallback
-@@ -130,26 +80,10 @@ void hd_geometry_guess(BlockBackend *blk,
+@@ -132,7 +132,8 @@ void hd_geometry_guess(BlockBackend *blk,
          *psecs = geo.sectors;
          *pheads = geo.heads;
          translation = BIOS_ATA_TRANSLATION_NONE;
 -    } else if (guess_disk_lchs(blk, &cylinders, &heads, &secs) < 0) {
-+    } else {
++    } else if ((ptrans && (ptrans == BIOS_ATA_TRANSLATION_FORCELBA)) ||
++            guess_disk_lchs(blk, &cylinders, &heads, &secs) < 0) {
          /* no LCHS guess: use a standard physical disk geometry  */
          guess_chs_for_size(blk, pcyls, pheads, psecs);
          translation = hd_bios_chs_auto_trans(*pcyls, *pheads, *psecs);
--    } else if (heads > 16) {
--        /* LCHS guess with heads > 16 means that a BIOS LBA
--           translation was active, so a standard physical disk
--           geometry is OK */
--        guess_chs_for_size(blk, pcyls, pheads, psecs);
--        translation = *pcyls * *pheads <= 131072
--            ? BIOS_ATA_TRANSLATION_LARGE
--            : BIOS_ATA_TRANSLATION_LBA;
--    } else {
--        /* LCHS guess with heads <= 16: use as physical geometry */
--        *pcyls = cylinders;
--        *pheads = heads;
--        *psecs = secs;
--        /* disable any translation to be in sync with
--           the logical geometry */
--        translation = BIOS_ATA_TRANSLATION_NONE;
-     }
-     if (ptrans) {
-         *ptrans = translation;
+diff --git a/qapi/block.json b/qapi/block.json
+index 8e9f590..3e96db5 100644
+--- a/qapi/block.json
++++ b/qapi/block.json
+@@ -34,10 +34,13 @@
+ #         15-head, by proportionally scaling up the number of
+ #         cylinders/head.
+ #
++# @forcelba: Force lba geometry, sectors = 63, heads = 16,
++#            cylinders is set based on the disk size with a max of 16383.
++#
+ # Since: 2.0
+ ##
+ { 'enum': 'BiosAtaTranslation',
+-  'data': ['auto', 'none', 'lba', 'large', 'rechs']}
++  'data': ['auto', 'none', 'lba', 'large', 'rechs', 'forcelba']}
+ 
+ ##
+ # @FloppyDriveType:
