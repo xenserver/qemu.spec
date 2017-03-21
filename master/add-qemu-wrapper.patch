@@ -1,9 +1,9 @@
 diff --git a/mk/qemu-wrapper b/mk/qemu-wrapper
 new file mode 100755
-index 0000000..d1660f3
+index 0000000..a820e51
 --- /dev/null
 +++ b/mk/qemu-wrapper
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,281 @@
 +#! /usr/bin/python
 +#
 +# Copyright (C) 2016 Citrix Systems R&D Ltd.
@@ -90,8 +90,17 @@ index 0000000..d1660f3
 +    drive_args = get_drive_args('%d' % domid)
 +    qemu_args = ['qemu-dm-%d' % domid]
 +
-+    qemu_args.extend(['-machine', 'pc-0.10,accel=xen', '-display', 'none',
-+                      '-nodefaults'])
++    # read the size of lower MMIO hole provisioned by xenguest
++    mmio_start = HVM_BELOW_4G_MMIO_START
++    mmio_size = xenstore_read("/local/domain/%d/data/mmio-hole-size" % domid)
++    if mmio_size:
++        mmio_start = (1 << 32) - int(mmio_size)
++
++    # don't allow hvmloader to change the lower MMIO hole size
++    xenstore_write("/local/domain/%d/hvmloader/allow-memory-relocate" % domid, "0")
++
++    qemu_args.extend(['-machine', 'pc-0.10,accel=xen,max-ram-below-4g=%lu' % mmio_start])
++    qemu_args.extend(['-display', 'none', '-nodefaults'])
 +
 +    platform_device = True
 +    disable_pf = xenstore_read("/local/domain/%d/vm-data/disable_pf" % domid)
