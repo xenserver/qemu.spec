@@ -118,7 +118,7 @@ class Section(object):
         self.section_type = section_type
         self.data = ""
 
-   def load_body(self, image):
+    def load_body(self, image):
         t = string.maketrans(" :./-", "_____")
         n = "load_" + string.translate(self.idstr, t)
         try:
@@ -212,7 +212,7 @@ class Section(object):
         lfb_end = i.read_be32()
         vram_gmfn = i.read_be64()
         i.vram_size = lfb_end - lfb_addr
-       i.vram_phys_addr = vram_gmfn
+        i.vram_phys_addr = vram_gmfn
 
         # FIXME: need to consider older versions that appended the frame buffer
 
@@ -388,7 +388,7 @@ class Section(object):
         # Add pending_int_mask
         self.data += struct.pack(">I", 0)
 
-       self.idstr = "0000:00:01.2/uhci"
+        self.idstr = "0000:00:01.2/uhci"
         self.version_id = 3
 
     def load_gpe(self, i):
@@ -463,7 +463,7 @@ class CompleteSection(Section):
         Section.__init__(self, section_type)
 
     def load_header(self, image):
-       self.section_id = image.read_be32()
+        self.section_id = image.read_be32()
         self.load_idstr(image)
         self.instance_id = image.read_be32()
         self.version_id = image.read_be32()
@@ -531,7 +531,7 @@ def convert_file(f1, f2):
 
 
 def is_trad_image(s1):
-   f1 = open(s1, 'rb')
+    f1 = open(s1, 'rb')
 
     image = Image(f1)
     image.load_header()

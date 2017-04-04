@@ -33,7 +33,7 @@ rm -rf %{buildroot}
 %{__make} %{?_smp_mflags} install DESTDIR=%{buildroot}
 rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_libdir}/libcacard.*a \
        %{buildroot}/usr/share/locale
-%{__install} -D -m 775 %{SOURCE1} %{buildroot}%{_libdir}/xen/bin/qemu-wrapper
+%{__install} -D -m 755 %{SOURCE1} %{buildroot}%{_libdir}/xen/bin/qemu-wrapper
 %{__install} -D -m 644 %{SOURCE2} %{buildroot}%{_libdir}/xen/bin/qemu_trad_image.py
 
 %files
