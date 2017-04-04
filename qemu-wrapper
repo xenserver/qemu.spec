@@ -50,17 +50,22 @@ def get_drive_args(dom):
             continue
 
         path = ''
+        path_str = ''
         keys = xenstore_ls("%s/%s" % (vbd3, num))
         if "params" in keys:
-            path = 'file=%s,' % (xenstore_read("%s/%s/params" % (vbd3, num)),)
+            path = xenstore_read("%s/%s/params" % (vbd3, num))
+            path_str = 'file=%s,' % path
 
         # XXX This is a heuristic to determine if the disk is a CD. We should be told
         # by the toolstack.
         mode = xenstore_read("%s/%s/mode" % (vbd3, num))
         media = 'cdrom' if dev == 'xvdd' and mode == 'r' else 'disk'
 
+        format_str = ',format=raw' if path != '' else ''
+
         # XXX What should cache=... be set to?
-        args.extend(["-drive", "%sif=ide,index=%d,media=%s,format=raw" % (path, index_map[dev], media)])
+        args.extend(["-drive", "%sif=ide,index=%d,media=%s%s" %
+                    (path_str, index_map[dev], media, format_str)])
 
     return args
 
