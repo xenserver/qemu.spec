@@ -60,12 +60,13 @@ def get_drive_args(dom):
         # by the toolstack.
         mode = xenstore_read("%s/%s/mode" % (vbd3, num))
         media = 'cdrom' if dev == 'xvdd' and mode == 'r' else 'disk'
+        forcelba = 'on' if media == 'disk' else 'off'
 
         format_str = ',format=raw' if path != '' else ''
 
         # XXX What should cache=... be set to?
-        args.extend(["-drive", "%sif=ide,index=%d,media=%s%s" %
-                    (path_str, index_map[dev], media, format_str)])
+        args.extend(["-drive", "%sif=ide,index=%d,media=%s%s,force-lba=%s" %
+                    (path_str, index_map[dev], media, format_str, forcelba)])
 
     return args
 
