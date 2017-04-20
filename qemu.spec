@@ -1,7 +1,7 @@
 Summary: qemu-dm device model
 Name: qemu
 Version: 2.8.0
-Release: 1.0.1
+Release: 1.1.0
 License: GPL
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=v%{version}&format=tar.gz#/%{name}.tar.gz
 Source1: qemu-wrapper
