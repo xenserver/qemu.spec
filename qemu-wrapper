@@ -266,6 +266,7 @@ def main(argv):
                       "-global", "%s.subsystem_id=0x0001" % driver]
 
     #qemu_args += ["-trace", "events=/root/trace"]
+    #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
 
     xenstore_write("/libxl/%d/dm-version" % domid, "qemu_xen")
 
