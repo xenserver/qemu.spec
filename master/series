@@ -25,6 +25,7 @@ xen-platform-add-device-id-property.patch
 xen-platform-add-class_id-property.patch
 force-lba-geometry.patch
 0001-CP-21767-Don-t-accidently-unplug-ourselves-if-PCI_CL.patch
+vnc_clipboard.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
