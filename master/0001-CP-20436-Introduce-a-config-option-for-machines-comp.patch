@@ -1,0 +1,84 @@
+From 6730ee633e14290bbccda33c4861e10d941fd1d9 Mon Sep 17 00:00:00 2001
+From: Igor Druzhinin <igor.druzhinin@citrix.com>
+Date: Tue, 16 May 2017 23:03:47 +0100
+Subject: [PATCH] CP-20436 Introduce a config option for machines compatible
+ with QEMU-trad
+
+A new trad-compat={true,false} option is introduced for all PC machines
+that are expected to be binary compatible with QEMU-trad. For now,
+just pass it always as true - it's expected to be passed as a qemu-wrapper
+parameter from XAPI later.
+
+Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+---
+ hw/i386/pc.c         | 18 ++++++++++++++++++
+ include/hw/i386/pc.h |  3 +++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index a9e64a8..53d28bb 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -2158,6 +2158,20 @@ static void pc_machine_set_nvdimm(Object *obj, bool value, Error **errp)
+     pcms->acpi_nvdimm_state.is_enabled = value;
+ }
+ 
++static bool pc_machine_get_trad_compat(Object *obj, Error **errp)
++{
++    PCMachineState *pcms = PC_MACHINE(obj);
++
++    return pcms->is_trad_compat;
++}
++
++static void pc_machine_set_trad_compat(Object *obj, bool value, Error **errp)
++{
++    PCMachineState *pcms = PC_MACHINE(obj);
++
++    pcms->is_trad_compat = value;
++}
++
+ static void pc_machine_initfn(Object *obj)
+ {
+     PCMachineState *pcms = PC_MACHINE(obj);
+@@ -2169,6 +2183,7 @@ static void pc_machine_initfn(Object *obj)
+     pcms->acpi_nvdimm_state.is_enabled = false;
+     /* acpi build is enabled by default if machine supports it */
+     pcms->acpi_build_enabled = PC_MACHINE_GET_CLASS(pcms)->has_acpi_build;
++    pcms->is_trad_compat = false;
+ }
+ 
+ static void pc_machine_reset(void)
+@@ -2329,6 +2344,9 @@ static void pc_machine_class_init(ObjectClass *oc, void *data)
+ 
+     object_class_property_add_bool(oc, PC_MACHINE_NVDIMM,
+         pc_machine_get_nvdimm, pc_machine_set_nvdimm, &error_abort);
++
++    object_class_property_add_bool(oc, PC_MACHINE_TRAD_COMPAT,
++        pc_machine_get_trad_compat, pc_machine_set_trad_compat, &error_abort);
+ }
+ 
+ static const TypeInfo pc_machine_info = {
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index 4b74130..0d9b2c9 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -80,6 +80,8 @@ struct PCMachineState {
+     /* Address space used by IOAPIC device. All IOAPIC interrupts
+      * will be translated to MSI messages in the address space. */
+     AddressSpace *ioapic_as;
++
++    bool is_trad_compat;
+ };
+ 
+ #define PC_MACHINE_ACPI_DEVICE_PROP "acpi-device"
+@@ -88,6 +90,7 @@ struct PCMachineState {
+ #define PC_MACHINE_VMPORT           "vmport"
+ #define PC_MACHINE_SMM              "smm"
+ #define PC_MACHINE_NVDIMM           "nvdimm"
++#define PC_MACHINE_TRAD_COMPAT      "trad-compat"
+ 
+ /**
+  * PCMachineClass:
+-- 
+2.7.4
+

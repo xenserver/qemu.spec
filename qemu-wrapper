@@ -99,7 +99,10 @@ def main(argv):
     # don't allow hvmloader to change the lower MMIO hole size
     xenstore_write("/local/domain/%d/hvmloader/allow-memory-relocate" % domid, "0")
 
-    qemu_args.extend(['-machine', 'pc-0.10,accel=xen,max-ram-below-4g=%lu' % mmio_start])
+    trad_compat = 'true'
+    qemu_args.extend(['-machine',
+                      'pc-0.10,accel=xen,max-ram-below-4g=%lu,trad_compat=%s'
+                      % (mmio_start, trad_compat)])
     qemu_args.extend(['-display', 'none', '-nodefaults'])
 
     platform_device = True
