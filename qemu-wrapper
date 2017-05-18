@@ -228,7 +228,6 @@ def main(argv):
 
         if p == "-vgpu":
             vga_type = 'vgpu'
-            vga_extra_props += ['qemu-extended-regs=false']
             del qemu_args[n]
             continue
 
@@ -257,8 +256,11 @@ def main(argv):
 
         n += 1
 
-    qemu_args += ["-device", ",".join([vga_type, "vgamem_mb=%d" % vgamem_mb] \
-                                      + vga_extra_props)]
+    if vga_type != 'vgpu':
+        qemu_args += ["-device", ",".join([vga_type, "vgamem_mb=%d" % vgamem_mb] \
+                                          + vga_extra_props)]
+    else:
+        qemu_args += ["-device", "vgpu"]
 
     has_device = xenstore_read("/local/domain/%d/control/has-vendor-device" % domid)
     if has_device and int(has_device) == 1:

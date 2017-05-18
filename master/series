@@ -32,6 +32,7 @@ force-lba-geometry.patch
 # General compatibility with qemu trad (no need for an option)
 #
 vnc_clipboard.patch
+0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
