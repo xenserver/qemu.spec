@@ -19,11 +19,12 @@ This package contains Qemu.
 
 %build
 ./configure --cc=gcc --enable-xen --target-list=i386-softmmu --source-path=. \
-	--prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu \
-	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
-	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
-	--disable-curses --disable-curl --disable-gtk --disable-bzip2 \
-	--disable-strip --disable-gnutls --disable-nettle --disable-gcrypt
+    --prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu \
+    --localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
+    --enable-werror \
+    --disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
+    --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
+    --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt
 %{?cov_wrap} %{__make} %{?_smp_mflags} all 
 
 %install
