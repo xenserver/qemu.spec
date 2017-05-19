@@ -8,7 +8,7 @@ Source1: qemu-wrapper
 Source2: qemu_trad_image.py
 #Patch0: qemu-xen-development.patch
 BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
-BuildRequires: cyrus-sasl-devel gnutls-devel libcap-devel libjpeg-devel libpng-devel pixman-devel
+BuildRequires: libcap-devel libjpeg-devel libpng-devel pixman-devel
 BuildRequires: xen-dom0-devel xen-libs-devel
 
 %description
@@ -23,7 +23,7 @@ This package contains Qemu.
 	--localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
 	--disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
 	--disable-curses --disable-curl --disable-gtk --disable-bzip2 \
-	--disable-strip --disable-gnutls
+	--disable-strip --disable-gnutls --disable-nettle --disable-gcrypt
 %{?cov_wrap} %{__make} %{?_smp_mflags} all 
 
 %install
