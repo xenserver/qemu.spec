@@ -36,7 +36,7 @@ index 245e1e1..1c1b42c 100644
          if (cyls || secs || heads) {
              error_report("CHS can't be set with media=cdrom");
 diff --git a/hw/block/hd-geometry.c b/hw/block/hd-geometry.c
-index 57ad501..cd67c0e 100644
+index 57ad501..e4fbe68 100644
 --- a/hw/block/hd-geometry.c
 +++ b/hw/block/hd-geometry.c
 @@ -132,7 +132,8 @@ void hd_geometry_guess(BlockBackend *blk,
@@ -44,7 +44,7 @@ index 57ad501..cd67c0e 100644
          *pheads = geo.heads;
          translation = BIOS_ATA_TRANSLATION_NONE;
 -    } else if (guess_disk_lchs(blk, &cylinders, &heads, &secs) < 0) {
-+    } else if ((ptrans && (ptrans == BIOS_ATA_TRANSLATION_FORCELBA)) ||
++    } else if ((ptrans && (*ptrans == BIOS_ATA_TRANSLATION_FORCELBA)) ||
 +            guess_disk_lchs(blk, &cylinders, &heads, &secs) < 0) {
          /* no LCHS guess: use a standard physical disk geometry  */
          guess_chs_for_size(blk, pcyls, pheads, psecs);
