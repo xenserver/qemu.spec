@@ -135,7 +135,6 @@ def main(argv):
     qemu_args.extend(drive_args)
 
     n = 0
-    netaddr = 6
 
     vga_type = 'cirrus-vga'
     vgamem_mb = 4
@@ -178,8 +177,10 @@ def main(argv):
         if p == "-net":
             n += 1
             if qemu_args[n].startswith("nic,"):
-                qemu_args[n] += ",addr=" + str(netaddr)
-                netaddr += 1
+                nic_mac = re.search(r'macaddr=(.*),', qemu_args[n]).group(1)
+                nic_addr = int(os.popen('xe vif-list MAC=' + nic_mac + ' params="device" --minimal').read().rstrip())
+                nic_addr += 4
+                qemu_args[n] += ",addr=" + str(nic_addr)
                 n += 1
                 continue
 
@@ -264,7 +265,7 @@ def main(argv):
 
     has_device = xenstore_read("/local/domain/%d/control/has-vendor-device" % domid)
     if has_device and int(has_device) == 1:
-        qemu_args += ["-device", "xen-pvdevice,addr=5,device-id=0xc000"]
+        qemu_args += ["-device", "xen-pvdevice,device-id=0xc000"]
 
     for driver in ["piix3-ide-xen", "piix3-usb-uhci", "rtl8139"]:
         qemu_args += ["-global", "%s.subvendor_id=0x5853" % driver,
