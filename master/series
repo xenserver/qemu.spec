@@ -43,6 +43,7 @@ vnc_clipboard.patch
 
 # Local Intel GVT-g patches
 gvt-g-set-vbe_extended.patch
+gvt-g-add-monitor-support.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
