@@ -232,6 +232,11 @@ def main(argv):
             del qemu_args[n]
             continue
 
+        if p == "-xengt":
+            vga_type = 'xengt'
+            del qemu_args[n]
+            continue
+
         if p == "-vnc":
             # This is the incorect way to do this!
             # Should pass QEMU a range of ports, then use QMP to find the port it picked.
@@ -257,11 +262,13 @@ def main(argv):
 
         n += 1
 
-    if vga_type != 'vgpu':
+    if vga_type == 'vgpu':
+        qemu_args += ["-device", "vgpu"]
+    elif vga_type == 'xengt':
+        qemu_args += ["-vga", "xengt"]
+    else:
         qemu_args += ["-device", ",".join([vga_type, "vgamem_mb=%d" % vgamem_mb] \
                                           + vga_extra_props)]
-    else:
-        qemu_args += ["-device", "vgpu"]
 
     has_device = xenstore_read("/local/domain/%d/control/has-vendor-device" % domid)
     if has_device and int(has_device) == 1:
