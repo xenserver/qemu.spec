@@ -1,0 +1,176 @@
+From b718107e970f11d5fe06009b43d5dedc2c8953c1 Mon Sep 17 00:00:00 2001
+From: Xiaoguang Chen <xiaoguang.chen@intel.com>
+Date: Fri, 15 Jan 2016 15:23:48 +0800
+Subject: [PATCH 3/5] Add vgt as a configure parameter
+
+User can enable/disable the Intel GVT-g technology support by setting
+enable-vgt/disable-vgt parameter while config the compiling.
+The default is disable vgt.
+
+Signed-off-by: Xiaoguang Chen <xiaoguang.chen@intel.com>
+Signed-off-by: Bing Niu <bing.niu@intel.com>
+diff --git a/Makefile.target b/Makefile.target
+index 7a5080e..a6fc363 100644
+--- a/Makefile.target
++++ b/Makefile.target
+@@ -97,6 +97,7 @@ obj-y += disas.o
+ obj-y += tcg-runtime.o
+ obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
+ obj-$(call lnot,$(CONFIG_KVM)) += kvm-stub.o
++obj-$(call lnot,$(CONFIG_VGT)) += hw/display/vgt-stub.o
+ 
+ obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decContext.o
+ obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
+diff --git a/configure b/configure
+index 3770d7c..d66c518 100755
+--- a/configure
++++ b/configure
+@@ -226,6 +226,7 @@ attr=""
+ libattr=""
+ xfs=""
+ 
++vgt="yes"
+ vhost_net="no"
+ vhost_scsi="no"
+ vhost_vsock="no"
+@@ -838,6 +839,10 @@ for opt do
+   ;;
+   --with-sdlabi=*) sdlabi="$optarg"
+   ;;
++  --disable-vgt) vgt="no"
++  ;;
++  --enable-vgt) vgt="yes"
++  ;;
+   --disable-qom-cast-debug) qom_cast_debug="no"
+   ;;
+   --enable-qom-cast-debug) qom_cast_debug="yes"
+@@ -1355,9 +1360,11 @@ disabled with --disable-FEATURE, default is enabled if available:
+   nettle          nettle cryptography support
+   gcrypt          libgcrypt cryptography support
+   sdl             SDL UI
+-  --with-sdlabi     select preferred SDL ABI 1.2 or 2.0
++  --with-sdlabi   select preferred SDL ABI 1.2 or 2.0
++  --disable-vgt   disable Intel GVT-g technology
++  --enable-vgt    enable Intel GVT-g technology
+   gtk             gtk UI
+-  --with-gtkabi     select preferred GTK ABI 2.0 or 3.0
++  --with-gtkabi   select preferred GTK ABI 2.0 or 3.0
+   vte             vte support for the gtk UI
+   curses          curses UI
+   vnc             VNC UI support
+@@ -2621,6 +2628,12 @@ EOF
+ fi
+ 
+ ##########################################
++# Intel GVT-g detection
++if test "$vgt" = "yes" ; then
++  vgt="yes"
++fi
++
++##########################################
+ # RDMA needs OpenFabrics libraries
+ if test "$rdma" != "no" ; then
+   cat > $TMPC <<EOF
+@@ -5007,6 +5020,7 @@ if test "$darwin" = "yes" ; then
+ fi
+ echo "pixman            $pixman"
+ echo "SDL support       $sdl $(echo_version $sdl $sdlversion)"
++echo "Intel GVT-g support $vgt"
+ echo "GTK support       $gtk $(echo_version $gtk $gtk_version)"
+ echo "GTK GL support    $gtk_gl"
+ echo "VTE support       $vte $(echo_version $vte $vteversion)"
+@@ -5270,6 +5284,9 @@ if test "$sdl" = "yes" ; then
+   echo "CONFIG_SDLABI=$sdlabi" >> $config_host_mak
+   echo "SDL_CFLAGS=$sdl_cflags" >> $config_host_mak
+ fi
++if test "$vgt" = "yes" ; then
++  echo "CONFIG_VGT=y" >> $config_host_mak
++fi
+ if test "$cocoa" = "yes" ; then
+   echo "CONFIG_COCOA=y" >> $config_host_mak
+ fi
+diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
+index 879e7b0..c472055 100644
+--- a/hw/display/Makefile.objs
++++ b/hw/display/Makefile.objs
+@@ -1,8 +1,6 @@
+ common-obj-$(CONFIG_ADS7846) += ads7846.o
+ common-obj-$(CONFIG_VGA_CIRRUS) += cirrus_vga.o
+-ifeq ($(findstring y,$(CONFIG_XEN)),y)
+-obj-y += vgt_vga.o
+-endif
++obj-$(CONFIG_VGT) += vgt_vga.o
+ common-obj-$(CONFIG_G364FB) += g364fb.o
+ common-obj-$(CONFIG_JAZZ_LED) += jazz_led.o
+ common-obj-$(CONFIG_PL110) += pl110.o
+diff --git a/hw/display/vgt-stub.c b/hw/display/vgt-stub.c
+new file mode 100644
+index 0000000..f6571ba
+--- /dev/null
++++ b/hw/display/vgt-stub.c
+@@ -0,0 +1,32 @@
++/*
++ * QEMU VGT support
++ *
++ * Copyright (c) Intel
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2.  See
++ * the COPYING file in the top-level directory.
++ *
++ */
++#include "hw/hw.h"
++#include "ui/console.h"
++#include "hw/i386/pc.h"
++
++DeviceState *vgt_vga_init(PCIBus *pci_bus)
++{
++    return NULL;
++}
++
++void vgt_bridge_pci_conf_init(PCIDevice *pdev)
++{
++}
++
++void vgt_kvm_set_opregion_addr(uint32_t addr)
++{
++}
++
++void vgt_bridge_pci_write(PCIDevice *dev,
++                          uint32_t address, uint32_t val, int len)
++{
++}
++
++
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 8dcf6dc..74199c9 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -955,6 +955,8 @@ old style -sdl/-curses/... options. Valid values for @var{type} are
+ @item sdl
+ Display video output via SDL (usually in a separate graphics
+ window; see the SDL documentation for other possibilities).
++@item vgt
++Intel GVT-g technology
+ @item curses
+ Display video output via curses. For graphics device models which
+ support a text mode, QEMU can display this output using a
+diff --git a/vl.c b/vl.c
+index 951145c..a104f9a 100644
+--- a/vl.c
++++ b/vl.c
+@@ -4054,6 +4054,7 @@ int main(int argc, char **argv, char **envp)
+                     exit(1);
+                 }
+                 break;
++#ifdef CONFIG_VGT
+             case QEMU_OPTION_vgt_low_gm_sz:
+                 {
+                     char *ptr;
+@@ -4072,6 +4073,7 @@ int main(int argc, char **argv, char **envp)
+                     vgt_fence_sz = strtol(optarg, &ptr, 10);
+                 }
+                 break;
++#endif
+             default:
+                 os_parse_cmd_args(popt->index, optarg);
+             }

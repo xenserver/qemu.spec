@@ -34,6 +34,13 @@ force-lba-geometry.patch
 vnc_clipboard.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 
+# Intel GVT-g support backported from a 2.9-based branch
+0001-vgt-class-introduction-and-adaption.patch
+0002-vgt-clean-up-vgt_vga-class.patch
+0003-Add-vgt-as-a-configure-parameter.patch
+0004-fix-the-bug-that-qemu-will-crash-when-reboot-windows.patch
+0005-add-a-new-parameter-to-define-cap.patch
+
 #
 # Temporary hacks for qemu-trad compatability.
 #
