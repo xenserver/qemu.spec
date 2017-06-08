@@ -45,6 +45,7 @@ vnc_clipboard.patch
 gvt-g-set-vbe_extended.patch
 gvt-g-add-monitor-support.patch
 gvt-g-cleanup-on-exit.patch
+gvt-g-console-support.patch
 
 #
 # Temporary hacks for qemu-trad compatability.
