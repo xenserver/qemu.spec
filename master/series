@@ -41,6 +41,9 @@ vnc_clipboard.patch
 0004-fix-the-bug-that-qemu-will-crash-when-reboot-windows.patch
 0005-add-a-new-parameter-to-define-cap.patch
 
+# Local Intel GVT-g patches
+gvt-g-set-vbe_extended.patch
+
 #
 # Temporary hacks for qemu-trad compatability.
 #
