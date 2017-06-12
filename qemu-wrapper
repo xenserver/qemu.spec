@@ -238,9 +238,16 @@ def main(argv):
             continue
 
         if p == "-vnc":
-            # This is the incorect way to do this!
-            # Should pass QEMU a range of ports, then use QMP to find the port it picked.
-            qemu_args[n+1] = "127.0.0.1:%d" % (domid + 100)
+            # There are two hacks here
+            # 1. Predefined vncport, based on domid.
+            #    This is the incorect way to do this!
+            #    Should pass QEMU a range of ports, then use QMP to find
+            #    the port it picked.
+            # 2. Disable lock-key-sync
+            #    lock-key-sync expects vnclient to send different keysym for
+            #    alphabet keys (different for lowercase and uppercase). XC
+            #    can't do it atm, disable lock-key-sync
+            qemu_args[n+1] = "127.0.0.1:%d,lock-key-sync=off" % (domid + 100)
             xenstore_write("/local/domain/%d/console/vnc-port" % domid, "%d" % (domid+6000))
             n += 2
             continue
