@@ -12,7 +12,7 @@ the correct entry is found.
 Signed-off-by: Zhao Yan <yan.y.zhao@intel.com>
 Signed-off-by: Bing Niu <bing.niu@intel.com>
 diff --git a/xen-mapcache.c b/xen-mapcache.c
-index 8f3a592..849569f 100644
+index 8f3a592..2245f45 100644
 --- a/xen-mapcache.c
 +++ b/xen-mapcache.c
 @@ -337,7 +337,13 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
@@ -44,7 +44,7 @@ index 8f3a592..849569f 100644
          pentry = entry;
          entry = entry->next;
      }
-@@ -431,23 +442,26 @@ void xen_invalidate_map_cache(void)
+@@ -431,23 +442,28 @@ void xen_invalidate_map_cache(void)
      for (i = 0; i < mapcache->nr_buckets; i++) {
          MapCacheEntry *entry = &mapcache->entry[i];
  
@@ -60,9 +60,11 @@ index 8f3a592..849569f 100644
 -            exit(-1);
 +        while(entry){
 +            if (entry->vaddr_base == NULL) {
++                entry = entry->next;
 +                continue;
 +            }
 +            if (entry->lock > 0) {
++                entry = entry->next;
 +                continue;
 +            }
 +
