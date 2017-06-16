@@ -263,7 +263,7 @@ def main(argv):
                 incoming_file.seek(0)
                 incoming_fd = os.dup(incoming_file.fileno())
             else:
-                incoming_fd = os.open(loadvm_path, "rb")
+                incoming_fd = os.open(loadvm_path, os.O_RDONLY)
             qemu_args[n] = "-incoming"
             qemu_args[n+1] = "fd:%d" % incoming_fd
 
