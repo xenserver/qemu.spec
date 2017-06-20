@@ -27,6 +27,8 @@ HVM_BELOW_4G_RAM_END = 0xf0000000
 HVM_BELOW_4G_MMIO_START = HVM_BELOW_4G_RAM_END
 HVM_BELOW_4G_MMIO_LENGTH = (1 << 32) - HVM_BELOW_4G_MMIO_START
 
+dic_mac = {}
+
 xenstore = xs.xs()
 
 def xenstore_read(path):
@@ -177,8 +179,18 @@ def main(argv):
         if p == "-net":
             n += 1
             if qemu_args[n].startswith("nic,"):
+                vm_uuid = re.search(r'\/vm\/(.*)', xenstore_read("/local/domain/%d/vm" % domid)).group(1)
                 nic_mac = re.search(r'macaddr=(.*),', qemu_args[n]).group(1)
-                nic_addr = int(os.popen('xe vif-list MAC=' + nic_mac + ' params="device" --minimal').read().rstrip())
+                # we suppose that the output of next command is always in same order
+                nic_addrs = os.popen('xe vif-list vm-uuid=' + vm_uuid + ' MAC=' + nic_mac + ' params="device" --minimal').read().rstrip()
+                nic_addrs = nic_addrs.split(',')  
+                if dic_mac.has_key(nic_mac):
+                   dic_mac[nic_mac] += 1
+                   count = dic_mac[nic_mac]
+                   nic_addr = int(nic_addrs[count])
+                else:
+                   dic_mac[nic_mac] = 0
+                   nic_addr = int(nic_addrs[0])                
                 nic_addr += 4
                 qemu_args[n] += ",addr=" + str(nic_addr)
                 n += 1
