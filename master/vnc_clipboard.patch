@@ -1,11 +1,12 @@
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index a8f3afb..ca1cbde 100644
+index 84b9819..efe75a0 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
-@@ -47,4 +47,6 @@ void xen_modified_memory(ram_addr_t start, ram_addr_t length);
+@@ -49,4 +49,7 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
  
- void xen_register_framebuffer(struct MemoryRegion *mr);
- 
+ void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
+                            unsigned size);
++
 +void xenstore_set_guest_clipboard(const uint8_t *buf, size_t len);
 +
  #endif /* QEMU_HW_XEN_H */
@@ -64,10 +65,10 @@ index d20b154..0722a31 100644
 +
  #endif /* QEMU_VNC_H */
 diff --git a/xen-hvm.c b/xen-hvm.c
-index 0892361..a6b404a 100644
+index fb39579..6a01c2f 100644
 --- a/xen-hvm.c
 +++ b/xen-hvm.c
-@@ -29,6 +29,8 @@
+@@ -31,6 +31,8 @@
  #include <xen/hvm/params.h>
  #include <xen/hvm/e820.h>
  
@@ -76,7 +77,7 @@ index 0892361..a6b404a 100644
  //#define DEBUG_XEN_HVM
  
  #ifdef DEBUG_XEN_HVM
-@@ -1205,6 +1207,185 @@ static void xen_wakeup_notifier(Notifier *notifier, void *data)
+@@ -1209,6 +1211,185 @@ static void xen_wakeup_notifier(Notifier *notifier, void *data)
      xc_set_hvm_param(xen_xc, xen_domid, HVM_PARAM_ACPI_S_STATE, 0);
  }
  
@@ -262,7 +263,7 @@ index 0892361..a6b404a 100644
  void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
  {
      int i, rc;
-@@ -1212,6 +1393,7 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1216,6 +1397,7 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
      xen_pfn_t bufioreq_pfn;
      evtchn_port_t bufioreq_evtchn;
      XenIOState *state;
@@ -270,7 +271,7 @@ index 0892361..a6b404a 100644
  
      state = g_malloc0(sizeof (XenIOState));
  
-@@ -1341,6 +1523,26 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1345,6 +1527,26 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
      xen_be_register_common();
      xen_read_physmap(state);
  

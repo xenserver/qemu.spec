@@ -110,7 +110,8 @@ def main(argv):
         igdpt = ',igd-passthru=on'
 
     qemu_args.extend(['-machine',
-                      'pc-0.10,accel=xen,max-ram-below-4g=%lu,trad_compat=%s%s'
+                      'pc-0.10,accel=xen,max-ram-below-4g=%lu,'
+                      'allow-unassigned=true,trad_compat=%s%s'
                       % (mmio_start, trad_compat, igdpt)])
     qemu_args.extend(['-display', 'none', '-nodefaults'])
 
