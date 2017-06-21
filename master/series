@@ -52,3 +52,8 @@ gvt-g-console-support.patch
 # Temporary hacks for qemu-trad compatability.
 #
 hack-relax-pci-config-checks-on-load.patch
+
+#
+# Technical debt to unblock further development.  Needs removing
+#
+0001-xen-don-t-save-restore-the-physmap-on-VM-save-restor.patch
