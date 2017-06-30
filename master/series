@@ -3,6 +3,7 @@
 #
 
 xsa208-qemuu.patch
+0001-xen-platform-Cleanup-network-infrastructure-when-emu.patch
 
 #
 # ABI Changes

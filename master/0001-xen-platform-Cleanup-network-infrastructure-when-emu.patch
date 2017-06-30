@@ -1,0 +1,37 @@
+From 6c808651e327388c22845700e14fe103da9b37cd Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Fri, 30 Jun 2017 13:50:28 +0100
+Subject: [PATCH] xen-platform: Cleanup network infrastructure when emulated
+ NICs are unplugged
+
+When the guest unplugs the emulated NICs, cleanup the peer for each NIC
+as it is not needed anymore. Most importantly, this allows the tap
+interfaces which QEMU holds open to be closed and removed.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Acked-by: Anthony PERARD <anthony.perard@citrix.com>
+Signed-off-by: Stefano Stabellini <sstabellini@kernel.org>
+diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
+index 2e1e543..d2d2ed5 100644
+--- a/hw/i386/xen/xen_platform.c
++++ b/hw/i386/xen/xen_platform.c
+@@ -102,8 +102,19 @@ static void unplug_nic(PCIBus *b, PCIDevice *d, void *o)
+     }
+ }
+ 
++/* Remove the peer of the NIC device. Normally, this would be a tap device. */
++static void del_nic_peer(NICState *nic, void *opaque)
++{
++    NetClientState *nc;
++
++    nc = qemu_get_queue(nic);
++    if (nc->peer)
++        qemu_del_net_client(nc->peer);
++}
++
+ static void pci_unplug_nics(PCIBus *bus)
+ {
++    qemu_foreach_nic(del_nic_peer, NULL);
+     pci_for_each_device(bus, 0, unplug_nic, NULL);
+ }
+ 
