@@ -190,11 +190,19 @@ def main(argv):
                    dic_mac[nic_mac] = 0
                    nic_addr = int(nic_addrs[0])                
                 nic_addr += 4
-                qemu_args[n] += ",addr=" + str(nic_addr)
+                qemu_args[n - 1] = '-device'
+                qemu_args[n] = re.sub(r'^nic,', '', qemu_args[n])
+                qemu_args[n] = qemu_args[n].replace('vlan=', 'netdev=tapnet')
+                model = re.search(r',model=([^,]+)', qemu_args[n]).group(1)
+                qemu_args[n] = re.sub(r',model=([^,]+)', '', qemu_args[n])
+                qemu_args[n] = re.sub(r',macaddr=', ',mac=', qemu_args[n])
+                qemu_args[n] = model + ',' +  qemu_args[n] + ",addr=" + str(nic_addr)
                 n += 1
                 continue
 
             if qemu_args[n].startswith("tap,"):
+                qemu_args[n - 1] = '-netdev'
+                qemu_args[n] = re.sub(r',vlan=', ',id=tapnet', qemu_args[n])
                 qemu_args[n] = re.sub(r'bridge=[a-z0-9]+,', '', qemu_args[n])
                 qemu_args[n] += ",script=no,downscript=no"
 
