@@ -16,6 +16,9 @@ xsa208-qemuu.patch
 # These should be upstreamed.
 #
 syslog-logging.patch
+0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
+0002-cpu-Allow-stopping-a-dummy-CPU-thread.patch
+0003-xen-apic-Implement-unrealize.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
@@ -34,6 +37,7 @@ force-lba-geometry.patch
 vnc_clipboard.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
+0004-hotplug-Implement-legacy-CPU-hot-unplug.patch
 
 # Intel GVT-g support backported from a 2.9-based branch
 0001-vgt-class-introduction-and-adaption.patch

@@ -1,0 +1,28 @@
+From ec9c530d9358cdc1244bd37a40dfb2ecc54dfbde Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Mon, 3 Jul 2017 13:57:50 +0100
+Subject: [PATCH 2/4] cpu: Allow stopping a dummy CPU thread
+
+Check whether the CPU is being unplugged during each dummy CPU loop
+iteration.  This allows CPUs to be hot unplugged on Xen (which uses
+dummy CPU threads).
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/cpus.c b/cpus.c
+index 5213351..e7fcb95 100644
+--- a/cpus.c
++++ b/cpus.c
+@@ -1048,6 +1048,13 @@ static void *qemu_dummy_cpu_thread_fn(void *arg)
+         }
+         qemu_mutex_lock_iothread();
+         current_cpu = cpu;
++        if (cpu->stop && cpu->unplug) {
++            qemu_wait_io_event_common(cpu);
++            cpu->created = false;
++            qemu_cond_signal(&qemu_cpu_cond);
++            qemu_mutex_unlock_iothread();
++            break;
++        }
+         qemu_wait_io_event_common(cpu);
+     }
+ 
