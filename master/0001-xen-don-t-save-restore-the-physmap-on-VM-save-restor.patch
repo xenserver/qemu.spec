@@ -27,18 +27,11 @@ the mapping again, this time successfully, and update the VRAM region
 metadata accordingly.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
----
- exec.c                  |  16 ++++++++
- hw/display/cirrus_vga.c |   7 ++++
- hw/display/vga.c        |  11 +++++
- xen-hvm.c               | 104 +++++++++---------------------------------------
- 4 files changed, 53 insertions(+), 85 deletions(-)
-
 diff --git a/exec.c b/exec.c
-index aabb035..a1ac8cd 100644
+index 08c558e..0c05594 100644
 --- a/exec.c
 +++ b/exec.c
-@@ -2008,6 +2008,14 @@ void *qemu_map_ram_ptr(RAMBlock *ram_block, ram_addr_t addr)
+@@ -1869,6 +1869,14 @@ void *qemu_map_ram_ptr(RAMBlock *ram_block, ram_addr_t addr)
          }
  
          block->host = xen_map_cache(block->offset, block->max_length, 1);
@@ -53,7 +46,7 @@ index aabb035..a1ac8cd 100644
      }
      return ramblock_ptr(block, addr);
  }
-@@ -2041,6 +2049,14 @@ static void *qemu_ram_ptr_length(RAMBlock *ram_block, ram_addr_t addr,
+@@ -1902,6 +1910,14 @@ static void *qemu_ram_ptr_length(RAMBlock *ram_block, ram_addr_t addr,
          }
  
          block->host = xen_map_cache(block->offset, block->max_length, 1);
@@ -69,10 +62,10 @@ index aabb035..a1ac8cd 100644
  
      return ramblock_ptr(block, addr);
 diff --git a/hw/display/cirrus_vga.c b/hw/display/cirrus_vga.c
-index b9e7cb1..cc1f908 100644
+index 3bbe3d5..6f3b8ba 100644
 --- a/hw/display/cirrus_vga.c
 +++ b/hw/display/cirrus_vga.c
-@@ -35,6 +35,7 @@
+@@ -34,6 +34,7 @@
  #include "ui/pixel_ops.h"
  #include "vga_int.h"
  #include "hw/loader.h"
@@ -80,7 +73,7 @@ index b9e7cb1..cc1f908 100644
  
  /*
   * TODO:
-@@ -2789,6 +2790,12 @@ static int cirrus_post_load(void *opaque, int version_id)
+@@ -2750,6 +2751,12 @@ static int cirrus_post_load(void *opaque, int version_id)
      s->vga.gr[0x01] = s->cirrus_shadow_gr1 & 0x0f;
  
      cirrus_update_memory_access(s);
@@ -94,10 +87,10 @@ index b9e7cb1..cc1f908 100644
      s->vga.graphic_mode = -1;
      cirrus_update_bank_ptr(s, 0);
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index 69c3e1d..7d85fd8 100644
+index f14c60a..e63f36e 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
-@@ -2035,6 +2035,12 @@ static int vga_common_post_load(void *opaque, int version_id)
+@@ -2063,6 +2063,12 @@ static int vga_common_post_load(void *opaque, int version_id)
  {
      VGACommonState *s = opaque;
  
@@ -110,7 +103,7 @@ index 69c3e1d..7d85fd8 100644
      /* force refresh */
      s->graphic_mode = -1;
      vbe_update_vgaregs(s);
-@@ -2165,6 +2171,11 @@ void vga_common_init(VGACommonState *s, Object *obj, bool global_vmstate)
+@@ -2193,6 +2199,11 @@ void vga_common_init(VGACommonState *s, Object *obj, bool global_vmstate)
      vmstate_register_ram(&s->vram, global_vmstate ? NULL : DEVICE(obj));
      xen_register_framebuffer(&s->vram);
      s->vram_ptr = memory_region_get_ram_ptr(&s->vram);
@@ -123,10 +116,10 @@ index 69c3e1d..7d85fd8 100644
      s->get_offsets = vga_get_offsets;
      s->get_resolution = vga_get_resolution;
 diff --git a/xen-hvm.c b/xen-hvm.c
-index 5043beb..8bedd9b 100644
+index 2348f81..ec603e6 100644
 --- a/xen-hvm.c
 +++ b/xen-hvm.c
-@@ -317,7 +317,6 @@ static int xen_add_to_physmap(XenIOState *state,
+@@ -323,7 +323,6 @@ static int xen_add_to_physmap(XenIOState *state,
      XenPhysmap *physmap = NULL;
      hwaddr pfn, start_gpfn;
      hwaddr phys_offset = memory_region_get_ram_addr(mr);
@@ -134,7 +127,7 @@ index 5043beb..8bedd9b 100644
      const char *mr_name;
  
      if (get_physmapping(state, start_addr, size)) {
-@@ -340,6 +339,22 @@ go_physmap:
+@@ -346,6 +345,22 @@ go_physmap:
      DPRINTF("mapping vram to %"HWADDR_PRIx" - %"HWADDR_PRIx"\n",
              start_addr, start_addr + size);
  
@@ -157,7 +150,7 @@ index 5043beb..8bedd9b 100644
      pfn = phys_offset >> TARGET_PAGE_BITS;
      start_gpfn = start_addr >> TARGET_PAGE_BITS;
      for (i = 0; i < size >> TARGET_PAGE_BITS; i++) {
-@@ -350,49 +365,17 @@ go_physmap:
+@@ -356,49 +371,17 @@ go_physmap:
          if (rc) {
              DPRINTF("add_to_physmap MFN %"PRI_xen_pfn" to PFN %"
                      PRI_xen_pfn" failed: %d (errno: %d)\n", idx, gpfn, rc, errno);
@@ -210,7 +203,7 @@ index 5043beb..8bedd9b 100644
      return 0;
  }
  
-@@ -1152,54 +1135,6 @@ static void xen_exit_notifier(Notifier *n, void *data)
+@@ -1158,54 +1141,6 @@ static void xen_exit_notifier(Notifier *n, void *data)
      xs_daemon_close(state->xenstore);
  }
  
@@ -265,14 +258,11 @@ index 5043beb..8bedd9b 100644
  static void xen_wakeup_notifier(Notifier *notifier, void *data)
  {
      xc_set_hvm_param(xen_xc, xen_domid, HVM_PARAM_ACPI_S_STATE, 0);
-@@ -1339,7 +1274,6 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1525,7 +1460,6 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
          goto err;
      }
      xen_be_register_common();
 -    xen_read_physmap(state);
  
-     /* Disable ACPI build because Xen handles it */
-     pcms->acpi_build_enabled = false;
--- 
-2.7.4
-
+     dom_path = xs_get_domain_path(state->xenstore, xen_domid);
+ 
