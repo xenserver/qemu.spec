@@ -72,12 +72,6 @@ def get_drive_args(dom):
 
     return args
 
-def set_physmap(domain, address, start, size, name):
-    path = "/local/domain/0/device-model/%d/physmap/%x/" % (domain, address)
-    xenstore_write(path + "start_addr", "%x" % (start))
-    xenstore_write(path + "size", "%x" % (size))
-    xenstore_write(path + "name", name)
-
 def main(argv):
     f = sys.stdout
 
@@ -302,18 +296,6 @@ def main(argv):
     #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
 
     xenstore_write("/libxl/%d/dm-version" % domid, "qemu_xen")
-
-    #
-    # If we're restoring from a qemu-trad image, create the physmap
-    # xenstore keys as they won't have been migrated by the toolstack.
-    #
-    if upgraded_save_image:
-        start = ram_size_mb * 1024 * 1024
-        if start > HVM_BELOW_4G_RAM_END:
-            start += HVM_BELOW_4G_MMIO_LENGTH
-        set_physmap(domid, start,
-                    upgraded_save_image.vram_phys_addr,
-                    upgraded_save_image.vram_size, "vga.vram")
 
     f.write("Exec: %s %s\n" % (qemu_dm, " ".join(qemu_args)))
     f.close()
