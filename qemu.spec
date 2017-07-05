@@ -9,7 +9,7 @@ Source2: qemu_trad_image.py
 #Patch0: qemu-xen-development.patch
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel libdrm-devel
-BuildRequires: xen-dom0-devel xen-libs-devel
+BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
 
 %description
 This package contains Qemu.
@@ -28,7 +28,7 @@ This package contains Qemu.
     --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock \
     --disable-colo --disable-lzo --disable-tpm --disable-virtfs \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
-    --audio-drv-list= --disable-coroutine-pool
+    --audio-drv-list= --disable-coroutine-pool --enable-libusb
 %{?cov_wrap} %{__make} %{?_smp_mflags} all 
 
 %install
