@@ -20,6 +20,8 @@ syslog-logging.patch
 0002-cpu-Allow-stopping-a-dummy-CPU-thread.patch
 0003-xen-apic-Implement-unrealize.patch
 
+0001-xen-pt-Fixup-addr-validation-in-xen_pt_pci_config_ac.patch
+
 #
 # Binary compatability with qemu trad (must be behind an option)
 #

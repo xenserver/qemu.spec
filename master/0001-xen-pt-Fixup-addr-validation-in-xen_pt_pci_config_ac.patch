@@ -1,0 +1,23 @@
+From 3e220f031b0e27541f90be362337bec526666e6f Mon Sep 17 00:00:00 2001
+From: Anoob Soman <anoob.soman@citrix.com>
+Date: Tue, 4 Jul 2017 22:15:15 +0100
+Subject: [PATCH] xen/pt: Fixup addr validation in
+ xen_pt_pci_config_access_check
+
+xen_pt_pci_config_access_check checks if addr >= 0xFF. 0xFF is a valid
+address and should not be ignored.
+
+Signed-off-by: Anoob Soman <anoob.soman@citrix.com>
+diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
+index b6d71bb..375efa6 100644
+--- a/hw/xen/xen_pt.c
++++ b/hw/xen/xen_pt.c
+@@ -85,7 +85,7 @@ void xen_pt_log(const PCIDevice *d, const char *f, ...)
+ static int xen_pt_pci_config_access_check(PCIDevice *d, uint32_t addr, int len)
+ {
+     /* check offset range */
+-    if (addr >= 0xFF) {
++    if (addr > 0xFF) {
+         XEN_PT_ERR(d, "Failed to access register with offset exceeding 0xFF. "
+                    "(addr: 0x%02x, len: %d)\n", addr, len);
+         return -1;
