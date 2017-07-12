@@ -46,6 +46,9 @@ def get_drive_args(dom):
     vbd3 = "/local/domain/0/backend/vbd3/" + dom
 
     medialist = xenstore_ls(vbd3)
+    if not medialist:
+        return args
+
     for num in medialist:
         dev = xenstore_read("%s/%s/dev" % (vbd3, num))
         if dev not in index_map:
