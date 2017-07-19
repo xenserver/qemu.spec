@@ -16,10 +16,10 @@ Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
  1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index 519d787..5c1c490 100644
+index f60c529..f8ccbe6 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -112,14 +112,18 @@ static void pci_unplug_nics(PCIBus *bus)
+@@ -117,14 +117,18 @@ static void pci_unplug_nics(PCIBus *bus)
  
  static void unplug_disks(PCIBus *b, PCIDevice *d, void *o)
  {
@@ -42,6 +42,3 @@ index 519d787..5c1c490 100644
          object_unparent(OBJECT(d));
      }
  }
--- 
-2.7.4
-

@@ -20,6 +20,9 @@ syslog-logging.patch
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
 0002-cpu-Allow-stopping-a-dummy-CPU-thread.patch
 0003-xen-apic-Implement-unrealize.patch
+0001-xen-platform-Handle-write-of-four-byte-build-number-.patch
+0002-xen-platform-Provide-QMP-query-commands-for-XEN-PV-d.patch
+0003-xen-platform-Emit-XEN_PLATFORM_PV_DRIVER_INFO-after-.patch
 
 0001-xen-pt-Fixup-addr-validation-in-xen_pt_pci_config_ac.patch
 

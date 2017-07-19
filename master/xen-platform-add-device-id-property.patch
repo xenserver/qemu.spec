@@ -1,8 +1,8 @@
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index 28b324a..e07b3db 100644
+index c3f927a..81ab4f4 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -65,6 +65,8 @@ typedef struct PCIXenPlatformState {
+@@ -71,6 +71,8 @@ typedef struct PCIXenPlatformState {
      /* Log from guest drivers */
      char log_buffer[4096];
      int log_buffer_off;
@@ -11,7 +11,7 @@ index 28b324a..e07b3db 100644
  } PCIXenPlatformState;
  
  #define TYPE_XEN_PLATFORM "xen-platform"
-@@ -397,6 +399,8 @@ static int xen_platform_initfn(PCIDevice *dev)
+@@ -469,6 +471,8 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
  
      pci_conf[PCI_INTERRUPT_PIN] = 1;
  
@@ -20,7 +20,7 @@ index 28b324a..e07b3db 100644
      platform_ioport_bar_setup(d);
      pci_register_bar(dev, 0, PCI_BASE_ADDRESS_SPACE_IO, &d->bar);
  
-@@ -417,6 +421,12 @@ static void platform_reset(DeviceState *dev)
+@@ -487,6 +491,12 @@ static void platform_reset(DeviceState *dev)
      platform_fixed_ioport_reset(s);
  }
  
@@ -33,7 +33,7 @@ index 28b324a..e07b3db 100644
  static void xen_platform_class_init(ObjectClass *klass, void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -433,6 +443,7 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
+@@ -503,6 +513,7 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
      dc->desc = "XEN platform pci device";
      dc->reset = platform_reset;
      dc->vmsd = &vmstate_xen_platform;
