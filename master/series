@@ -54,6 +54,12 @@ gvt-g-add-monitor-support.patch
 gvt-g-cleanup-on-exit.patch
 gvt-g-console-support.patch
 
+# AMD MxGPU patches
+0001-Update-fd-handlers-to-support-sysfs_notify.patch
+0002-Fix-up-PCI-command-register-for-AMD-ATI-GPU-VFs.patch
+0003-Add-interception-layer-for-BAR-ops.patch
+0004-Add-AMD-code.patch
+
 #
 # Temporary hacks for qemu-trad compatability.
 #
