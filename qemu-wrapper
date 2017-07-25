@@ -69,6 +69,9 @@ def get_drive_args(dom):
 
         format_str = ',format=raw' if path != '' else ''
 
+        if mode == 'r' and media != 'cdrom':
+            continue
+
         # XXX What should cache=... be set to?
         args.extend(["-drive", "%sif=ide,index=%d,media=%s%s,force-lba=%s" %
                      (path_str, index_map[dev], media, format_str, forcelba)])
