@@ -117,7 +117,7 @@ def main(argv):
         if not device_id:
             device_id = "0001"
         qemu_args.extend(['-device',
-                          'xen-platform,addr=3,device-id=0x%s,'
+                          'xen-platform,addr=3,device-id=0x%s,revision=0x2,'
                           'class-id=0x0100,subvendor_id=0x5853,subsystem_id=0x%s'
                           % (device_id, device_id)])
 

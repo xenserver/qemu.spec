@@ -20,6 +20,7 @@ xsa208-qemuu.patch
 syslog-logging.patch
 xen-platform-add-device-id-property.patch
 xen-platform-add-class-id-property.patch
+xen-platform-add-revision-property.patch
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
 0002-cpu-Allow-stopping-a-dummy-CPU-thread.patch
 0003-xen-apic-Implement-unrealize.patch
