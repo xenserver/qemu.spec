@@ -1,8 +1,8 @@
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index c3f927a..81ab4f4 100644
+index d2d2ed5..901ea2a 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -71,6 +71,8 @@ typedef struct PCIXenPlatformState {
+@@ -66,6 +66,8 @@ typedef struct PCIXenPlatformState {
      /* Log from guest drivers */
      char log_buffer[4096];
      int log_buffer_off;
@@ -11,7 +11,7 @@ index c3f927a..81ab4f4 100644
  } PCIXenPlatformState;
  
  #define TYPE_XEN_PLATFORM "xen-platform"
-@@ -469,6 +471,8 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
+@@ -442,6 +444,8 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
  
      pci_conf[PCI_INTERRUPT_PIN] = 1;
  
@@ -20,12 +20,12 @@ index c3f927a..81ab4f4 100644
      platform_ioport_bar_setup(d);
      pci_register_bar(dev, 0, PCI_BASE_ADDRESS_SPACE_IO, &d->bar);
  
-@@ -487,6 +491,12 @@ static void platform_reset(DeviceState *dev)
+@@ -460,6 +464,12 @@ static void platform_reset(DeviceState *dev)
      platform_fixed_ioport_reset(s);
  }
  
 +static Property xen_platform_props[] = {
-+    DEFINE_PROP_UINT16("device_id", PCIXenPlatformState, device_id,
++    DEFINE_PROP_UINT16("device-id", PCIXenPlatformState, device_id,
 +                       PCI_DEVICE_ID_XEN_PLATFORM),
 +    DEFINE_PROP_END_OF_LIST()
 +};
@@ -33,7 +33,15 @@ index c3f927a..81ab4f4 100644
  static void xen_platform_class_init(ObjectClass *klass, void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -503,6 +513,7 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
+@@ -467,7 +477,6 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
+ 
+     k->realize = xen_platform_realize;
+     k->vendor_id = PCI_VENDOR_ID_XEN;
+-    k->device_id = PCI_DEVICE_ID_XEN_PLATFORM;
+     k->class_id = PCI_CLASS_OTHERS << 8 | 0x80;
+     k->subsystem_vendor_id = PCI_VENDOR_ID_XEN;
+     k->subsystem_id = PCI_DEVICE_ID_XEN_PLATFORM;
+@@ -476,6 +485,7 @@ static void xen_platform_class_init(ObjectClass *klass, void *data)
      dc->desc = "XEN platform pci device";
      dc->reset = platform_reset;
      dc->vmsd = &vmstate_xen_platform;

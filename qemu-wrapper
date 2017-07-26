@@ -117,8 +117,8 @@ def main(argv):
         if not device_id:
             device_id = "0001"
         qemu_args.extend(['-device',
-                          'xen-platform,addr=3,device_id=0x%s,'
-                          'subvendor_id=0x5853,subsystem_id=0x%s,class_id=0x0100'
+                          'xen-platform,addr=3,device-id=0x%s,'
+                          'class-id=0x0100,subvendor_id=0x5853,subsystem_id=0x%s'
                           % (device_id, device_id)])
 
     # enable qmp for debugging
