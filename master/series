@@ -4,6 +4,7 @@
 
 xsa208-qemuu.patch
 0001-xen-platform-Cleanup-network-infrastructure-when-emu.patch
+0001-xen-pt-Fixup-addr-validation-in-xen_pt_pci_config_ac.patch
 
 #
 # ABI Changes
@@ -23,8 +24,6 @@ syslog-logging.patch
 0001-xen-platform-Handle-write-of-four-byte-build-number-.patch
 0002-xen-platform-Provide-QMP-query-commands-for-XEN-PV-d.patch
 0003-xen-platform-Emit-XEN_PLATFORM_PV_DRIVER_INFO-after-.patch
-
-0001-xen-pt-Fixup-addr-validation-in-xen_pt_pci_config_ac.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
