@@ -140,7 +140,7 @@ def main(argv):
 
     vga_type = 'cirrus-vga'
     vgamem_mb = 4
-    vga_extra_props = ["rombar=1,romfile="]
+    vga_extra_props = ["rombar=1,romfile=", "subvendor_id=0x5853,subsystem_id=0x0001"]
     upgraded_save_image = None
     serial_c = ''
     tmp_serial_c = ''
@@ -299,6 +299,8 @@ def main(argv):
         qemu_args += ["-device", "xen-pvdevice,device-id=0xc000"]
 
     qemu_args += ["-global", "PIIX4_PM.revision_id=0x1"]
+    qemu_args += ["-global", "ide-hd.ver=0.10.2"]
+
     for driver in ["piix3-ide-xen", "piix3-usb-uhci", "rtl8139"]:
         qemu_args += ["-global", "%s.subvendor_id=0x5853" % driver,
                       "-global", "%s.subsystem_id=0x0001" % driver]
