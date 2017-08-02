@@ -21,9 +21,6 @@ syslog-logging.patch
 xen-platform-add-device-id-property.patch
 xen-platform-add-class-id-property.patch
 xen-platform-add-revision-property.patch
-0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
-0002-cpu-Allow-stopping-a-dummy-CPU-thread.patch
-0003-xen-apic-Implement-unrealize.patch
 0001-xen-platform-Handle-write-of-four-byte-build-number-.patch
 0002-xen-platform-Provide-QMP-query-commands-for-XEN-PV-d.patch
 0003-xen-platform-Emit-XEN_PLATFORM_PV_DRIVER_INFO-after-.patch
@@ -44,7 +41,6 @@ force-lba-geometry.patch
 vnc_clipboard.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
-0004-hotplug-Implement-legacy-CPU-hot-unplug.patch
 
 # Intel GVT-g support backported from a 2.9-based branch
 0001-vgt-class-introduction-and-adaption.patch

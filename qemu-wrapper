@@ -172,8 +172,7 @@ def main(argv):
 
         if p == "-vcpus":
             qemu_args[n] = "-smp"
-            cpus_start = xenstore_read("/local/domain/%d/platform/vcpu/current" % domid)
-            qemu_args[n+1] = cpus_start + ",maxcpus=" + qemu_args[n+1]
+            qemu_args[n+1] = qemu_args[n+1] + ",maxcpus=" + qemu_args[n+1]
             n += 2
             continue
 
