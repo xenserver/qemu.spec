@@ -504,7 +504,7 @@ index f9218aa..91f7ed7 100644
  
  PCIBus *i440fx_init(const char *host_type, const char *pci_type,
 diff --git a/hw/pci/pci.c b/hw/pci/pci.c
-index eeabebf..d5dd464 100644
+index 7f32edf..4bbc1b6 100644
 --- a/hw/pci/pci.c
 +++ b/hw/pci/pci.c
 @@ -23,6 +23,7 @@
@@ -515,7 +515,7 @@ index eeabebf..d5dd464 100644
  #include "hw/pci/pci.h"
  #include "hw/pci/pci_bridge.h"
  #include "hw/pci/pci_bus.h"
-@@ -967,6 +968,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -968,6 +969,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
      if (devfn < 0) {
          for(devfn = bus->devfn_min ; devfn < ARRAY_SIZE(bus->devices);
              devfn += PCI_FUNC_MAX) {
@@ -527,15 +527,15 @@ index eeabebf..d5dd464 100644
              if (!bus->devices[devfn])
                  goto found;
          }
-@@ -1001,6 +1007,7 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -1002,6 +1008,7 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
      pci_dev->irq_state = 0;
      pci_config_alloc(pci_dev);
  
 +    printf("set vendor id(%x) for devfn(%x)\n", pc->vendor_id, devfn);
      pci_config_set_vendor_id(pci_dev->config, pc->vendor_id);
      pci_config_set_device_id(pci_dev->config, pc->device_id);
-     pci_config_set_revision(pci_dev->config, pc->revision);
-@@ -1042,6 +1049,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+     if (pci_dev->revision_id > 0xff) {
+@@ -1047,6 +1054,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
          config_read = pci_default_read_config;
      if (!config_write)
          config_write = pci_default_write_config;
