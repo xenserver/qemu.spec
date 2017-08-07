@@ -3,7 +3,6 @@
 import string
 import struct
 import sys
-import time
 
 QEMU_VM_FILE_MAGIC = 0x5145564d
 QEMU_VM_FILE_VERSION = 0x00000003
@@ -174,10 +173,8 @@ class Section(object):
 
     def load_PIIX3(self, i):
         self.load_generic_pci_device(i)
-        self.data += struct.pack(">IIII", 0, 0, 0, 0) # Unused pci_irq_levels_vmstate
 
         self.new_idstr = "0000:00:01.0/PIIX3"
-        self.version_id = 3
 
     def load_vga(self, i):
         self.load_generic_pci_device(i)
@@ -228,64 +225,28 @@ class Section(object):
         cmos_data = i.read_buffer(128)
         cmos_index = i.read_u8()
 
-        tm_sec = i.read_be32()
-        tm_min = i.read_be32()
-        tm_hour = i.read_be32()
-        tm_wday = i.read_be32()
-        tm_mday = i.read_be32()
-        tm_mon = i.read_be32() + 1
-        tm_year = i.read_be32() + 1900
-        dst = -1
-
-        current_tm = time.struct_time((tm_year, tm_mon, tm_mday, tm_hour, tm_min, tm_sec, 0, 0, -1))
+        i.read_buffer(28) # tm_sec + tm_min + tm_hour + tm_wday + tm_mday + tm_mon + tm_year
 
         periodic_timer = self.load_generic_timer(i)
         next_periodic_time = i.read_be64()
-        next_second_time = i.read_be64()
-        second_timer = self.load_generic_timer(i)
-        second_timer2 = self.load_generic_timer(i)
+        i.read_be64() # next_second_time
+        self.load_generic_timer(i) # second_timer
+        self.load_generic_timer(i) # second_timer2
 
-        #
-        # Ick.  The upstream save record is quite different.
-        #
-
-        # 1. Qemu trad doesn't use irq coalescing for periodic
-        #    interrupts.
+        # Qemu trad doesn't use irq coalescing for periodic interrupts.
         irq_coalesced = 0
         period = 0
 
-        # 2. The update timer is now a single timer. Use whichever
-        #    timer is not expired.
-        #
-        # FIXME: or generate a new timer with suitable expiry?
-        if second_timer.expired():
-            if second_timer2.expired():
-                update_timer = GenericTimer()
-            else:
-                update_timer = second_timer2
-        else:
-            update_timer = second_timer
-
-        # 3. Calculate next_alarm_time from CMOS data.
-        next_alarm_time = 0 # FIXME
-
-        # 4. Current time is recorded quite differently and the best
-        #    we can do is within 1 second.
-        timer_section = i.find_section("timer")
-        base_rtc = int(time.mktime(current_tm))
-        last_update = int(time.mktime(current_tm) * 1000000000)
-        offset = 0
-
         self.data += cmos_data
-        self.data += struct.pack(">BIIIIIII", cmos_index, 0, 0, 0, 0, 0, 0, 0)
+        self.data += struct.pack(">B", cmos_index)
+        self.data += struct.pack(">IIIIIII", 0, 0, 0, 0, 0, 0, 0) # unused[0]
         self.data += periodic_timer.packed()
-        self.data += struct.pack(">QQQQ", next_periodic_time, 0, 0, 0)
+        self.data += struct.pack(">Q", next_periodic_time)
+        self.data += struct.pack(">QQQ", 0, 0, 0) # unused[1]
         self.data += struct.pack(">II", irq_coalesced, period)
-        self.data += struct.pack(">QQQ", base_rtc, last_update, offset)
-        self.data += update_timer.packed()
-        self.data += struct.pack(">Q", next_alarm_time)
 
-        self.version_id = 3
+        # set version to 2 to recalculate missing fields from cmos in post_load
+        self.version_id = 2
 
     def load_platform(self, i):
         self.load_generic_pci_device(i)
@@ -429,16 +390,11 @@ class Section(object):
         self.data += i.read_buffer(2*4+4+1*2)
 
         # Add frame_timer
-        frame_timer = GenericTimer()
-        frame_timer.expires = i.read_be64()
-        self.data += frame_timer.packed()
-        self.data += struct.pack(">Q", frame_timer.expires)
-
-        # Add pending_int_mask
-        self.data += struct.pack(">I", 0)
+        frame_timer = self.load_generic_timer(i) # expire_time
+        self.data += frame_timer.packed() # frame_timer
 
         self.new_idstr = "0000:00:01.2/uhci"
-        self.version_id = 3
+        self.version_id = 1
 
     def load_gpe(self, i):
         # Read in the bits to end up in the piix4_pm section.
