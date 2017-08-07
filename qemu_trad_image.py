@@ -573,15 +573,18 @@ def convert_file(f1, f2):
     image = Image(f1)
     image.load()
 
-    usb_ptr = CompleteSection(QEMU_VM_SECTION_FULL)
-    usb_ptr.new(0, "2/usb-ptr", 0, 1)
-    usb_ptr.data += struct.pack(">BIIIII", 1, 3, 0, 0, 0, 0)
-    for i in range(8):
-        usb_ptr.data += struct.pack(">B", 0)
-    for i in range(16):
-        usb_ptr.data += struct.pack(">IIII", 0, 0, 0, 0)
-    usb_ptr.data += struct.pack(">IIIB", 0, 0, 1, 0)
-    image.sections.append(usb_ptr)
+    if image.find_section("UHCI usb controller"):
+        usb_ptr = CompleteSection(QEMU_VM_SECTION_FULL)
+        usb_ptr.new(0, "2/usb-ptr", 0, 1)
+        # addr + state + remote_wakeup + setup_state + setup_len + setup_index
+        usb_ptr.data += struct.pack(">BIIIII", 1, 3, 0, 0, 0, 0)
+        for i in range(8):
+            usb_ptr.data += struct.pack(">B", 0) # setup_buf
+        for i in range(16):
+            usb_ptr.data += struct.pack(">IIII", 0, 0, 0, 0) # ptr_queue
+        # head + n + protocol + idle
+        usb_ptr.data += struct.pack(">IIIB", 0, 0, 1, 0)
+        image.sections.append(usb_ptr)
 
     image.save(f2)
     return image
