@@ -106,7 +106,14 @@ class Image(object):
         for s in self.sections:
             if s.idstr == name:
                 return s
-        self.error("need section '%s'" % (self.sections))
+        return None
+
+    def find_last_section(self, name):
+        for s in reversed(self.sections):
+            if s.idstr == name:
+                return s
+        return None
+
 
 class Section(object):
     def __init__(self, section_type):
@@ -127,6 +134,7 @@ class Section(object):
     def load_idstr(self, image):
         length = image.read_u8()
         self.idstr = image.read_buffer(length)
+        self.new_idstr = self.idstr
 
     def packed(self):
         packed = struct.pack(">B", self.section_type)
@@ -135,7 +143,7 @@ class Section(object):
         return packed
 
     def idstr_packed(self):
-        return struct.pack(">B", len(self.idstr)) + self.idstr
+        return struct.pack(">B", len(self.new_idstr)) + self.new_idstr
 
     def save(self, f):
         if self.data:
@@ -161,14 +169,14 @@ class Section(object):
         self.load_generic_pci_device(i)
         self.data += struct.pack(">B", 0) # smm_enabled
 
-        self.idstr = "0000:00:00.0/I440FX"
+        self.new_idstr = "0000:00:00.0/I440FX"
         self.version_id = 3
 
     def load_PIIX3(self, i):
         self.load_generic_pci_device(i)
         self.data += struct.pack(">IIII", 0, 0, 0, 0) # Unused pci_irq_levels_vmstate
 
-        self.idstr = "0000:00:01.0/PIIX3"
+        self.new_idstr = "0000:00:01.0/PIIX3"
         self.version_id = 3
 
     def load_vga(self, i):
@@ -196,7 +204,7 @@ class Section(object):
 
         i.read_buffer(4+8) # vram_size + vram_phys_addr
 
-        self.idstr = "0000:00:02.0/vga"
+        self.new_idstr = "0000:00:02.0/vga"
         self.version_id = 2
 
     def load_cirrus_vga(self, i):
@@ -213,7 +221,7 @@ class Section(object):
 
         # FIXME: need to consider older versions that appended the frame buffer
 
-        self.idstr = "0000:00:02.0/cirrus_vga"
+        self.new_idstr = "0000:00:02.0/cirrus_vga"
         self.version_id = 2
 
     def load_mc146818rtc(self, i):
@@ -289,8 +297,11 @@ class Section(object):
 
         # Merge this section into the platform section.
         platform_section = i.find_section("platform")
+        if not platform_section:
+            i.error("need section 'platform'")
+
         platform_section.data += struct.pack(">B", flags)
-        platform_section.idstr = "0000:00:03.0/platform"
+        platform_section.new_idstr = "0000:00:03.0/platform"
         platform_section.version_id = 4
 
         self.data = None
@@ -322,7 +333,8 @@ class Section(object):
         # + TxUndrn) + cplus_enabled
         self.data += i.read_buffer(4*2+8*4+4+2*2+4*2+8*2+4+2*2+4)
 
-        self.idstr = "0000:00:04.0/rtl8139"
+        self.new_idstr = "0000:00:%02d.0/rtl8139" % (4 + self.instance_id)
+        self.new_instance_id = 0
         self.version_id = 5
 
     def load_ide(self, i):
@@ -367,7 +379,7 @@ class Section(object):
                                      hob_feature, hob_sector, hob_nsector, hob_lcyl, hob_hcyl,
                                      select, status, lba48, sense_key, asc, 0)
 
-        self.idstr = "0000:00:01.1/ide"
+        self.new_idstr = "0000:00:01.1/ide"
 
     def load_pckbd(self, i):
         # write_cmd + status + mode + pending
@@ -425,7 +437,7 @@ class Section(object):
         # Add pending_int_mask
         self.data += struct.pack(">I", 0)
 
-        self.idstr = "0000:00:01.2/uhci"
+        self.new_idstr = "0000:00:01.2/uhci"
         self.version_id = 3
 
     def load_gpe(self, i):
@@ -468,13 +480,15 @@ class Section(object):
         pci_status_down = 0
 
         gpe_section = i.find_section("gpe")
+        if not gpe_section:
+            i.error("need section 'gpe'")
 
         self.data += tmr_timer.packed()
         self.data += struct.pack(">QHHII",
                                  tmr_overflow, gpe_section.gpe_sts, gpe_section.gpe_en,
                                  pci_status_up, pci_status_down)
 
-        self.idstr = "0000:00:01.3/piix4_pm"
+        self.new_idstr = "0000:00:01.3/piix4_pm"
         self.version_id = 3
 
     def load_xen_pvdevice(self, i):
@@ -506,19 +520,30 @@ class CompleteSection(Section):
     def load_header(self, image):
         self.section_id = image.read_be32()
         self.load_idstr(image)
-        self.instance_id = image.read_be32()
+
+        image.read_be32() # instance_id
+        # recalculate instance_id according to the image layout
+        prev_section = image.find_last_section(self.idstr)
+        if prev_section:
+            self.instance_id = prev_section.instance_id + 1
+        else:
+            self.instance_id = 0
+        self.new_instance_id = self.instance_id
+
         self.version_id = image.read_be32()
 
     def new(self, section_id, idstr, instance_id, version_id):
         self.section_id = section_id
         self.idstr = idstr
+        self.new_idstr = idstr
         self.instance_id = instance_id
+        self.new_instance_id = instance_id
         self.version_id = version_id
 
     def packed_header(self):
         packed = struct.pack(">I", self.section_id)
         packed += self.idstr_packed()
-        packed += struct.pack(">II", self.instance_id, self.version_id)
+        packed += struct.pack(">II", self.new_instance_id, self.version_id)
         return packed
 
 
