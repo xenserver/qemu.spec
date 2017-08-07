@@ -271,6 +271,8 @@ def main(argv):
         if p == "-loadvm":
             loadvm_path = qemu_args[n+1]
             if qemu_trad_image.is_trad_image(loadvm_path):
+                f.write("QEMU Traditional image detected. Upgrading...\n")
+
                 loadvm_file = open(loadvm_path, "rb")
                 incoming_file = tempfile.TemporaryFile()
                 upgraded_save_image = qemu_trad_image.convert_file(loadvm_file, incoming_file)

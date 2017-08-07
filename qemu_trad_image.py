@@ -20,11 +20,6 @@ class Image(object):
         self.f = f
         self.sections = []
 
-        # Data extracted from the qemu-trad save image that must be
-        # passed OOB to QEMU.
-        self.vram_size = 0
-        self.vram_phys_addr = 0
-
     def error(self, msg):
         sys.stderr.write("%s: %s\n" % (sys.argv[0], msg))
         sys.exit(1)
@@ -156,7 +151,10 @@ class Section(object):
         self.data = struct.pack(">QQQ", 0, 0, cpu_clock_offset)
 
     def load_fw_cfg(self, i):
+        # cur_entry + cur_offset
         i.read_buffer(2*2)
+
+        # Discarding as not present in QEMU
         self.data = None
 
     def load_I440FX(self, i):
@@ -175,7 +173,9 @@ class Section(object):
 
     def load_vga(self, i):
         self.load_generic_pci_device(i)
-
+        # latch + sr_index + sr + gr_index + gr + ar_index + ar + ar_flip_flop
+        # + cr_index + cr + msr + fcr + st00 + st01 + dac_state + dac_sub_index
+        # + dac_read_index + dac_write_index + dac_cache + palette + bank_offset
         self.data += i.read_buffer(4+1+8+1+16+1+21+4+1+256+1*8+3+768+4)
 
         have_vbe = i.read_u8()
@@ -194,25 +194,22 @@ class Section(object):
                 self.data += struct.pack(">H", vbe_regs[r])
             self.data += struct.pack(">III", vbe_start_addr, vbe_line_offset, vbe_bank_mask)
 
-        i.vram_size = i.read_be32()
-        i.vram_phys_addr = i.read_be64()
+        i.read_buffer(4+8) # vram_size + vram_phys_addr
 
         self.idstr = "0000:00:02.0/vga"
         self.version_id = 2
 
     def load_cirrus_vga(self, i):
         self.load_generic_pci_device(i)
+        # latch + sr_index + sr + gr_index + cirrus_shadow_gr0 + cirrus_shadow_gr1
+        # + gr + ar_index + ar + ar_flip_flop + cr_index + cr + msr + fcr + st00
+        # + st01 + dac_state + dac_sub_index + dac_read_index + dac_write_index
+        # + dac_cache + palette + bank_offset + cirrus_hidden_dac_lockindex
+        # + cirrus_hidden_dac_data + hw_cursor_x + hw_cursor_y
+        self.data += i.read_buffer(4+1+256+1+1+1+254+1+21+4+1+256+1*8+3+768+4+1*2+4*2)
 
-        self.data += i.read_buffer(4+1+256+1+1+1+254+1+21+4+1+256+1*8+3+768+4+1*2+2*4)
-
-        i.read_u8()
-        i.read_be32()
-        lfb_addr = i.read_be32()
-        i.read_be32()
-        lfb_end = i.read_be32()
-        vram_gmfn = i.read_be64()
-        i.vram_size = lfb_end - lfb_addr
-        i.vram_phys_addr = vram_gmfn
+        # vga_acc + "some rubbish" + lfb_addr + "some rubbish" + lfb_end + vram_gfn
+        i.read_buffer(1+4*4+8)
 
         # FIXME: need to consider older versions that appended the frame buffer
 
@@ -299,14 +296,31 @@ class Section(object):
         self.data = None
 
     def load_serial(self, i):
-        self.data = i.read_buffer(2 + 9)
+        # divider + rbr + ier + iir + lcr + mcr + lsr + msr + scr + fcr
+        self.data = i.read_buffer(2+1*9)
 
         self.version_id = 3
 
     def load_rtl8139(self, i):
         self.load_generic_pci_device(i)
 
-        self.data += i.read_buffer(366)
+        # phys + mult + TxStatus*4 + TxAddr*4 + RxBuf + RxBufferSize + RxBufPtr
+        # + RxBufAddr + IntrStatus + IntrMask + TxConfig + RxConfig + RxMissed
+        # + CSCR + Cfg9346 + Config0 + Config1 + Config3 + Config4 + Config5
+        # + clock_enabled + bChipCmdState + MultiIntr + BasicModeCtrl + BasicModeStatus
+        # + NWayAdvert + NWayLPAR + NWayExpansion + CpCmd + TxThresh + *unused*
+        # + macaddr + rtl8139_mmio_io_addr + currTxDesc + currCPlusRxDesc + currCPlusTxDesc
+        # + RxRingAddrLO + RxRingAddrHI
+        self.data += i.read_buffer(6+8+4*12+2*2+4*3+2+1*8+2*7+1+4+6+4*6)
+
+        # eeprom.contents*64 + eeprom.mode + eeprom.tick + eeprom.address + eeprom.input
+        # + eeprom.output + eeprom.eecs + eeprom.eesk + eeprom.eedi + eeprom.eedo
+        self.data += i.read_buffer(2*64+4*2+1+2*2+1*4)
+
+        # TCTR + TimerInt + TCTR_base + tally_counters.(TxOk + RxOk + TxERR + RxERR
+        # + MissPkt + FAE + Tx1Col + TxMCol + RxOkPhy + RxOkBrd + RxOkMul + TxAbt
+        # + TxUndrn) + cplus_enabled
+        self.data += i.read_buffer(4*2+8*4+4+2*2+4*2+8*2+4+2*2+4)
 
         self.idstr = "0000:00:04.0/rtl8139"
         self.version_id = 5
@@ -316,18 +330,22 @@ class Section(object):
 
         # dma_state
         for s in range(2):
-            self.data += i.read_buffer(2+4+8+4+1)
+            # cmd + status + addr + sector_num + nsector + ifidx
+            self.data += i.read_buffer(1*2+4+8+4+1)
+
         # if_state
         for s in range(2):
-            self.data += i.read_buffer(2)
+            # cmd + drive1_selected
+            self.data += i.read_buffer(1*2)
+
         # drive_state
         for s in range(4):
-            self.data += i.read_buffer(4)
+            mult_sectors = i.read_be32()
             identify_set = i.read_be32()
-            self.data += struct.pack(">I", identify_set)
+            self.data += struct.pack(">II", mult_sectors, identify_set)
             if identify_set:
-                self.data += i.read_buffer(512)
-            write_cache = i.read_u8()
+                self.data += i.read_buffer(512) # identify_data
+            i.read_u8() # write_cache
             feature = i.read_u8()
             error = i.read_u8()
             nsector = i.read_be32()
@@ -352,32 +370,51 @@ class Section(object):
         self.idstr = "0000:00:01.1/ide"
 
     def load_pckbd(self, i):
-        self.data += i.read_buffer(4)
+        # write_cmd + status + mode + pending
+        self.data += i.read_buffer(1*4)
 
     def load_ps2kbd(self, i):
         self.load_generic_ps2_device(i)
-        self.data += i.read_buffer(3*4)
+        # scan_enabled + translate + scancode_set
+        self.data += i.read_buffer(4*3)
 
     def load_ps2mouse(self, i):
         self.load_generic_ps2_device(i)
-        self.data += i.read_buffer(6+3*4+1)
+        # mouse_status + mouse_resolution + mouse_sample_rate + mouse_wrap + mouse_type
+        # mouse_detect_state + mouse_dx + mouse_dy + mouse_dz + mouse_buttons
+        self.data += i.read_buffer(1*6+3*4+1)
 
     def load_dma(self, i):
-        self.data += i.read_buffer(3+4+4*(2*4+2*2+5))
+        # command + mask + flip_flop + dshift
+        self.data += i.read_buffer(1*3+4)
+
+        for c in range(4):
+            # now[0] + now[1] + base[0] + base[1] + mode + page + pageh + dack + eop
+            self.data += i.read_buffer(2*4+2*2+1*5)
 
     def load_fdc(self, i):
-        self.data += i.read_buffer(9+512+2*4+9)
-        num_drives = i.read_u8()
-        self.data += struct.pack(">B", num_drives)
-        for d in range(num_drives):
-            self.data += i.read_buffer(3)
+        # sra + srb + dor + tdr + dsr + msr + status0 + status1 + status2 + fifo
+        # + data_pos + data_len + data_state + data_dir + eot + timer0 + timer1
+        # + precomp_trk + config + lock + pwrd
+        self.data += i.read_buffer(1*9+512+2*4+1*9)
+
+        num_floppies = i.read_u8()
+        self.data += struct.pack(">B", num_floppies)
+
+        for d in range(num_floppies):
+            # head + track + sect
+            self.data += i.read_buffer(1*3)
 
     def load_UHCI_usb_controller(self, i):
         self.load_generic_pci_device(i)
+
         num_ports = i.read_u8()
         self.data += struct.pack(">B", num_ports)
+
+        # ports.ctrl
         self.data += i.read_buffer(2 * num_ports)
-        self.data += i.read_buffer(4*2+4+2)
+        # cmd + status + intr + frnum + fl_base_addr + sof_timing + status2
+        self.data += i.read_buffer(2*4+4+1*2)
 
         # Add frame_timer
         frame_timer = GenericTimer()
@@ -393,29 +430,38 @@ class Section(object):
 
     def load_gpe(self, i):
         # Read in the bits to end up in the piix4_pm section.
+        # ACPI_GPE0_BLK_LEN_V1 == ACPI_GPE0_BLK_LEN_V0 / 2
         self.gpe_sts = i.read_u8()
         self.gpe_en = i.read_u8()
         self.gpe_sts |= (i.read_u8() << 8)
         self.gpe_en |= (i.read_u8() << 8)
 
-        i.read_buffer(2*2+1+2*4) # discard remaining fields
+        # (gpe_sts + gpe_en) * 2 + sci_asserted + gpe0_blk_address + gpe0_blk_half_len
+        i.read_buffer((1+1)*2+1+4*2) # discard remaining fields
 
+        # This section is merged into the piix4_pm section.
         self.data = None
 
     def load_pci_devfn(self, i):
-        i.read_buffer(128+2)
+        # hotplug_devfn->status + hotplug_devfn->plug_evt + hotplug_devfn->plug_devfn
+        i.read_buffer(128+1+1)
+
+        # Discarding as we do not upgrade this section
         self.data = None
 
     def load_piix4acpi(self, i):
         self.load_generic_pci_device(i)
         pm1_control = i.read_be16()
-        i.read_buffer(4)
+        i.read_buffer(4) # pm1a_evt_blk_address
 
         pm1_evt_sts = 0
         pm1_evt_en = 0
         pm1_cnt_cnt = pm1_control
         apmc = 0
         apms = 0
+        self.data += struct.pack(">HHHBB",
+                                 pm1_evt_sts, pm1_evt_en, pm1_cnt_cnt, apmc, apms)
+
         tmr_timer = GenericTimer()
         tmr_overflow = 0
         pci_status_up = 0
@@ -423,30 +469,24 @@ class Section(object):
 
         gpe_section = i.find_section("gpe")
 
-        self.data += struct.pack(">HHHBB",
-                                 pm1_evt_sts, pm1_evt_en, pm1_cnt_cnt, apmc, apms)
         self.data += tmr_timer.packed()
         self.data += struct.pack(">QHHII",
                                  tmr_overflow, gpe_section.gpe_sts, gpe_section.gpe_en,
                                  pci_status_up, pci_status_down)
-
-        memhp_subsection = SubSection("piix4_pm/memhp", 1)
-        memhp_subsection.data += struct.pack(">I", 0)
-
-        self.data += memhp_subsection.packed()
 
         self.idstr = "0000:00:01.3/piix4_pm"
         self.version_id = 3
 
     def load_xen_pvdevice(self, i):
         self.load_generic_pci_device(i)
-        self.idstr = "0000:00:05.0/xen-pvdevice"
 
         # FIXME: Discard this section as QEMU does not yet save/load
-        # any state for this device.
+        # any state for this device. It should at least save/load
+        # PCI configuration.
         self.data = None
 
     def load_generic_pci_device(self, i):
+        # version + config + 4 * irq_state
         self.data = i.read_buffer(4 + 256 + 4*4)
 
     def load_generic_timer(self, i):
@@ -455,6 +495,7 @@ class Section(object):
         return timer
 
     def load_generic_ps2_device(self, i):
+        # write_cmd + queue.rptr + queue.wptr + queue.count + queue.data
         self.data += i.read_buffer(4*4 + 256)
 
 
@@ -480,6 +521,7 @@ class CompleteSection(Section):
         packed += struct.pack(">II", self.instance_id, self.version_id)
         return packed
 
+
 class RepeatSection(Section):
     def __init__(self, section_type):
         Section.__init__(self, section_type)
@@ -487,17 +529,6 @@ class RepeatSection(Section):
     def load_header(self, image):
         self.section_id = image.read_be32()
 
-class SubSection(Section):
-    def __init__(self, idstr, version):
-        Section.__init__(self, QEMU_VM_SUBSECTION)
-
-        self.idstr = idstr
-        self.version_id = version
-
-    def packed_header(self):
-        packed = self.idstr_packed()
-        packed += struct.pack(">I", self.version_id)
-        return packed
 
 class GenericTimer(object):
     def __init__(self):
@@ -511,6 +542,7 @@ class GenericTimer(object):
 
     def packed(self):
         return struct.pack(">Q", self.expires)
+
 
 def convert_file(f1, f2):
     image = Image(f1)
