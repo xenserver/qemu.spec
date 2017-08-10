@@ -172,7 +172,7 @@ def main(argv):
 
         if p == "-vcpus":
             qemu_args[n] = "-smp"
-            qemu_args[n+1] = qemu_args[n+1] + ",maxcpus=" + qemu_args[n+1]
+            qemu_args[n+1] = "maxcpus=" + qemu_args[n+1]
             n += 2
             continue
 

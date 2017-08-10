@@ -1,0 +1,24 @@
+piix: Don't initialize vCPUs running on Xen
+
+When running on Xen, QEMU doesn't handle the CPU execution context so
+initializing the CPUs serves no purpose other than using resources
+(memory + one thread per vCPU).
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+
+diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
+index a54a468..20f8542 100644
+--- a/hw/i386/pc_piix.c
++++ b/hw/i386/pc_piix.c
+@@ -144,9 +144,9 @@ static void pc_init1(MachineState *machine,
+             pcms->above_4g_mem_size = 0;
+             pcms->below_4g_mem_size = machine->ram_size;
+         }
+-    }
+ 
+-    pc_cpus_init(pcms);
++        pc_cpus_init(pcms);
++    }
+ 
+     if (kvm_enabled() && pcmc->kvmclock_enabled) {
+         kvmclock_create();
