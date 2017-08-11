@@ -7,8 +7,8 @@ Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}
 Source1: qemu-wrapper
 Source2: qemu_trad_image.py
 #Patch0: qemu-xen-development.patch
-BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
-BuildRequires: libcap-devel libjpeg-devel libpng-devel pixman-devel libdrm-devel
+BuildRequires: libaio-devel glib2-devel
+BuildRequires: libjpeg-devel libpng-devel pixman-devel libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel
 
 %description
@@ -24,7 +24,11 @@ This package contains Qemu.
     --enable-werror \
     --disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
     --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
-    --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt
+    --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt \
+    --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock \
+    --disable-colo --disable-lzo --disable-tpm --disable-virtfs \
+    --disable-replication --disable-qom-cast-debug --disable-slirp \
+    --audio-drv-list= --disable-coroutine-pool
 %{?cov_wrap} %{__make} %{?_smp_mflags} all 
 
 %install
