@@ -8,7 +8,7 @@ Source1: qemu-wrapper
 Source2: qemu_trad_image.py
 #Patch0: qemu-xen-development.patch
 BuildRequires: pciutils-devel libaio-devel glib2-devel libuuid-devel lzo-devel
-BuildRequires: libcap-devel libjpeg-devel libpng-devel pixman-devel libdrm-devel libpciaccess-devel
+BuildRequires: libcap-devel libjpeg-devel libpng-devel pixman-devel libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel
 
 %description

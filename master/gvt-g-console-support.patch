@@ -824,10 +824,10 @@ index 0000000..d1217ad
 +}
 diff --git a/hw/display/intel-tools/intel_chipset.h b/hw/display/intel-tools/intel_chipset.h
 new file mode 100644
-index 0000000..4b40612
+index 0000000..378ee00
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.h
-@@ -0,0 +1,524 @@
+@@ -0,0 +1,522 @@
 +/*
 + * Copyright © 2007 Intel Corporation
 + *
@@ -857,8 +857,6 @@ index 0000000..4b40612
 +
 +#ifndef _INTEL_CHIPSET_H
 +#define _INTEL_CHIPSET_H
-+
-+#include <pciaccess.h>
 +
 +struct pci_device *intel_get_pci_device(void);
 +uint32_t intel_get_drm_devid(int fd);
@@ -4977,7 +4975,7 @@ index 0000000..0ffa803
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index 788f6d1..8de79a1 100644
+index 05290d5..f14c60a 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
 @@ -1735,6 +1735,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
