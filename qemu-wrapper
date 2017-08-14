@@ -306,6 +306,7 @@ def main(argv):
         qemu_args += ["-global", "%s.subvendor_id=0x5853" % driver,
                       "-global", "%s.subsystem_id=0x0001" % driver]
 
+    qemu_args += ["-trace", "enable=xen_platform_log"]
     #qemu_args += ["-trace", "events=/root/trace"]
     #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
 
