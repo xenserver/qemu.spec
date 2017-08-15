@@ -64,6 +64,11 @@ gvt-g-console-support.patch
 0003-Add-interception-layer-for-BAR-ops.patch
 0004-Add-AMD-code.patch
 
+# Temporary hacks for Intel GVT-d
+0001-xen_pt-Allow-PCI_CLASS_DISPLAY_OTHER-igd-devices-to-.patch
+xen_pt_gfx-Don-t-load-VGA-rom-from-IGD-device.patch
+xen_pt_gfx-Dont-map-legacy-VGA-region.patch
+
 #
 # Technical debt to unblock further development.  Needs removing
 #
