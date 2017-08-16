@@ -66,7 +66,10 @@ gvt-g-console-support.patch
 #
 # Technical debt to unblock further development.  Needs removing
 #
+# remove after 2.10
 0001-xen-don-t-save-restore-the-physmap-on-VM-save-restor.patch
+# remove after 2.11
+0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
 
 # Build configuration
 build-configuration.patch
