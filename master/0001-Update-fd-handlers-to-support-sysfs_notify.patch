@@ -1,5 +1,5 @@
 diff --git a/aio-posix.c b/aio-posix.c
-index e13b9ab..2b0e6d7 100644
+index e13b9ab..d63eadb 100644
 --- a/aio-posix.c
 +++ b/aio-posix.c
 @@ -27,6 +27,7 @@ struct AioHandler
@@ -59,7 +59,7 @@ index e13b9ab..2b0e6d7 100644
          /* Update handler with latest information */
          node->io_read = io_read;
          node->io_write = io_write;
-+        node->io_write = io_exception;
++        node->io_exception = io_exception;
          node->opaque = opaque;
          node->is_external = is_external;
  
