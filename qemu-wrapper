@@ -100,6 +100,8 @@ def main(argv):
 
     # don't allow hvmloader to change the lower MMIO hole size
     xenstore_write("/local/domain/%d/hvmloader/allow-memory-relocate" % domid, "0")
+    # prepare the correct set of ACPI tables in hvmloader
+    xenstore_write("/local/domain/%d/platform/device-model" % domid, "qemu_xen")
 
     trad_compat = 'true'
     igdpt = ''
