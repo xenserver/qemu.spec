@@ -324,7 +324,14 @@ def main(argv):
     f.write("Exec: %s %s\n" % (qemu_dm, " ".join(qemu_args)))
     f.close()
 
-    os.execve(qemu_dm, qemu_args, os.environ)
+    # set up library preload path for qemu such that it can use jemalloc
+    qemu_env = os.environ
+    if not qemu_env.has_key("LD_PRELOAD"):
+       qemu_env["LD_PRELOAD"] = "/usr/lib64/libjemalloc.so.1"
+    else:
+       qemu_env["LD_PRELOAD"] = "/usr/lib64/libjemalloc.so.1:" + qemu_env["LD_PRELOAD"]
+
+    os.execve(qemu_dm, qemu_args, qemu_env)
 
 if __name__ == '__main__':
     raise SystemExit(main(sys.argv))

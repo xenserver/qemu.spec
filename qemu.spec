@@ -3,6 +3,7 @@ Name: qemu
 Version: 2.8.0
 Release: 1.1.0
 License: GPL
+Requires: jemalloc
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=v%{version}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
 Source1: qemu-wrapper
 Source2: qemu_trad_image.py
