@@ -1,13 +1,12 @@
 Summary: qemu-dm device model
 Name: qemu
-Version: 2.8.0
-Release: 1.1.0
+Version: 2.10.0
+Release: 1
 License: GPL
 Requires: jemalloc
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=v%{version}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
 Source1: qemu-wrapper
 Source2: qemu_trad_image.py
-#Patch0: qemu-xen-development.patch
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
@@ -22,15 +21,15 @@ This package contains Qemu.
 ./configure --cc=gcc --enable-xen --target-list=i386-softmmu --source-path=. \
     --prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir}/qemu \
     --localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
-    --enable-werror \
+    --enable-werror --enable-libusb \
     --disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
     --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
     --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt \
-    --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock \
-    --disable-colo --disable-lzo --disable-tpm --disable-virtfs \
+    --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock --disable-vhost-user \
+    --disable-lzo --disable-tpm --disable-virtfs --disable-tcg --disable-tcg-interpreter \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
-    --audio-drv-list= --disable-coroutine-pool --enable-libusb
-%{?cov_wrap} %{__make} %{?_smp_mflags} all 
+    --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration
+%{?cov_wrap} %{__make} %{?_smp_mflags} all
 
 %install
 mkdir -p %{buildroot}%{_libdir}/xen/bin
@@ -48,6 +47,9 @@ rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_
 %{_libexecdir}/*
 
 %changelog
+* Thu Aug 31 2017 Ross Lagerwall <ross.lagerwall@citrix.com> - 2.10.0-1
+- Update to QEMU v2.10.0.
+
 * Tue Jun 16 2015 Ross Lagerwall <ross.lagerwall@citrix.com>
 - Update for Xen 4.5.
 

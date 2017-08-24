@@ -18,22 +18,16 @@ we fix it locally for now by disabling SO_REUSEADDR since it's
 unnecessary anyway for our usecase.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
----
- util/qemu-sockets.c | 1 -
- 1 file changed, 1 deletion(-)
-
 diff --git a/util/qemu-sockets.c b/util/qemu-sockets.c
-index fe1d07a..93226e7 100644
+index 1358c81..7c588dd 100644
 --- a/util/qemu-sockets.c
 +++ b/util/qemu-sockets.c
-@@ -198,7 +198,6 @@ static int inet_listen_saddr(InetSocketAddress *saddr,
+@@ -223,8 +223,6 @@ static int inet_listen_saddr(InetSocketAddress *saddr,
              continue;
          }
  
 -        socket_set_fast_reuse(slisten);
- #ifdef IPV6_V6ONLY
-         if (e->ai_family == PF_INET6) {
-             /* listen on both ipv4 and ipv6 */
--- 
-2.7.4
-
+-
+         port_min = inet_getport(e);
+         port_max = saddr->has_to ? saddr->to + port_offset : port_min;
+         for (p = port_min; p <= port_max; p++) {

@@ -10,17 +10,12 @@ just pass it always as true - it's expected to be passed as a qemu-wrapper
 parameter from XAPI later.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
----
- hw/i386/pc.c         | 18 ++++++++++++++++++
- include/hw/i386/pc.h |  3 +++
- 2 files changed, 21 insertions(+)
-
 diff --git a/hw/i386/pc.c b/hw/i386/pc.c
-index a9e64a8..53d28bb 100644
+index ccdaa75..594aaa1 100644
 --- a/hw/i386/pc.c
 +++ b/hw/i386/pc.c
-@@ -2158,6 +2158,20 @@ static void pc_machine_set_nvdimm(Object *obj, bool value, Error **errp)
-     pcms->acpi_nvdimm_state.is_enabled = value;
+@@ -2211,6 +2211,20 @@ static void pc_machine_set_pit(Object *obj, bool value, Error **errp)
+     pcms->pit = value;
  }
  
 +static bool pc_machine_get_trad_compat(Object *obj, Error **errp)
@@ -40,18 +35,18 @@ index a9e64a8..53d28bb 100644
  static void pc_machine_initfn(Object *obj)
  {
      PCMachineState *pcms = PC_MACHINE(obj);
-@@ -2169,6 +2183,7 @@ static void pc_machine_initfn(Object *obj)
-     pcms->acpi_nvdimm_state.is_enabled = false;
-     /* acpi build is enabled by default if machine supports it */
-     pcms->acpi_build_enabled = PC_MACHINE_GET_CLASS(pcms)->has_acpi_build;
+@@ -2225,6 +2239,7 @@ static void pc_machine_initfn(Object *obj)
+     pcms->smbus = true;
+     pcms->sata = true;
+     pcms->pit = true;
 +    pcms->is_trad_compat = false;
  }
  
  static void pc_machine_reset(void)
-@@ -2329,6 +2344,9 @@ static void pc_machine_class_init(ObjectClass *oc, void *data)
+@@ -2373,6 +2388,9 @@ static void pc_machine_class_init(ObjectClass *oc, void *data)
  
-     object_class_property_add_bool(oc, PC_MACHINE_NVDIMM,
-         pc_machine_get_nvdimm, pc_machine_set_nvdimm, &error_abort);
+     object_class_property_add_bool(oc, PC_MACHINE_PIT,
+         pc_machine_get_pit, pc_machine_set_pit, &error_abort);
 +
 +    object_class_property_add_bool(oc, PC_MACHINE_TRAD_COMPAT,
 +        pc_machine_get_trad_compat, pc_machine_set_trad_compat, &error_abort);
@@ -59,10 +54,10 @@ index a9e64a8..53d28bb 100644
  
  static const TypeInfo pc_machine_info = {
 diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index 4b74130..0d9b2c9 100644
+index f278b3a..4267175 100644
 --- a/include/hw/i386/pc.h
 +++ b/include/hw/i386/pc.h
-@@ -80,6 +80,8 @@ struct PCMachineState {
+@@ -82,6 +82,8 @@ struct PCMachineState {
      /* Address space used by IOAPIC device. All IOAPIC interrupts
       * will be translated to MSI messages in the address space. */
      AddressSpace *ioapic_as;
@@ -71,14 +66,11 @@ index 4b74130..0d9b2c9 100644
  };
  
  #define PC_MACHINE_ACPI_DEVICE_PROP "acpi-device"
-@@ -88,6 +90,7 @@ struct PCMachineState {
- #define PC_MACHINE_VMPORT           "vmport"
- #define PC_MACHINE_SMM              "smm"
- #define PC_MACHINE_NVDIMM           "nvdimm"
+@@ -93,6 +95,7 @@ struct PCMachineState {
+ #define PC_MACHINE_SMBUS            "smbus"
+ #define PC_MACHINE_SATA             "sata"
+ #define PC_MACHINE_PIT              "pit"
 +#define PC_MACHINE_TRAD_COMPAT      "trad-compat"
  
  /**
   * PCMachineClass:
--- 
-2.7.4
-

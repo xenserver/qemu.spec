@@ -40,7 +40,7 @@ index 37bf34e..3bcb13e 100644
    'data': { 'result': 'DumpQueryResult', '*error': 'str' } }
 +
 +##
-+# @XEN_PLATFORM_PV_DRIVER_INFO
++# @XEN_PLATFORM_PV_DRIVER_INFO:
 +#
 +# Emitted when XEN PV driver write build number to io-port 0x10,
 +# marking the end of preamble.

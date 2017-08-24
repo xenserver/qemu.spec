@@ -15,18 +15,12 @@ Temporary fix it by unplugging all the emulated devices right
 after saving the device states.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
----
- hw/i386/xen/xen_platform.c | 10 ++++++++++
- include/hw/xen/xen.h       |  3 +++
- migration/savevm.c         |  2 ++
- 3 files changed, 15 insertions(+)
-
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index d7ef2c7..a3dab81 100644
+index 8daf46a..2abe70f 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -150,6 +150,16 @@ static void pci_unplug_disks(PCIBus *bus)
-     pci_for_each_device(bus, 0, unplug_disks, NULL);
+@@ -185,6 +185,16 @@ static void pci_unplug_disks(PCIBus *bus, uint32_t flags)
+     pci_for_each_device(bus, 0, unplug_disks, &flags);
  }
  
 +void xen_platform_unplug_devices(void)
@@ -34,7 +28,7 @@ index d7ef2c7..a3dab81 100644
 +    PCIBus *bus = pci_find_primary_bus();
 +
 +    if (bus) {
-+        pci_unplug_disks(bus);
++        pci_unplug_disks(bus, ~0u);
 +        pci_unplug_nics(bus);
 +    }
 +}
@@ -43,10 +37,10 @@ index d7ef2c7..a3dab81 100644
  {
      PCIBus *bus;
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index 84b9819..8b61914 100644
+index a3038f1..568b3ef 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
-@@ -49,4 +49,7 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
+@@ -50,4 +50,7 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
  
  void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
                             unsigned size);
@@ -55,10 +49,10 @@ index 84b9819..8b61914 100644
 +
  #endif /* QEMU_HW_XEN_H */
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 0363372..277cb04 100644
+index fdd15fa..7738968 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
-@@ -2131,6 +2131,8 @@ void qmp_xen_save_devices_state(const char *filename, Error **errp)
+@@ -2220,6 +2220,8 @@ void qmp_xen_save_devices_state(const char *filename, Error **errp)
          error_setg(errp, QERR_IO_ERROR);
      }
  
@@ -67,6 +61,3 @@ index 0363372..277cb04 100644
   the_end:
      if (saved_vm_running) {
          vm_start();
--- 
-2.7.4
-

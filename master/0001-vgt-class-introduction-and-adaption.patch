@@ -8,7 +8,7 @@ user, new class w/ pc initialise and adaption low mem.
 
 Signed-off-by: Bing Niu <bing.niu@intel.com>
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index a59254a..879e7b0 100644
+index 86c0e28..7997383 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
 @@ -1,5 +1,8 @@
@@ -453,10 +453,10 @@ index 0000000..79b7dd2
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index a54a468..f405d13 100644
+index 41fe6db..3654e04 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -226,7 +226,19 @@ static void pc_init1(MachineState *machine,
+@@ -228,7 +228,19 @@ static void pc_init1(MachineState *machine,
  
      pc_register_ferr_irq(pcms->gsi[13]);
  
@@ -477,11 +477,28 @@ index a54a468..f405d13 100644
  
      assert(pcms->vmport != ON_OFF_AUTO__MAX);
      if (pcms->vmport == ON_OFF_AUTO_AUTO) {
+diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
+index f710234..e944d61 100644
+--- a/hw/i386/xen/xen-hvm.c
++++ b/hw/i386/xen/xen-hvm.c
+@@ -201,7 +201,11 @@ static void xen_ram_init(PCMachineState *pcms,
+         user_lowmem = HVM_BELOW_4G_RAM_END;
+     }
+ 
+-    if (ram_size >= user_lowmem) {
++    if (vgt_vga_enabled &&
++        ram_size >= 0xc0000000) {
++        pcms->above_4g_mem_size = ram_size - 0xc0000000;
++        pcms->below_4g_mem_size = 0xc0000000;
++    } else if (ram_size >= user_lowmem) {
+         pcms->above_4g_mem_size = ram_size - user_lowmem;
+         pcms->below_4g_mem_size = user_lowmem;
+     } else {
 diff --git a/hw/pci-host/piix.c b/hw/pci-host/piix.c
-index f9218aa..91f7ed7 100644
+index 072a04e..a0a161a 100644
 --- a/hw/pci-host/piix.c
 +++ b/hw/pci-host/piix.c
-@@ -156,8 +156,8 @@ static void i440fx_update_memory_mappings(PCII440FXState *d)
+@@ -150,8 +150,8 @@ static void i440fx_update_memory_mappings(PCII440FXState *d)
  }
  
  
@@ -492,9 +509,9 @@ index f9218aa..91f7ed7 100644
  {
      PCII440FXState *d = I440FX_PCI_DEVICE(dev);
  
-@@ -315,6 +315,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
+@@ -309,6 +309,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
      if (object_property_get_bool(qdev_get_machine(), "iommu", NULL)) {
-         error_report("warning: i440fx doesn't support emulated iommu");
+         warn_report("i440fx doesn't support emulated iommu");
      }
 +
 +    if (vgt_vga_enabled && xen_enabled()) {
@@ -504,7 +521,7 @@ index f9218aa..91f7ed7 100644
  
  PCIBus *i440fx_init(const char *host_type, const char *pci_type,
 diff --git a/hw/pci/pci.c b/hw/pci/pci.c
-index 7f32edf..4bbc1b6 100644
+index 9c71f29..87af437 100644
 --- a/hw/pci/pci.c
 +++ b/hw/pci/pci.c
 @@ -23,6 +23,7 @@
@@ -515,7 +532,7 @@ index 7f32edf..4bbc1b6 100644
  #include "hw/pci/pci.h"
  #include "hw/pci/pci_bridge.h"
  #include "hw/pci/pci_bus.h"
-@@ -968,6 +969,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -977,6 +978,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
      if (devfn < 0) {
          for(devfn = bus->devfn_min ; devfn < ARRAY_SIZE(bus->devices);
              devfn += PCI_FUNC_MAX) {
@@ -527,7 +544,7 @@ index 7f32edf..4bbc1b6 100644
              if (!bus->devices[devfn])
                  goto found;
          }
-@@ -1002,6 +1008,7 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -1016,6 +1022,7 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
      pci_dev->irq_state = 0;
      pci_config_alloc(pci_dev);
  
@@ -535,7 +552,7 @@ index 7f32edf..4bbc1b6 100644
      pci_config_set_vendor_id(pci_dev->config, pc->vendor_id);
      pci_config_set_device_id(pci_dev->config, pc->device_id);
      if (pci_dev->revision_id > 0xff) {
-@@ -1047,6 +1054,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -1061,6 +1068,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
          config_read = pci_default_read_config;
      if (!config_write)
          config_write = pci_default_write_config;
@@ -548,10 +565,10 @@ index 7f32edf..4bbc1b6 100644
      pci_dev->config_write = config_write;
      bus->devices[devfn] = pci_dev;
 diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index 0d9b2c9..8cde9c0 100644
+index e8ff0cb..526929c 100644
 --- a/include/hw/i386/pc.h
 +++ b/include/hw/i386/pc.h
-@@ -328,6 +328,16 @@ int isa_vga_mm_init(hwaddr vram_base,
+@@ -332,6 +332,16 @@ int isa_vga_mm_init(hwaddr vram_base,
                      hwaddr ctrl_base, int it_shift,
                      MemoryRegion *address_space);
  
@@ -581,10 +598,10 @@ index ba31595..dc7d266 100644
 +
  #endif /* PCI_HOST_H */
 diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
-index 66c6f15..a6ff175 100644
+index b213696..d22cba8 100644
 --- a/include/sysemu/sysemu.h
 +++ b/include/sysemu/sysemu.h
-@@ -133,12 +133,13 @@ extern int autostart;
+@@ -97,12 +97,13 @@ extern int autostart;
  
  typedef enum {
      VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
@@ -600,10 +617,10 @@ index 66c6f15..a6ff175 100644
  extern int graphic_width;
  extern int graphic_height;
 diff --git a/qemu-options.hx b/qemu-options.hx
-index c534a2f..8dcf6dc 100644
+index 9f6e2ad..f38ad02 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1184,7 +1184,7 @@ Rotate graphical output some deg left (only PXA LCD).
+@@ -1510,7 +1510,7 @@ Rotate graphical output some deg left (only PXA LCD).
  ETEXI
  
  DEF("vga", HAS_ARG, QEMU_OPTION_vga,
@@ -612,7 +629,7 @@ index c534a2f..8dcf6dc 100644
      "                select video card type\n", QEMU_ARCH_ALL)
  STEXI
  @item -vga @var{type}
-@@ -1219,11 +1219,42 @@ for sun4m machines available in both 1024x768 (OpenBIOS) and 1152x900 (OBP)
+@@ -1545,11 +1545,42 @@ for sun4m machines available in both 1024x768 (OpenBIOS) and 1152x900 (OBP)
  resolutions aimed at people wishing to run older Solaris versions.
  @item virtio
  Virtio VGA card.
@@ -656,10 +673,10 @@ index c534a2f..8dcf6dc 100644
      "-full-screen    start in full screen\n", QEMU_ARCH_ALL)
  STEXI
 diff --git a/vl.c b/vl.c
-index 75b788f..9489fd8 100644
+index de974fc..2e8b519 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -2088,9 +2088,10 @@ static void select_vgahw(const char *p)
+@@ -2041,9 +2041,10 @@ static void select_vgahw(const char *p)
                  error_report("%s not available", ti->name);
                  exit(1);
              }
@@ -673,7 +690,7 @@ index 75b788f..9489fd8 100644
      }
      if (t == VGA_TYPE_MAX) {
      invalid_vga:
-@@ -2110,6 +2111,7 @@ static void select_vgahw(const char *p)
+@@ -2063,6 +2064,7 @@ static void select_vgahw(const char *p)
          } else goto invalid_vga;
          opts = nextopt;
      }
@@ -681,7 +698,7 @@ index 75b788f..9489fd8 100644
  }
  
  typedef enum DisplayType {
-@@ -4047,6 +4049,24 @@ int main(int argc, char **argv, char **envp)
+@@ -4108,6 +4110,24 @@ int main(int argc, char **argv, char **envp)
                      exit(1);
                  }
                  break;
@@ -706,20 +723,3 @@ index 75b788f..9489fd8 100644
              default:
                  os_parse_cmd_args(popt->index, optarg);
              }
-diff --git a/xen-hvm.c b/xen-hvm.c
-index a6b404a..2348f81 100644
---- a/xen-hvm.c
-+++ b/xen-hvm.c
-@@ -199,7 +199,11 @@ static void xen_ram_init(PCMachineState *pcms,
-         user_lowmem = HVM_BELOW_4G_RAM_END;
-     }
- 
--    if (ram_size >= user_lowmem) {
-+    if (vgt_vga_enabled &&
-+        ram_size >= 0xc0000000) {
-+        pcms->above_4g_mem_size = ram_size - 0xc0000000;
-+        pcms->below_4g_mem_size = 0xc0000000;
-+    } else if (ram_size >= user_lowmem) {
-         pcms->above_4g_mem_size = ram_size - user_lowmem;
-         pcms->below_4g_mem_size = user_lowmem;
-     } else {

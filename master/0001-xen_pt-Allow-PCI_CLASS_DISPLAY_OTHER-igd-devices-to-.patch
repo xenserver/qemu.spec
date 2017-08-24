@@ -7,10 +7,10 @@ Subject: [PATCH] xen_pt: Allow PCI_CLASS_DISPLAY_OTHER igd devices to be
 On Broadwell machines, igd PCI devices comes up with class_code set
 to PCI_CLASS_DISPLAY_OTHER. Allow them to be pass-throughed.
 diff --git a/hw/xen/xen_pt.h b/hw/xen/xen_pt.h
-index 191d9ca..31a6847 100644
+index d422482..1f043b4 100644
 --- a/hw/xen/xen_pt.h
 +++ b/hw/xen/xen_pt.h
-@@ -326,7 +326,8 @@ extern bool has_igd_gfx_passthru;
+@@ -337,7 +337,8 @@ extern bool has_igd_gfx_passthru;
  static inline bool is_igd_vga_passthrough(XenHostPCIDevice *dev)
  {
      return (has_igd_gfx_passthru
@@ -18,5 +18,5 @@ index 191d9ca..31a6847 100644
 +            && (((dev->class_code >> 0x8) == PCI_CLASS_DISPLAY_VGA)
 +            || ((dev->class_code >> 0x8) == PCI_CLASS_DISPLAY_OTHER)));
  }
- int xen_pt_register_vga_regions(XenHostPCIDevice *dev);
- int xen_pt_unregister_vga_regions(XenHostPCIDevice *dev);
+ int xen_pt_register_vga_regions(XenPCIPassthroughState *s);
+ int xen_pt_unregister_vga_regions(XenPCIPassthroughState *s);

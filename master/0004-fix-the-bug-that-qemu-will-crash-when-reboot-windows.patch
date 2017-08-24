@@ -13,8 +13,8 @@ Signed-off-by: Zhao Yan <yan.y.zhao@intel.com>
 Signed-off-by: Bing Niu <bing.niu@intel.com>
 diff --git a/xen-mapcache.c b/xen-mapcache.c
 index 8f3a592..2245f45 100644
---- a/xen-mapcache.c
-+++ b/xen-mapcache.c
+--- a/hw/i386/xen/xen-mapcache.c
++++ b/hw/i386/xen/xen-mapcache.c
 @@ -337,7 +337,13 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
      }
  

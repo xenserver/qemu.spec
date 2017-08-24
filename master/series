@@ -2,10 +2,6 @@
 # Backports from upstream
 #
 
-xsa208-qemuu.patch
-0001-xen-platform-Cleanup-network-infrastructure-when-emu.patch
-0001-xen-pt-Fixup-addr-validation-in-xen_pt_pci_config_ac.patch
-
 #
 # ABI Changes
 #
@@ -73,12 +69,12 @@ xen_pt_gfx-Dont-map-legacy-VGA-region.patch
 #
 # Technical debt to unblock further development.  Needs removing
 #
-# remove after 2.10
-0001-xen-don-t-save-restore-the-physmap-on-VM-save-restor.patch
 # remove after 2.11
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
 # remove after CP-24277
 0001-CP-23827-Unplug-emulated-devices-in-xen-save-devices.patch
+# remove after upgrading Xen
+remove-wrapper-functions.patch
 
 # Build configuration
 build-configuration.patch

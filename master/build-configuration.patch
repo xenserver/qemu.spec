@@ -6,15 +6,15 @@ This is made up of:
 * Disabling many devices which are not needed/used.
 
 diff --git a/block/Makefile.objs b/block/Makefile.objs
-index 67a036a..59da325 100644
+index 2aaede4..9907714 100644
 --- a/block/Makefile.objs
 +++ b/block/Makefile.objs
 @@ -1,10 +1,12 @@
--block-obj-y += raw_bsd.o qcow.o vdi.o vmdk.o cloop.o bochs.o vpc.o vvfat.o dmg.o
-+block-obj-y += raw_bsd.o qcow.o vdi.o
+-block-obj-y += raw-format.o qcow.o vdi.o vmdk.o cloop.o bochs.o vpc.o vvfat.o dmg.o
++block-obj-y += raw-format.o qcow.o vdi.o
 +block-obj-$(call lnot,$(CONFIG_XEN)) += vmdk.o cloop.o bochs.o vpc.o vvfat.o dmg.o
- block-obj-y += qcow2.o qcow2-refcount.o qcow2-cluster.o qcow2-snapshot.o qcow2-cache.o
- block-obj-y += qed.o qed-gencb.o qed-l2-cache.o qed-table.o qed-cluster.o
+ block-obj-y += qcow2.o qcow2-refcount.o qcow2-cluster.o qcow2-snapshot.o qcow2-cache.o qcow2-bitmap.o
+ block-obj-y += qed.o qed-l2-cache.o qed-table.o qed-cluster.o
  block-obj-y += qed-check.o
 -block-obj-y += vhdx.o vhdx-endian.o vhdx-log.o
 +block-obj-$(call lnot,$(CONFIG_XEN)) += vhdx.o vhdx-endian.o vhdx-log.o
@@ -23,8 +23,8 @@ index 67a036a..59da325 100644
 +block-obj-y += blkdebug.o blkverify.o blkreplay.o
 +block-obj-$(call lnot,$(CONFIG_XEN)) += parallels.o
  block-obj-y += block-backend.o snapshot.o qapi.o
- block-obj-$(CONFIG_WIN32) += raw-win32.o win32-aio.o
- block-obj-$(CONFIG_POSIX) += raw-posix.o
+ block-obj-$(CONFIG_WIN32) += file-win32.o win32-aio.o
+ block-obj-$(CONFIG_POSIX) += file-posix.o
 @@ -12,7 +14,7 @@ block-obj-$(CONFIG_LINUX_AIO) += linux-aio.o
  block-obj-y += null.o mirror.o commit.o io.o
  block-obj-y += throttle-groups.o
@@ -32,13 +32,13 @@ index 67a036a..59da325 100644
 -block-obj-y += nbd.o nbd-client.o sheepdog.o
 +block-obj-$(call lnot,$(CONFIG_XEN)) += nbd.o nbd-client.o sheepdog.o
  block-obj-$(CONFIG_LIBISCSI) += iscsi.o
+ block-obj-$(if $(CONFIG_LIBISCSI),y,n) += iscsi-opts.o
  block-obj-$(CONFIG_LIBNFS) += nfs.o
- block-obj-$(CONFIG_CURL) += curl.o
 diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index 0b51360..5cdd795 100644
+index d2ab2f6..0d73182 100644
 --- a/default-configs/i386-softmmu.mak
 +++ b/default-configs/i386-softmmu.mak
-@@ -6,18 +6,18 @@ include usb.mak
+@@ -6,19 +6,19 @@ include usb.mak
  CONFIG_QXL=$(CONFIG_SPICE)
  CONFIG_VGA_ISA=y
  CONFIG_VGA_CIRRUS=y
@@ -59,6 +59,7 @@ index 0b51360..5cdd795 100644
 +CONFIG_ISA_IPMI_KCS=n
 +CONFIG_ISA_IPMI_BT=n
  CONFIG_SERIAL=y
+ CONFIG_SERIAL_ISA=y
  CONFIG_PARALLEL=y
  CONFIG_I8254=y
 -CONFIG_PCSPK=y
@@ -66,7 +67,7 @@ index 0b51360..5cdd795 100644
  CONFIG_PCKBD=y
  CONFIG_FDC=y
  CONFIG_ACPI=y
-@@ -29,30 +29,30 @@ CONFIG_APM=y
+@@ -30,21 +30,21 @@ CONFIG_APM=y
  CONFIG_I8257=y
  CONFIG_IDE_ISA=y
  CONFIG_IDE_PIIX=y
@@ -82,12 +83,11 @@ index 0b51360..5cdd795 100644
  CONFIG_MC146818RTC=y
  CONFIG_PCI_PIIX=y
 -CONFIG_WDT_IB700=y
-+CONFIG_WDT_IB700=n
- CONFIG_XEN_I386=$(CONFIG_XEN)
 -CONFIG_ISA_DEBUG=y
 -CONFIG_ISA_TESTDEV=y
 -CONFIG_VMPORT=y
 -CONFIG_SGA=y
++CONFIG_WDT_IB700=n
 +CONFIG_ISA_DEBUG=n
 +CONFIG_ISA_TESTDEV=n
 +CONFIG_VMPORT=n
@@ -98,9 +98,10 @@ index 0b51360..5cdd795 100644
  CONFIG_APIC=y
  CONFIG_IOAPIC=y
  CONFIG_PVPANIC=y
- CONFIG_MEM_HOTPLUG=y
+@@ -52,10 +52,10 @@ CONFIG_MEM_HOTPLUG=y
  CONFIG_NVDIMM=y
  CONFIG_ACPI_NVDIMM=y
+ CONFIG_PCIE_PORT=y
 -CONFIG_XIO3130=y
 -CONFIG_IOH3420=y
 -CONFIG_I82801B11=y
@@ -109,12 +110,17 @@ index 0b51360..5cdd795 100644
 +CONFIG_I82801B11=n
  CONFIG_SMBIOS=y
  CONFIG_HYPERV_TESTDEV=$(CONFIG_KVM)
+-CONFIG_PXB=y
++CONFIG_PXB=n
+ CONFIG_ACPI_VMGENID=y
 diff --git a/default-configs/pci.mak b/default-configs/pci.mak
-index fff7ce3..6bf8656 100644
+index a758630..106ee63 100644
 --- a/default-configs/pci.mak
 +++ b/default-configs/pci.mak
-@@ -1,41 +1,41 @@
+@@ -1,46 +1,46 @@
  CONFIG_PCI=y
+ # For now, CONFIG_IDE_CORE requires ISA, so we enable it here
+ CONFIG_ISA_BUS=y
 -CONFIG_VIRTIO_PCI=y
 -CONFIG_VIRTIO=y
 +CONFIG_VIRTIO_PCI=n
@@ -123,6 +129,7 @@ index fff7ce3..6bf8656 100644
  CONFIG_USB_OHCI=y
  CONFIG_USB_EHCI=y
 -CONFIG_USB_XHCI=y
+-CONFIG_USB_XHCI_NEC=y
 -CONFIG_NE2000_PCI=y
 -CONFIG_EEPRO100_PCI=y
 -CONFIG_PCNET_PCI=y
@@ -135,6 +142,7 @@ index fff7ce3..6bf8656 100644
 -CONFIG_MEGASAS_SCSI_PCI=y
 -CONFIG_MPTSAS_SCSI_PCI=y
 +CONFIG_USB_XHCI=n
++CONFIG_USB_XHCI_NEC=n
 +CONFIG_NE2000_PCI=n
 +CONFIG_EEPRO100_PCI=n
 +CONFIG_PCNET_PCI=n
@@ -162,6 +170,7 @@ index fff7ce3..6bf8656 100644
 +CONFIG_ESP=n
 +CONFIG_ESP_PCI=n
  CONFIG_SERIAL=y
+ CONFIG_SERIAL_ISA=y
 -CONFIG_SERIAL_PCI=y
 -CONFIG_IPACK=y
 -CONFIG_WDT_IB6300ESB=y
@@ -180,10 +189,11 @@ index fff7ce3..6bf8656 100644
 +CONFIG_EDU=n
  CONFIG_VGA=y
  CONFIG_VGA_PCI=y
--CONFIG_IVSHMEM=$(CONFIG_EVENTFD)
+-CONFIG_IVSHMEM_DEVICE=$(CONFIG_IVSHMEM)
 -CONFIG_ROCKER=y
-+CONFIG_IVSHMEM=n
++CONFIG_IVSHMEM_DEVICE=n
 +CONFIG_ROCKER=n
+ CONFIG_VHOST_USER_SCSI=$(and $(CONFIG_VHOST_USER),$(CONFIG_LINUX))
 diff --git a/default-configs/sound.mak b/default-configs/sound.mak
 index 4f22c34..55f64b8 100644
 --- a/default-configs/sound.mak
@@ -221,7 +231,7 @@ index f4b8568..7e52934 100644
 +CONFIG_USB_NETWORK=n
 +CONFIG_USB_BLUETOOTH=n
 diff --git a/hw/vfio/Makefile.objs b/hw/vfio/Makefile.objs
-index c25e32b..054cacd 100644
+index c3ab909..9e9fe59 100644
 --- a/hw/vfio/Makefile.objs
 +++ b/hw/vfio/Makefile.objs
 @@ -1,4 +1,4 @@
@@ -229,4 +239,15 @@ index c25e32b..054cacd 100644
 +ifeq ($(CONFIG_LINUX)$(CONFIG_XEN), yn)
  obj-$(CONFIG_SOFTMMU) += common.o
  obj-$(CONFIG_PCI) += pci.o pci-quirks.o
- obj-$(CONFIG_SOFTMMU) += platform.o
+ obj-$(CONFIG_VFIO_CCW) += ccw.o
+diff --git a/hw/virtio/Makefile.objs b/hw/virtio/Makefile.objs
+index 765d363..015fe60 100644
+--- a/hw/virtio/Makefile.objs
++++ b/hw/virtio/Makefile.objs
+@@ -11,5 +11,5 @@ obj-y += virtio-crypto.o
+ obj-$(CONFIG_VIRTIO_PCI) += virtio-crypto-pci.o
+ endif
+ 
+-common-obj-$(call lnot,$(CONFIG_LINUX)) += vhost-stub.o
++common-obj-$(call lnot,$(CONFIG_VIRTIO)) += vhost-stub.o
+ common-obj-$(CONFIG_ALL) += vhost-stub.o

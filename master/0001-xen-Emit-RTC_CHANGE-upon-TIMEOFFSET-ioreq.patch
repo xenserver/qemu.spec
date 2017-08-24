@@ -9,10 +9,10 @@ rather than ignoring it so that something useful can be done with the
 information.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
-diff --git a/xen-hvm.c b/xen-hvm.c
-index 0892361..1b63b91 100644
---- a/xen-hvm.c
-+++ b/xen-hvm.c
+diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
+index d9ccd5d..ffd20dc 100644
+--- a/hw/i386/xen/xen-hvm.c
++++ b/hw/i386/xen/xen-hvm.c
 @@ -16,6 +16,7 @@
  #include "hw/i386/apic-msidef.h"
  #include "hw/xen/xen_common.h"
@@ -20,8 +20,8 @@ index 0892361..1b63b91 100644
 +#include "qapi-event.h"
  #include "qmp-commands.h"
  
- #include "sysemu/char.h"
-@@ -949,6 +950,7 @@ static void handle_ioreq(XenIOState *state, ioreq_t *req)
+ #include "qemu/error-report.h"
+@@ -967,6 +968,7 @@ static void handle_ioreq(XenIOState *state, ioreq_t *req)
              handle_vmport_ioreq(state, req);
              break;
          case IOREQ_TYPE_TIMEOFFSET:

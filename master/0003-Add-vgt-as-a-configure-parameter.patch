@@ -10,30 +10,30 @@ The default is disable vgt.
 Signed-off-by: Xiaoguang Chen <xiaoguang.chen@intel.com>
 Signed-off-by: Bing Niu <bing.niu@intel.com>
 diff --git a/Makefile.target b/Makefile.target
-index 7a5080e..a6fc363 100644
+index 7f42c45..33e448d 100644
 --- a/Makefile.target
 +++ b/Makefile.target
-@@ -97,6 +97,7 @@ obj-y += disas.o
- obj-y += tcg-runtime.o
+@@ -102,6 +102,7 @@ obj-y += target/$(TARGET_BASE_ARCH)/
+ obj-y += disas.o
  obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
- obj-$(call lnot,$(CONFIG_KVM)) += kvm-stub.o
+ obj-$(call lnot,$(CONFIG_HAX)) += hax-stub.o
 +obj-$(call lnot,$(CONFIG_VGT)) += hw/display/vgt-stub.o
  
  obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decContext.o
  obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
 diff --git a/configure b/configure
-index 3770d7c..d66c518 100755
+index dd73cce..a39fc40 100755
 --- a/configure
 +++ b/configure
-@@ -226,6 +226,7 @@ attr=""
- libattr=""
+@@ -303,6 +303,7 @@ libattr=""
  xfs=""
+ tcg="yes"
  
 +vgt="yes"
  vhost_net="no"
  vhost_scsi="no"
  vhost_vsock="no"
-@@ -838,6 +839,10 @@ for opt do
+@@ -940,6 +941,10 @@ for opt do
    ;;
    --with-sdlabi=*) sdlabi="$optarg"
    ;;
@@ -44,7 +44,7 @@ index 3770d7c..d66c518 100755
    --disable-qom-cast-debug) qom_cast_debug="no"
    ;;
    --enable-qom-cast-debug) qom_cast_debug="yes"
-@@ -1355,9 +1360,11 @@ disabled with --disable-FEATURE, default is enabled if available:
+@@ -1480,9 +1485,11 @@ disabled with --disable-FEATURE, default is enabled if available:
    nettle          nettle cryptography support
    gcrypt          libgcrypt cryptography support
    sdl             SDL UI
@@ -58,7 +58,7 @@ index 3770d7c..d66c518 100755
    vte             vte support for the gtk UI
    curses          curses UI
    vnc             VNC UI support
-@@ -2621,6 +2628,12 @@ EOF
+@@ -2804,6 +2811,12 @@ EOF
  fi
  
  ##########################################
@@ -71,7 +71,7 @@ index 3770d7c..d66c518 100755
  # RDMA needs OpenFabrics libraries
  if test "$rdma" != "no" ; then
    cat > $TMPC <<EOF
-@@ -5007,6 +5020,7 @@ if test "$darwin" = "yes" ; then
+@@ -5307,6 +5320,7 @@ if test "$darwin" = "yes" ; then
  fi
  echo "pixman            $pixman"
  echo "SDL support       $sdl $(echo_version $sdl $sdlversion)"
@@ -79,7 +79,7 @@ index 3770d7c..d66c518 100755
  echo "GTK support       $gtk $(echo_version $gtk $gtk_version)"
  echo "GTK GL support    $gtk_gl"
  echo "VTE support       $vte $(echo_version $vte $vteversion)"
-@@ -5270,6 +5284,9 @@ if test "$sdl" = "yes" ; then
+@@ -5600,6 +5614,9 @@ if test "$sdl" = "yes" ; then
    echo "CONFIG_SDLABI=$sdlabi" >> $config_host_mak
    echo "SDL_CFLAGS=$sdl_cflags" >> $config_host_mak
  fi
@@ -90,7 +90,7 @@ index 3770d7c..d66c518 100755
    echo "CONFIG_COCOA=y" >> $config_host_mak
  fi
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 879e7b0..c472055 100644
+index 7997383..07c03ca 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
 @@ -1,8 +1,6 @@
@@ -142,10 +142,10 @@ index 0000000..f6571ba
 +
 +
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 8dcf6dc..74199c9 100644
+index f38ad02..4e5576f 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -955,6 +955,8 @@ old style -sdl/-curses/... options. Valid values for @var{type} are
+@@ -1277,6 +1277,8 @@ old style -sdl/-curses/... options. Valid values for @var{type} are
  @item sdl
  Display video output via SDL (usually in a separate graphics
  window; see the SDL documentation for other possibilities).
@@ -155,10 +155,10 @@ index 8dcf6dc..74199c9 100644
  Display video output via curses. For graphics device models which
  support a text mode, QEMU can display this output using a
 diff --git a/vl.c b/vl.c
-index 951145c..a104f9a 100644
+index a5df7a7..40ed20e 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -4054,6 +4054,7 @@ int main(int argc, char **argv, char **envp)
+@@ -4115,6 +4115,7 @@ int main(int argc, char **argv, char **envp)
                      exit(1);
                  }
                  break;
@@ -166,7 +166,7 @@ index 951145c..a104f9a 100644
              case QEMU_OPTION_vgt_low_gm_sz:
                  {
                      char *ptr;
-@@ -4072,6 +4073,7 @@ int main(int argc, char **argv, char **envp)
+@@ -4133,6 +4134,7 @@ int main(int argc, char **argv, char **envp)
                      vgt_fence_sz = strtol(optarg, &ptr, 10);
                  }
                  break;
