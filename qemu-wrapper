@@ -15,7 +15,10 @@
 import os
 import re
 import sys
+import socket
 import tempfile
+from subprocess import call
+
 import xen.lowlevel.xs as xs
 
 import qemu_trad_image
@@ -319,6 +322,8 @@ def main(argv):
                       "-global", "%s.subsystem_id=0x0001" % driver]
 
     qemu_args += ["-trace", "enable=xen_platform_log"]
+    s1, s2 = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+    qemu_args += ["-vnc-clipboard-socket-fd", str(s1.fileno())]
     #qemu_args += ["-trace", "events=/root/trace"]
     #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
 
@@ -334,6 +339,10 @@ def main(argv):
     else:
        qemu_env["LD_PRELOAD"] = "/usr/lib64/libjemalloc.so.1:" + qemu_env["LD_PRELOAD"]
 
+    clipboardd = '/opt/xensource/libexec/xs-clipboardd'
+    call([clipboardd, "-d", str(domid), "-s", str(s2.fileno())], preexec_fn = lambda : (s1.close()))
+
+    s2.close()
     os.execve(qemu_dm, qemu_args, qemu_env)
 
 if __name__ == '__main__':

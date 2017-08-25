@@ -44,6 +44,7 @@ force-lba-geometry.patch
 #
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
+0001-CP-23753-Talk-to-new-clipboard-daemon.patch
 
 # Intel GVT-g support backported from a 2.9-based branch
 0001-vgt-class-introduction-and-adaption.patch
