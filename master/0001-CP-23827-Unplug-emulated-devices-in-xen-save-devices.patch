@@ -1,0 +1,72 @@
+From 89f11f81ed18a3b9165706ea359fa0290965ef12 Mon Sep 17 00:00:00 2001
+From: Igor Druzhinin <igor.druzhinin@citrix.com>
+Date: Thu, 31 Aug 2017 11:22:56 +0100
+Subject: [PATCH] CP-23827 Unplug emulated devices in xen-save-devices-state
+ command
+
+Legacy guest kernels (without xen-platform driver) and "forced"
+migration sequence keep emulated disks opened during suspend operation.
+QEMU trad unplugs disks and NICs as soon as it gets "save" message
+from the toolstack. At the same time the toolstack relies on this
+in its migrate/suspend sequence and doesn't allow suspend to finish
+until all the disk image files are closed.
+
+Temporary fix it by unplugging all the emulated devices right
+after saving the device states.
+
+Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+---
+ hw/i386/xen/xen_platform.c | 10 ++++++++++
+ include/hw/xen/xen.h       |  3 +++
+ migration/savevm.c         |  2 ++
+ 3 files changed, 15 insertions(+)
+
+diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
+index d7ef2c7..a3dab81 100644
+--- a/hw/i386/xen/xen_platform.c
++++ b/hw/i386/xen/xen_platform.c
+@@ -150,6 +150,16 @@ static void pci_unplug_disks(PCIBus *bus)
+     pci_for_each_device(bus, 0, unplug_disks, NULL);
+ }
+ 
++void xen_platform_unplug_devices(void)
++{
++    PCIBus *bus = pci_find_primary_bus();
++
++    if (bus) {
++        pci_unplug_disks(bus);
++        pci_unplug_nics(bus);
++    }
++}
++
+ XenPvDriverInfo* qmp_query_xen_platform_pv_driver_info(Error **errp)
+ {
+     PCIBus *bus;
+diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
+index 84b9819..8b61914 100644
+--- a/include/hw/xen/xen.h
++++ b/include/hw/xen/xen.h
+@@ -49,4 +49,7 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
+ 
+ void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
+                            unsigned size);
++
++void xen_platform_unplug_devices(void);
++
+ #endif /* QEMU_HW_XEN_H */
+diff --git a/migration/savevm.c b/migration/savevm.c
+index 0363372..277cb04 100644
+--- a/migration/savevm.c
++++ b/migration/savevm.c
+@@ -2131,6 +2131,8 @@ void qmp_xen_save_devices_state(const char *filename, Error **errp)
+         error_setg(errp, QERR_IO_ERROR);
+     }
+ 
++    xen_platform_unplug_devices();
++
+  the_end:
+     if (saved_vm_running) {
+         vm_start();
+-- 
+2.7.4
+
