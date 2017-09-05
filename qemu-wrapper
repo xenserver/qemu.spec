@@ -142,7 +142,7 @@ def main(argv):
                                  % domid])
 
     # enable parallel for legacy reasons
-    qemu_args.extend(['-parallel'] + ['/dev/null'])
+    qemu_args.extend(['-parallel', 'null'])
 
     qemu_args.extend(argv[1:])
     qemu_args.extend(drive_args)
