@@ -23,6 +23,7 @@ xen-platform-add-revision-property.patch
 dont-set-a20-on-xen.patch
 dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
+remove-ioapic.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
