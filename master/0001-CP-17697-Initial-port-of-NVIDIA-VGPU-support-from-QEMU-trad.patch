@@ -5,10 +5,10 @@ Subject: [PATCH] CP-17697 Initial port of NVIDIA VGPU support from QEMU-trad
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 063889b..a59254a 100644
+index 551c050..86c0e28 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
-@@ -45,3 +45,5 @@ virtio-gpu-3d.o-cflags := $(VIRGL_CFLAGS)
+@@ -41,3 +41,5 @@ virtio-gpu-3d.o-cflags := $(VIRGL_CFLAGS)
  virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
  obj-$(CONFIG_DPCD) += dpcd.o
  obj-$(CONFIG_XLNX_ZYNQMP) += xlnx_dp.o
@@ -16,10 +16,10 @@ index 063889b..a59254a 100644
 +obj-y += vgpu_fb.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..601a662
+index 0000000..29feab5
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,156 @@
 +#include "qemu/osdep.h"
 +#include "cpu.h"
 +#include "hw/hw.h"
@@ -159,6 +159,7 @@ index 0000000..601a662
 +    dc->realize = vgpu_fb_realize;
 +    /* we might want to have some properties here later */
 +    dc->props = NULL;
++    dc->user_creatable = true;
 +    dc->hotpluggable = false;
 +}
 +
