@@ -243,7 +243,7 @@ def main(argv):
             if qemu_args[n].startswith("tap,"):
                 qemu_args[n - 1] = '-netdev'
                 qemu_args[n] = re.sub(r',vlan=', ',id=tapnet', qemu_args[n])
-                qemu_args[n] = re.sub(r'bridge=[a-z0-9]+,', '', qemu_args[n])
+                qemu_args[n] = re.sub(r'bridge=[^,]+,', '', qemu_args[n])
                 qemu_args[n] += ",script=no,downscript=no"
 
         if p == "-usbdevice":
