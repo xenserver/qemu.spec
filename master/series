@@ -13,7 +13,6 @@
 #
 # These should be upstreamed.
 #
-syslog-logging.patch
 xen-platform-add-device-id-property.patch
 xen-platform-add-class-id-property.patch
 xen-platform-add-revision-property.patch
