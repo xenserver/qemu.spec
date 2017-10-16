@@ -385,7 +385,6 @@ def main(argv):
             print "Warning: writing pid to '%s' tasks file: %s" \
                 % (cgroup_slice, e)
 
-    os.dup2(1, 2)
     f.flush()
     os.execve(qemu_dm, qemu_args, qemu_env)
 
