@@ -17,6 +17,10 @@ import re
 import sys
 import socket
 import tempfile
+import errno
+import stat
+import pwd
+import grp
 from subprocess import call
 
 import xen.lowlevel.xs as xs
@@ -349,6 +353,27 @@ def main(argv):
     qemu_args += ["-vnc-clipboard-socket-fd", str(s1.fileno())]
     #qemu_args += ["-trace", "events=/root/trace"]
     #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
+
+    depriv = True
+    if depriv:
+        try:
+            os.makedirs("/var/lib/xen/root-%d/dev" % domid, 0755)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+        try:
+            os.mknod("/var/lib/xen/root-%d/dev/null" % domid, 0644 | stat.S_IFCHR, os.makedev(1, 3))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+        qemu_args += ["-xen-domid-restrict"]
+        qemu_args += ["-chroot", "/var/lib/xen/root-%d" % domid]
+
+        uid = pwd.getpwnam('qemu_base').pw_uid + domid
+        gid = grp.getgrnam('qemu_base').gr_gid + domid
+        qemu_args += ["-runas", "%d.%d" % (uid, gid)]
 
     xenstore_write("/libxl/%d/dm-version" % domid, "qemu_xen")
 
