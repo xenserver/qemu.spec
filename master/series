@@ -24,6 +24,15 @@ dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
 remove-ioapic.patch
 
+# QEMU deprivileging
+0001-xen-link-against-xentoolcore.patch
+0002-xen-restrict-use-xentoolcore_restrict_all.patch
+0003-xen-defer-call-to-xen_restrict-until-just-before-os_setup_post.patch
+0004-xen-destroy_hvm_domain-Move-reason-into-a-variable.patch
+0005-xen-move-xc_interface-compatibility-fallback-further-up-the-file.patch
+0006-xen-destroy_hvm_domain-Try-xendevicemodel_shutdown.patch
+0007-os-posix-Provide-new--runas-uid-.-gid-facility.patch
+
 #
 # Binary compatability with qemu trad (must be behind an option)
 #
