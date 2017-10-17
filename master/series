@@ -73,8 +73,6 @@ xen_pt_gfx-Dont-map-legacy-VGA-region.patch
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
 # remove after CP-24277
 0001-CP-23827-Unplug-emulated-devices-in-xen-save-devices.patch
-# remove after upgrading Xen
-remove-wrapper-functions.patch
 
 # Build configuration
 build-configuration.patch
