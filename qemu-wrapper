@@ -354,7 +354,7 @@ def main(argv):
     #qemu_args += ["-trace", "events=/root/trace"]
     #qemu_args += ["-monitor", "tcp:127.0.0.1:7777,server,nowait"]
 
-    depriv = True
+    depriv = False
     if depriv:
         try:
             os.makedirs("/var/lib/xen/root-%d/dev" % domid, 0755)
