@@ -50,6 +50,8 @@ remove-ioapic.patch
 0006-xen-destroy_hvm_domain-Try-xendevicemodel_shutdown.patch
 0007-os-posix-Provide-new--runas-uid-.-gid-facility.patch
 
+use-new-dmops-for-vram.patch
+
 #
 # Binary compatability with qemu trad (must be behind an option)
 #
