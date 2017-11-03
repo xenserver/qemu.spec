@@ -1,6 +1,18 @@
 #
 # Backports from upstream
 #
+# 1bd6152ae23549032ef4aca0d3d350512f012f05
+0001-seccomp-changing-from-whitelist-to-blacklist.patch
+# 2b716fa6d63a183a42b789595c3944f53c0ded7c
+0002-seccomp-add-obsolete-argument-to-command-line.patch
+# 73a1e647256b09734ce64ef7a6001a0db03f7106
+0003-seccomp-add-elevateprivileges-argument-to-command-li.patch
+# 995a226f880b807e05240e8752d6ce65679775be
+0004-seccomp-add-spawn-argument-to-command-line.patch
+# 24f8cdc5722476e12d8e39d71f66311b4fa971c1
+0005-seccomp-add-resourcecontrol-argument-to-command-line.patch
+# c3883e1f935bf11ef0d2b8157b0022ace3d0e77d
+0006-buildsys-Move-seccomp-cflags-libs-to-per-object.patch
 
 #
 # ABI Changes
