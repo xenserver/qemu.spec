@@ -5133,10 +5133,10 @@ index 0000000..f6571ba
 +
 diff --git a/hw/display/vgt_console.c b/hw/display/vgt_console.c
 new file mode 100644
-index 0000000..f681746
+index 0000000..c81b6ec
 --- /dev/null
 +++ b/hw/display/vgt_console.c
-@@ -0,0 +1,533 @@
+@@ -0,0 +1,531 @@
 +/*
 + * QEMU vGT/XenGT Console support
 + *
@@ -5649,8 +5649,6 @@ index 0000000..f681746
 +        xengt_create_display_surface(con, gem_vgtbuffer, &pf);
 +
 +        ds = qemu_console_surface(con);
-+        if (ds != NULL)
-+            qemu_console_resize(con, gem_vgtbuffer->width, gem_vgtbuffer->height);
 +    }
 +
 +    if (ds != NULL) {
