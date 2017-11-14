@@ -1,13 +1,91 @@
-gvt-g: Add support for piping the guest's framebuffer to the QEMU console
-
+diff --git a/Makefile.target b/Makefile.target
+index 7f42c45..33e448d 100644
+--- a/Makefile.target
++++ b/Makefile.target
+@@ -102,6 +102,7 @@ obj-y += target/$(TARGET_BASE_ARCH)/
+ obj-y += disas.o
+ obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
+ obj-$(call lnot,$(CONFIG_HAX)) += hax-stub.o
++obj-$(call lnot,$(CONFIG_VGT)) += hw/display/vgt-stub.o
+ 
+ obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decContext.o
+ obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
+diff --git a/configure b/configure
+index 130e224..4aea2f3 100755
+--- a/configure
++++ b/configure
+@@ -303,6 +303,7 @@ libattr=""
+ xfs=""
+ tcg="yes"
+ 
++vgt="yes"
+ vhost_net="no"
+ vhost_scsi="no"
+ vhost_vsock="no"
+@@ -940,6 +941,10 @@ for opt do
+   ;;
+   --with-sdlabi=*) sdlabi="$optarg"
+   ;;
++  --disable-vgt) vgt="no"
++  ;;
++  --enable-vgt) vgt="yes"
++  ;;
+   --disable-qom-cast-debug) qom_cast_debug="no"
+   ;;
+   --enable-qom-cast-debug) qom_cast_debug="yes"
+@@ -1480,9 +1485,11 @@ disabled with --disable-FEATURE, default is enabled if available:
+   nettle          nettle cryptography support
+   gcrypt          libgcrypt cryptography support
+   sdl             SDL UI
+-  --with-sdlabi     select preferred SDL ABI 1.2 or 2.0
++  --with-sdlabi   select preferred SDL ABI 1.2 or 2.0
++  --disable-vgt   disable Intel GVT-g technology
++  --enable-vgt    enable Intel GVT-g technology
+   gtk             gtk UI
+-  --with-gtkabi     select preferred GTK ABI 2.0 or 3.0
++  --with-gtkabi   select preferred GTK ABI 2.0 or 3.0
+   vte             vte support for the gtk UI
+   curses          curses UI
+   vnc             VNC UI support
+@@ -2806,6 +2813,12 @@ EOF
+ fi
+ 
+ ##########################################
++# Intel GVT-g detection
++if test "$vgt" = "yes" ; then
++  vgt="yes"
++fi
++
++##########################################
+ # RDMA needs OpenFabrics libraries
+ if test "$rdma" != "no" ; then
+   cat > $TMPC <<EOF
+@@ -5309,6 +5322,7 @@ if test "$darwin" = "yes" ; then
+ fi
+ echo "pixman            $pixman"
+ echo "SDL support       $sdl $(echo_version $sdl $sdlversion)"
++echo "Intel GVT-g support $vgt"
+ echo "GTK support       $gtk $(echo_version $gtk $gtk_version)"
+ echo "GTK GL support    $gtk_gl"
+ echo "VTE support       $vte $(echo_version $vte $vteversion)"
+@@ -5602,6 +5616,9 @@ if test "$sdl" = "yes" ; then
+   echo "CONFIG_SDLABI=$sdlabi" >> $config_host_mak
+   echo "SDL_CFLAGS=$sdl_cflags" >> $config_host_mak
+ fi
++if test "$vgt" = "yes" ; then
++  echo "CONFIG_VGT=y" >> $config_host_mak
++fi
+ if test "$cocoa" = "yes" ; then
+   echo "CONFIG_COCOA=y" >> $config_host_mak
+ fi
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index c472055..abdf6d7 100644
+index 86c0e28..098d48d 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
-@@ -1,6 +1,9 @@
+@@ -1,5 +1,9 @@
  common-obj-$(CONFIG_ADS7846) += ads7846.o
  common-obj-$(CONFIG_VGA_CIRRUS) += cirrus_vga.o
- obj-$(CONFIG_VGT) += vgt_vga.o
++obj-$(CONFIG_VGT) += vgt_vga.o
 +obj-$(CONFIG_VGT) += vgt_console.o intel-tools/
 +vgt_console.o-cflags := -I/usr/include/libdrm
 +vgt_console.o-libs := -ldrm -ldrm_intel
@@ -4975,10 +5053,10 @@ index 0000000..0ffa803
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index 05290d5..f14c60a 100644
+index 360c48e..c03b08b 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
-@@ -1735,6 +1735,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
+@@ -1728,6 +1728,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
  #define GMODE_TEXT     0
  #define GMODE_GRAPH    1
  #define GMODE_BLANK 2
@@ -4986,7 +5064,7 @@ index 05290d5..f14c60a 100644
  
  static void vga_update_display(void *opaque)
  {
-@@ -1748,7 +1749,9 @@ static void vga_update_display(void *opaque)
+@@ -1741,7 +1742,9 @@ static void vga_update_display(void *opaque)
          /* nothing to do */
      } else {
          full_update = 0;
@@ -4997,7 +5075,7 @@ index 05290d5..f14c60a 100644
              graphic_mode = GMODE_BLANK;
          } else {
              graphic_mode = s->gr[VGA_GFX_MISC] & VGA_GR06_GRAPHICS_MODE;
-@@ -1759,6 +1762,9 @@ static void vga_update_display(void *opaque)
+@@ -1752,6 +1755,9 @@ static void vga_update_display(void *opaque)
              full_update = 1;
          }
          switch(graphic_mode) {
@@ -5007,6 +5085,52 @@ index 05290d5..f14c60a 100644
          case GMODE_TEXT:
              vga_draw_text(s, full_update);
              break;
+@@ -2290,4 +2296,7 @@ void vga_init_vbe(VGACommonState *s, Object *obj, MemoryRegion *system_memory)
+                                 VBE_DISPI_LFB_PHYSICAL_ADDRESS,
+                                 &s->vram_vbe);
+     s->vbe_mapped = 1;
++
++    if (vgt_vga_enabled)
++        s->vbe_extended = true;
+ }
+diff --git a/hw/display/vgt-stub.c b/hw/display/vgt-stub.c
+new file mode 100644
+index 0000000..f6571ba
+--- /dev/null
++++ b/hw/display/vgt-stub.c
+@@ -0,0 +1,32 @@
++/*
++ * QEMU VGT support
++ *
++ * Copyright (c) Intel
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2.  See
++ * the COPYING file in the top-level directory.
++ *
++ */
++#include "hw/hw.h"
++#include "ui/console.h"
++#include "hw/i386/pc.h"
++
++DeviceState *vgt_vga_init(PCIBus *pci_bus)
++{
++    return NULL;
++}
++
++void vgt_bridge_pci_conf_init(PCIDevice *pdev)
++{
++}
++
++void vgt_kvm_set_opregion_addr(uint32_t addr)
++{
++}
++
++void vgt_bridge_pci_write(PCIDevice *dev,
++                          uint32_t address, uint32_t val, int len)
++{
++}
++
++
 diff --git a/hw/display/vgt_console.c b/hw/display/vgt_console.c
 new file mode 100644
 index 0000000..f681746
@@ -5547,29 +5671,1157 @@ index 0000000..f681746
 +    return;
 +}
 diff --git a/hw/display/vgt_vga.c b/hw/display/vgt_vga.c
-index e92aaeb..dae3b8d 100644
---- a/hw/display/vgt_vga.c
+new file mode 100644
+index 0000000..dae3b8d
+--- /dev/null
 +++ b/hw/display/vgt_vga.c
-@@ -449,6 +449,7 @@ static void create_vgt_instance(VGTVGAState *vdev)
-     qemu_add_exit_notifier(&exit_notifier);
- 
-     config_vgt_guest_monitors();
+@@ -0,0 +1,734 @@
++/*
++ * QEMU vGT/XenGT Legacy VGA support
++ *
++ * Copyright (c) 2003 Fabrice Bellard
++ * Copyright (c) Citrix Systems, Inc
++ * Copyright (c) Intel Corporation.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++#include "qemu/osdep.h"
++#include "hw/hw.h"
++#include "ui/console.h"
++#include "hw/i386/pc.h"
++#include "hw/pci/pci.h"
++#include "hw/pci/pci_host.h"
++#include "hw/pci/pci_bridge.h"
++#include "hw/pci/pci_bus.h"
++#include "vga_int.h"
++#include "ui/pixel_ops.h"
++#include "qemu/timer.h"
++#include "hw/loader.h"
++#include "qemu/log.h"
++#include "sysemu/arch_init.h"
++#include "hw/xen/xen.h"
++
++#define DEBUG_VGT
++
++#ifdef DEBUG_VGT
++#define DPRINTF(fmt, ...) \
++    do { fprintf(stderr, "vgt: " fmt, ## __VA_ARGS__); } while (0)
++#else
++#define DPRINTF(fmt, ...) \
++    do { } while (0)
++#endif
++
++#define EDID_SIZE 128
++#define MAX_INPUT_NUM 3
++#define MAX_FILE_NAME_LENGTH 128
++
++/* port definition must align with gvt-g driver */
++enum vgt_port {
++    PORT_A = 0,
++    PORT_B,
++    PORT_C,
++    PORT_D,
++    PORT_E,
++    MAX_PORTS
++};
++
++typedef struct vgt_monitor_info {
++    unsigned char port_type:4;
++    unsigned char port_is_dp:4;  /* 0 = HDMI PORT, 1 = DP port, only valid for PORT_B/C/D */
++    unsigned char port_override;
++    unsigned char edid[EDID_SIZE];
++}vgt_monitor_info_t;
++
++const char *vgt_monitor_config_file = "/etc/gvt-g-monitor.conf";
++
++typedef struct VGTHostDevice {
++    PCIHostDeviceAddress addr;
++    int config_fd;
++} VGTHostDevice;
++
++typedef struct VGTVMState {
++     struct VGACommonState vga;
++     struct VGTVGAState* parent;
++} VGTVMState;
++
++typedef struct VGTVGAState {
++    PCIDevice dev;
++    struct VGTVMState state;
++    int num_displays;
++    VGTHostDevice host_dev;
++    bool instance_created;
++    int domid;
++} VGTVGAState;
++
++static Notifier exit_notifier;
++
++static void vgt_exit_notify(Notifier *n, void *data);
++
++/* These are the default values */
++int vgt_low_gm_sz = 64; /* in MB */
++int vgt_high_gm_sz = 448; /* in MB */
++int vgt_fence_sz = 4;
++int vgt_primary = 1; /* -1 means "not specified */
++int guest_domid = 0;
++int vgt_cap = 0;
++
++static inline unsigned int port_info_to_type(unsigned char port_is_dp, int port)
++{
++    /* port type definition must align with gvt-g driver */
++    enum vgt_port_type {
++        VGT_CRT = 0,
++        VGT_DP_A,
++        VGT_DP_B,
++        VGT_DP_C,
++        VGT_DP_D,
++        VGT_HDMI_B,
++        VGT_HDMI_C,
++        VGT_HDMI_D,
++        VGT_PORT_TYPE_MAX
++    } ret;
++
++    switch (port) {
++        case PORT_A:
++            ret = VGT_DP_A;
++            break;
++        case PORT_B:
++            ret = (port_is_dp) ? VGT_DP_B : VGT_HDMI_B;
++            break;
++        case PORT_C:
++            ret = (port_is_dp) ? VGT_DP_C : VGT_HDMI_C;
++            break;
++        case PORT_D:
++            ret = (port_is_dp) ? VGT_DP_D : VGT_HDMI_D;
++            break;
++	case PORT_E:
++            ret = VGT_CRT;
++            break;
++        default:
++            ret = VGT_PORT_TYPE_MAX;
++            break;
++    }
++
++    return ret;
++}
++
++static bool validate_monitor_configs(vgt_monitor_info_t *config)
++{
++    if (config->port_type >= MAX_PORTS) {
++        qemu_log("vGT: %s failed because the invalid port_type input: %d!\n",
++            __func__, config->port_type);
++        return false;
++    }
++    if (config->port_override >= MAX_PORTS) {
++        qemu_log("vGT: %s failed due to the invalid port_override input: %d!\n",
++            __func__, config->port_override);
++        return false;
++    }
++    if (config->edid[126] != 0) {
++        qemu_log("vGT: %s failed because there is extended block in EDID! "
++            "(EDID[126] is not zero)\n", __func__);
++        return false;
++    }
++
++    return true;
++}
++
++static void config_hvm_monitors(vgt_monitor_info_t *config)
++{
++    const char *path_prefix = "/sys/kernel/vgt/vm";
++    FILE *fp;
++    char file_name[MAX_FILE_NAME_LENGTH];
++    int ret;
++
++    // override
++    snprintf(file_name, MAX_FILE_NAME_LENGTH, "%s%d/PORT_%c/port_override",
++        path_prefix, xen_domid, 'A' + config->port_type);
++    if ((fp = fopen(file_name, "w")) == NULL) {
++        qemu_log("vGT: %s failed to open file %s! errno = %d\n",
++            __func__, file_name, errno);
++        return;
++    }
++    fprintf(fp, "PORT_%c", 'A' + config->port_override);
++    if (fclose(fp) != 0) {
++        qemu_log("vGT: %s failed to close file: errno = %d\n", __func__, errno);
++    }
++
++    // type
++    snprintf(file_name, MAX_FILE_NAME_LENGTH, "%s%d/PORT_%c/type",
++        path_prefix, xen_domid, 'A' + config->port_type);
++    if ((fp = fopen(file_name, "w")) == NULL) {
++        qemu_log("vGT: %s failed to open file %s! errno = %d\n",
++            __func__, file_name, errno);
++        return;
++    }
++    fprintf(fp, "%d", port_info_to_type(config->port_is_dp, config->port_type));
++    if (fclose(fp) != 0) {
++        qemu_log("vGT: %s failed to close file: errno = %d\n", __func__, errno);
++    }
++
++    // edid
++    snprintf(file_name, MAX_FILE_NAME_LENGTH, "%s%d/PORT_%c/edid",
++        path_prefix, xen_domid, 'A' + config->port_type);
++    if ((fp = fopen(file_name, "w")) == NULL) {
++        qemu_log("vGT: %s failed to open file %s! errno = %d\n",
++            __func__, file_name, errno);
++        return;
++    }
++    ret = fwrite(config->edid, 1, EDID_SIZE, fp);
++    if (ret != EDID_SIZE) {
++        qemu_log("vGT: %s failed to write EDID with returned size %d: "
++            "errno = %d\n", __func__, ret, errno);
++    }
++    if (fclose(fp) != 0) {
++        qemu_log("vGT: %s failed to close file: errno = %d\n", __func__, errno);
++    }
++
++    // flush result to port structure
++    snprintf(file_name, MAX_FILE_NAME_LENGTH, "%s%d/PORT_%c/connection",
++        path_prefix, xen_domid, 'A' + config->port_type);
++    if ((fp = fopen(file_name, "w")) == NULL) {
++        qemu_log("vGT: %s failed to open file %s! errno = %d\n",
++            __func__, file_name, errno);
++        return;
++    }
++    fprintf(fp, "flush");
++    if (fclose(fp) != 0) {
++        qemu_log("vGT: %s failed to close file: errno = %d\n", __func__, errno);
++    }
++}
++
++#define CTOI(chr) \
++    (chr >= '0' && chr <= '9' ? chr - '0' : \
++    (chr >= 'a' && chr <= 'f' ? chr - 'a' + 10 :\
++    (chr >= 'A' && chr <= 'F' ? chr - 'A' + 10 : -1)))
++
++static int get_byte_from_txt_file(FILE *file, const char *file_name)
++{
++    int i;
++    int val[2];
++
++    for (i = 0; i < 2; ++ i) {
++        do {
++            unsigned char buf;
++            if (fread(&buf, 1, 1, file) != 1) {
++                qemu_log("vGT: %s failed to get byte from text file %s with errno: %d!\n",
++                    __func__, file_name, errno);
++                return -1;
++            }
++
++            if (buf == '#') {
++                // ignore comments
++                int ret;
++                while (((ret = fread(&buf, 1, 1, file)) == 1) && (buf != '\n')) ;
++                if (ret != 1) {
++                    qemu_log("vGT: %s failed to proceed after comment string "
++                            "from text file %s with errno: %d!\n",
++                            __func__, file_name, errno);
++                    return -1;
++                }
++            }
++
++            val[i] = CTOI(buf);
++        } while (val[i] == -1);
++    }
++
++    return ((val[0] << 4) | val[1]);
++}
++
++static int get_config_header(unsigned char *buf, FILE *file, const char *file_name)
++{
++    int ret;
++    unsigned char chr;
++
++    if (fread(&chr, 1, 1, file) != 1) {
++        qemu_log("vGT: %s failed to get byte from text file %s with errno: %d!\n",
++            __func__, file_name, errno);
++        return -1;
++    }
++
++    if (chr == '#') {
++        // it is text format input.
++        while (((ret = fread(&chr, 1, 1, file)) == 1) && (chr != '\n')) ;
++        if (ret != 1) {
++            qemu_log("vGT: %s failed to proceed after comment string "
++                "from file %s with errno: %d!\n",
++                __func__, file_name, errno);
++            return -1;
++        }
++        ret = get_byte_from_txt_file(file, file_name);
++        buf[0] = 1;
++        buf[1] = (ret & 0xf);
++    } else {
++        if ((ret = fread(&buf[0], 1, 2, file)) != 2) {
++            qemu_log("vGT: %s failed to read file %s! "
++                "Expect to read %d bytes but only got %d bytes! errno: %d\n",
++                __func__, file_name, 2, ret, errno);
++            return -1;
++        }
++
++        if (buf[0] != 0) {
++            // it is text format input.
++            buf[1] -= '0';
++        }
++    }
++
++    return 0;
++}
++
++static void config_vgt_guest_monitors(void)
++{
++    FILE *monitor_config_f;
++    unsigned char buf[4];
++    vgt_monitor_info_t monitor_configs[MAX_INPUT_NUM];
++    bool text_mode;
++    int input_items;
++    int ret, i;
++
++    if (!vgt_monitor_config_file) {
++        return;
++    }
++
++    if ((monitor_config_f = fopen(vgt_monitor_config_file, "r")) == NULL) {
++        qemu_log("vGT: %s failed to open file %s! errno = %d\n",
++            __func__, vgt_monitor_config_file, errno);
++        return;
++    }
++
++    if (get_config_header(buf, monitor_config_f, vgt_monitor_config_file) != 0) {
++        goto finish_config;
++    }
++
++    text_mode = !!buf[0];
++    input_items = buf[1];
++
++    if (input_items <= 0 || input_items > MAX_INPUT_NUM) {
++        qemu_log("vGT: %s, Out of range input of the number of items! "
++            "Should be [1 - 3] but input is %d\n", __func__, input_items);
++        goto finish_config;
++    }
++
++    if (text_mode) {
++        unsigned int total = sizeof(vgt_monitor_info_t) * input_items;
++        unsigned char *p = (unsigned char *)monitor_configs;
++
++        for (i = 0; i < total; ++i, ++p) {
++            unsigned int val = get_byte_from_txt_file(monitor_config_f,
++                vgt_monitor_config_file);
++            if (val == -1) {
++                break;
++            } else {
++                *p = val;
++            }
++        }
++        if (i < total) {
++            goto finish_config;
++        }
++    } else {
++        unsigned int total = sizeof(vgt_monitor_info_t) * input_items;
++        ret = fread(monitor_configs, sizeof(vgt_monitor_info_t), input_items,
++                    monitor_config_f);
++        if (ret != total) {
++            qemu_log("vGT: %s failed to read file %s! "
++                "Expect to read %d bytes but only got %d bytes! errno: %d\n",
++                 __func__, vgt_monitor_config_file, total, ret, errno);
++            goto finish_config;
++        }
++    }
++
++    for (i = 0; i < input_items; ++ i) {
++        if (validate_monitor_configs(&monitor_configs[i]) == false) {
++            qemu_log("vGT: %s the monitor config[%d] input from %s is not valid!\n",
++                __func__, i, vgt_monitor_config_file);
++            goto finish_config;
++        }
++    }
++    for (i = 0; i < input_items; ++ i) {
++        config_hvm_monitors(&monitor_configs[i]);
++    }
++
++finish_config:
++    if (fclose(monitor_config_f) != 0) {
++        qemu_log("vGT: %s failed to close file %s: errno = %d\n", __func__,
++            vgt_monitor_config_file, errno);
++    }
++    return;
++}
++
++static int vgt_host_pci_cfg_get(VGTHostDevice *host_dev,
++                                void *data, int len, uint32_t addr);
++ 
++
++void vgt_bridge_pci_write(PCIDevice *dev,
++                          uint32_t address, uint32_t val, int len)
++{
++    assert(dev->devfn == 0x00);
++
++    i440fx_write_config(dev, address, val, len);
++}
++
++/*
++ *  Inform vGT driver to create a vGT instance
++ */
++static void create_vgt_instance(VGTVGAState *vdev)
++{
++    /* FIXME: this should be substituded as a environment variable */
++    const char *path = "/sys/kernel/vgt/control/create_vgt_instance";
++    FILE *vgt_file;
++    int err = 0;
++    int domid = vdev->domid;
++  
++    qemu_log("vGT: %s: domid=%d, low_gm_sz=%dMB, high_gm_sz=%dMB, "
++        "fence_sz=%d, vgt_primary=%d, vgt_cap=%d\n", __func__, domid,
++       	vgt_low_gm_sz, vgt_high_gm_sz, vgt_fence_sz, vgt_primary,
++      	vgt_cap);
++  
++ if (vgt_low_gm_sz <= 0 || vgt_high_gm_sz <=0 ||
++                vgt_cap < 0 || vgt_cap > 100 ||
++		vgt_primary < -1 || vgt_primary > 1 ||
++        vgt_fence_sz <=0) {
++        qemu_log("vGT: %s failed: invalid parameters!\n", __func__);
++        abort();
++    }
++
++    if ((vgt_file = fopen(path, "w")) == NULL) {
++        err = errno;
++        qemu_log("vGT: open %s failed\n", path);
++    }
++    /* The format of the string is:
++     * domid,aperture_size,gm_size,fence_size. This means we want the vgt
++     * driver to create a vgt instanc for Domain domid with the required
++     * parameters. NOTE: aperture_size and gm_size are in MB.
++     */
++    if (!err && fprintf(vgt_file, "%d,%u,%u,%u,%d,%u\n", domid,
++        vgt_low_gm_sz, vgt_high_gm_sz, vgt_fence_sz, vgt_primary,
++		vgt_cap) < 0) {
++        err = errno;
++    }
++
++    if (!err && fclose(vgt_file) != 0) {
++        err = errno;
++    }
++
++    if (err) {
++        qemu_log("vGT: %s failed: errno=%d\n", __func__, err);
++        exit(-1);
++    }
++
++    vdev->instance_created = TRUE;
++    exit_notifier.notify = vgt_exit_notify;
++    qemu_add_exit_notifier(&exit_notifier);
++
++    config_vgt_guest_monitors();
 +    xengt_drm_init();
++}
++
++/*
++ *  Inform vGT driver to close a vGT instance
++ */
++static void destroy_vgt_instance(int domid)
++{
++    const char *path = "/sys/kernel/vgt/control/create_vgt_instance";
++    FILE *vgt_file;
++    int err = 0;
++
++    if ((vgt_file = fopen(path, "w")) == NULL) {
++        error_report("vgt: error: open %s failed", path);
++        err = errno;
++    }
++
++    /* -domid means we want the vgt driver to free the vgt instance
++     * of Domain domid.
++     * */
++    if (!err && fprintf(vgt_file, "%d\n", -domid) < 0) {
++        err = errno;
++    }
++
++    if (!err && fclose(vgt_file) != 0) {
++        err = errno;
++    }
++
++    if (err) {
++        qemu_log("vGT: %s: failed: errno=%d\n", __func__, err);
++        exit(-1);
++    }
++}
++
++static int pch_map_irq(PCIDevice *pci_dev, int irq_num)
++{
++    return irq_num;
++}
++
++static int vgt_host_device_get(VGTHostDevice *dev)
++{
++    char name[PATH_MAX];
++
++    snprintf(name, sizeof(name), "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config",
++             dev->addr.domain, dev->addr.bus, dev->addr.slot, dev->addr.function);
++    dev->config_fd = open(name, O_RDONLY);
++    if (dev->config_fd == -1) {
++        error_report("vgt:open failed: %s\n", strerror(errno));
++        return -1;
++     }
++
++    return 0;
++}
++
++static void vgt_host_device_put(VGTHostDevice *dev)
++{
++    if (dev->config_fd >= 0) {
++        close(dev->config_fd);
++        dev->config_fd = -1;
++    }
++}
++
++static int vgt_host_pci_cfg_get(VGTHostDevice *host_dev,
++                                void *data, int len, uint32_t addr)
++{
++    int ret;
++
++    vgt_host_device_get(host_dev);
++    ret = pread(host_dev->config_fd, data, len, addr);
++    if (ret < len) {
++        ret = ret < 0 ? -errno : -EFAULT;
++        error_report("failed to read device config space: %m");
++        goto out;
++    }
++
++out:
++    vgt_host_device_put(host_dev);
++    return ret;
++}
++
++static void vgt_host_bridge_cap_init(PCIDevice *dev, VGTHostDevice *host_dev)
++{
++    assert(dev->devfn == 0x00);
++    uint8_t cap_ptr = 0;
++
++    vgt_host_pci_cfg_get(host_dev, &cap_ptr, 1, PCI_CAPABILITY_LIST);
++    while (cap_ptr !=0) {
++        vgt_host_pci_cfg_get(host_dev, dev->config + cap_ptr, 4, cap_ptr);
++        vgt_host_pci_cfg_get(host_dev, dev->config + cap_ptr + 4, 4,
++                             cap_ptr + 4);
++        vgt_host_pci_cfg_get(host_dev, dev->config + cap_ptr + 8, 4,
++                             cap_ptr + 8);
++        vgt_host_pci_cfg_get(host_dev, dev->config + cap_ptr + 12, 4,
++                             cap_ptr + 12);
++        vgt_host_pci_cfg_get(host_dev, &cap_ptr, 1, cap_ptr + 1);
++    }
++}
++
++static void vgt_host_dev_init(PCIDevice *pdev, VGTHostDevice *host_dev)
++{
++    assert(pdev != NULL && host_dev != NULL);
++
++    host_dev->addr.domain = 0;
++    host_dev->addr.bus = pci_bus_num(pdev->bus);
++    host_dev->addr.slot = PCI_SLOT(pdev->devfn);
++    host_dev->addr.function = PCI_FUNC(pdev->devfn);
++}
++
++void vgt_bridge_pci_conf_init(PCIDevice *pdev)
++{
++    printf("vgt_bridge_pci_conf_init\n");
++    VGTHostDevice host_dev;
++
++    vgt_host_dev_init(pdev, &host_dev);
++
++    vgt_host_pci_cfg_get(&host_dev, pdev->config, 2, 0x00);
++    printf("vendor id: %x\n", *(uint16_t *)((char *)pdev->config + 0x00));
++
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x02, 2, 0x02);
++    printf("device id: %x\n", *(uint16_t *)((char *)pdev->config + 0x02));
++    /* status */
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x06, 2, 0x06);
++    /* revision id */
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x08, 2, 0x08);
++    /* capability */
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x34, 1, 0x34);
++    vgt_host_bridge_cap_init(pdev, &host_dev);
++
++    /* SNB: processor graphics control register */
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x50, 2, 0x50);
++    /* processor graphics control register */
++    vgt_host_pci_cfg_get(&host_dev, pdev->config + 0x52, 2, 0x52);
++}
++
++static void vgt_reset(DeviceState *dev)
++{
++    PCIDevice *pdev = DO_UPCAST(PCIDevice, qdev, dev);
++    VGTVGAState *d = DO_UPCAST(VGTVGAState, dev, pdev);
++
++    if (d->instance_created) {
++        destroy_vgt_instance(d->domid);
++    }
++
++    create_vgt_instance(d);
++}
++
++static void vgt_cleanupfn(PCIDevice *dev)
++{
++    VGTVGAState *d = DO_UPCAST(VGTVGAState, dev, dev);
++
++    if (d->instance_created) {
++        destroy_vgt_instance(d->domid);
++    }
++}
++
++static void vgt_exit_notify(Notifier *n, void *data)
++{
++    /*
++     * The vgt instance may have already been destroyed by the normal
++     * cleanup function. This covers the case where QEMU is forcibly
++     * terminated.
++     */
++    if (vgt_vga_enabled)
++        destroy_vgt_instance(xen_domid);
++}
++
++static int vgt_get_domid(void)
++{
++    int domid = 0;
++
++    if (xen_enabled()) {
++        domid = xen_domid;
++    }
++    assert(domid > 0);
++    guest_domid = domid;
++
++    return domid;
++}
++
++static int vgt_initfn(PCIDevice *dev)
++{
++    VGTVGAState *d = DO_UPCAST(VGTVGAState, dev, dev);
++
++    DPRINTF("vgt_initfn\n");
++    vgt_host_dev_init(dev, &d->host_dev);
++    d->domid = vgt_get_domid();
++    d->state.parent = d;
++
++    return 0;
++}
++
++DeviceState *vgt_vga_init(PCIBus *pci_bus)
++{
++    PCIDevice *dev;
++    PCIBridge *br;
++    uint16_t vendor_id;
++    uint16_t device_id;
++    uint8_t revision_id;
++    uint16_t class_dev;
++    VGTHostDevice host_dev = {
++        .addr.domain = 0,
++        .addr.bus = 0,
++        .addr.slot = 0x1f,
++        .addr.function = 0,
++    };
++
++    vgt_host_pci_cfg_get(&host_dev, &vendor_id, sizeof(vendor_id),
++                         PCI_VENDOR_ID);
++    vgt_host_pci_cfg_get(&host_dev, &device_id, sizeof(device_id),
++                         PCI_DEVICE_ID);
++    vgt_host_pci_cfg_get(&host_dev, &revision_id, sizeof(revision_id),
++                         PCI_REVISION_ID);
++    vgt_host_pci_cfg_get(&host_dev, &class_dev, sizeof(class_dev),
++                         PCI_CLASS_DEVICE);
++    DPRINTF("vendor: 0x%hx, device: 0x%hx, revision: 0x%hhx\n",
++            vendor_id, device_id, revision_id);
++
++    if (vendor_id != PCI_VENDOR_ID_INTEL) {
++        error_report("vgt: error: vgt-vga is only supported on Intel GPUs");
++        return NULL;
++    }
++
++    dev = pci_create_multifunction(pci_bus, PCI_DEVFN(0x1f, 0), true,
++                                   "vgt-isa");
++    if (!dev) {
++        error_report("vgt: error: vgt-isa not available");
++        return NULL;
++    }
++
++    qdev_init_nofail(&dev->qdev);
++
++    pci_config_set_vendor_id(dev->config, vendor_id);
++    pci_config_set_device_id(dev->config, device_id);
++    pci_config_set_revision(dev->config, revision_id);
++    pci_config_set_class(dev->config, class_dev);
++    br = PCI_BRIDGE(dev);
++    pci_bridge_map_irq(br, "IGD Bridge",
++                       pch_map_irq);
++
++    printf("Create vgt ISA bridge successfully\n");
++
++    dev = pci_create_multifunction(pci_bus, PCI_DEVFN(0x2, 0), true,
++                                   "vgt-vga");
++    if (!dev) {
++        error_report("vgt: error: vgt-vga not available");
++        return NULL;
++    }
++
++    qdev_init_nofail(&dev->qdev);
++    printf("Create vgt VGA successfully\n");
++    return DEVICE(dev);
++}
++
++static void vgt_class_initfn(ObjectClass *klass, void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    PCIDeviceClass *ic = PCI_DEVICE_CLASS(klass);
++    ic->init = vgt_initfn;
++    dc->reset = vgt_reset;
++    ic->exit = vgt_cleanupfn;
++    dc->vmsd = &vmstate_vga_common;
++}
++
++static TypeInfo vgt_info = {
++    .name          = "vgt-vga",
++    .parent        = TYPE_PCI_DEVICE,
++    .instance_size = sizeof(VGTVGAState),
++    .class_init    = vgt_class_initfn,
++};
++
++static TypeInfo isa_info = {
++    .name          = "vgt-isa",
++    .parent        = TYPE_PCI_BRIDGE,
++    .instance_size = sizeof(PCIBridge),
++};
++
++static void vgt_register_types(void)
++{
++    type_register_static(&vgt_info);
++    type_register_static(&isa_info);
++}
++
++type_init(vgt_register_types)
+diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
+index 4e61655..5ec83b6 100644
+--- a/hw/i386/pc_piix.c
++++ b/hw/i386/pc_piix.c
+@@ -228,7 +228,19 @@ static void pc_init1(MachineState *machine,
+ 
+     pc_register_ferr_irq(pcms->gsi[13]);
+ 
+-    pc_vga_init(isa_bus, pcmc->pci_enabled ? pci_bus : NULL);
++    /*
++     * Initialize XenGT hooks before normal VGA init. The
++     * ideal case is to have IGD presented as the primary
++     * graphics card in 00:02.0, and then have other emulated
++     * PCI VGA card all disabled. We still rely on Qemu to
++     * emulate legacy ISA ports, so requires the ISA vga logic.
++     */
++    if (vgt_vga_enabled && pcmc->pci_enabled) {
++        vgt_vga_init(pci_bus);
++        isa_create_simple(isa_bus, "isa-vga");
++    } else {
++        pc_vga_init(isa_bus, pcmc->pci_enabled ? pci_bus : NULL);
++    }
+ 
+     assert(pcms->vmport != ON_OFF_AUTO__MAX);
+     if (pcms->vmport == ON_OFF_AUTO_AUTO) {
+diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
+index ec071c4..47b9b02 100644
+--- a/hw/i386/xen/xen-hvm.c
++++ b/hw/i386/xen/xen-hvm.c
+@@ -199,7 +199,11 @@ static void xen_ram_init(PCMachineState *pcms,
+         user_lowmem = HVM_BELOW_4G_RAM_END;
+     }
+ 
+-    if (ram_size >= user_lowmem) {
++    if (vgt_vga_enabled &&
++        ram_size >= 0xc0000000) {
++        pcms->above_4g_mem_size = ram_size - 0xc0000000;
++        pcms->below_4g_mem_size = 0xc0000000;
++    } else if (ram_size >= user_lowmem) {
+         pcms->above_4g_mem_size = ram_size - user_lowmem;
+         pcms->below_4g_mem_size = user_lowmem;
+     } else {
+diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
+index 369c3df..b1bd426 100644
+--- a/hw/i386/xen/xen-mapcache.c
++++ b/hw/i386/xen/xen-mapcache.c
+@@ -386,7 +386,13 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
+     }
+ 
+     entry = &mapcache->entry[paddr_index % mapcache->nr_buckets];
+-    while (entry && (entry->paddr_index != paddr_index || entry->size != size)) {
++    while (entry && (entry->paddr_index != paddr_index || entry->size != size  ||
++            !(((unsigned long)ptr >= (unsigned long)entry->vaddr_base) &&
++              ((unsigned long) ptr < (unsigned long) entry->vaddr_base + (unsigned long)entry->size)) ||
++              !test_bits(((unsigned long) ptr - (unsigned long) entry->vaddr_base) >> XC_PAGE_SHIFT,
++              1,
++             entry->valid_mapping))) {
++
+         entry = entry->next;
+     }
+     if (!entry) {
+@@ -432,7 +438,12 @@ static void xen_invalidate_map_cache_entry_unlocked(uint8_t *buffer)
+     }
+ 
+     entry = &mapcache->entry[paddr_index % mapcache->nr_buckets];
+-    while (entry && (entry->paddr_index != paddr_index || entry->size != size)) {
++    while (entry && (entry->paddr_index != paddr_index || entry->size != size ||
++        !(((unsigned long)buffer >= (unsigned long)entry->vaddr_base)
++        && ((unsigned long) buffer < (unsigned long) entry->vaddr_base + (unsigned long)entry->size)) ||
++        !test_bits(((unsigned long) buffer - (unsigned long) entry->vaddr_base) >> XC_PAGE_SHIFT,
++        1,
++        entry->valid_mapping))) {
+         pentry = entry;
+         entry = entry->next;
+     }
+@@ -484,23 +495,28 @@ void xen_invalidate_map_cache(void)
+     for (i = 0; i < mapcache->nr_buckets; i++) {
+         MapCacheEntry *entry = &mapcache->entry[i];
+ 
+-        if (entry->vaddr_base == NULL) {
+-            continue;
+-        }
+-        if (entry->lock > 0) {
+-            continue;
+-        }
+-
+-        if (munmap(entry->vaddr_base, entry->size) != 0) {
+-            perror("unmap fails");
+-            exit(-1);
++        while(entry){
++            if (entry->vaddr_base == NULL) {
++                entry = entry->next;
++                continue;
++            }
++            if (entry->lock > 0) {
++                entry = entry->next;
++                continue;
++            }
++
++            if (munmap(entry->vaddr_base, entry->size) != 0) {
++                perror("unmap fails");
++                exit(-1);
++            }
++
++            entry->paddr_index = 0;
++            entry->vaddr_base = NULL;
++            entry->size = 0;
++            g_free(entry->valid_mapping);
++            entry->valid_mapping = NULL;
++            entry = entry->next;
+         }
+-
+-        entry->paddr_index = 0;
+-        entry->vaddr_base = NULL;
+-        entry->size = 0;
+-        g_free(entry->valid_mapping);
+-        entry->valid_mapping = NULL;
+     }
+ 
+     mapcache->last_entry = NULL;
+diff --git a/hw/pci-host/piix.c b/hw/pci-host/piix.c
+index 072a04e..a0a161a 100644
+--- a/hw/pci-host/piix.c
++++ b/hw/pci-host/piix.c
+@@ -150,8 +150,8 @@ static void i440fx_update_memory_mappings(PCII440FXState *d)
  }
  
- /*
+ 
+-static void i440fx_write_config(PCIDevice *dev,
+-                                uint32_t address, uint32_t val, int len)
++void i440fx_write_config(PCIDevice *dev,
++                         uint32_t address, uint32_t val, int len)
+ {
+     PCII440FXState *d = I440FX_PCI_DEVICE(dev);
+ 
+@@ -309,6 +309,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
+     if (object_property_get_bool(qdev_get_machine(), "iommu", NULL)) {
+         warn_report("i440fx doesn't support emulated iommu");
+     }
++
++    if (vgt_vga_enabled && xen_enabled()) {
++        vgt_bridge_pci_conf_init(dev);
++    }
+ }
+ 
+ PCIBus *i440fx_init(const char *host_type, const char *pci_type,
+diff --git a/hw/pci/pci.c b/hw/pci/pci.c
+index 9c71f29..87af437 100644
+--- a/hw/pci/pci.c
++++ b/hw/pci/pci.c
+@@ -23,6 +23,7 @@
+  */
+ #include "qemu/osdep.h"
+ #include "hw/hw.h"
++#include "hw/i386/pc.h"
+ #include "hw/pci/pci.h"
+ #include "hw/pci/pci_bridge.h"
+ #include "hw/pci/pci_bus.h"
+@@ -977,6 +978,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+     if (devfn < 0) {
+         for(devfn = bus->devfn_min ; devfn < ARRAY_SIZE(bus->devices);
+             devfn += PCI_FUNC_MAX) {
++
++            /* If vGT/XenGT is in use, reserve 00:02.* for the IGD */
++            if ((vgt_vga_enabled) && devfn == 0x10)
++                continue;
++
+             if (!bus->devices[devfn])
+                 goto found;
+         }
+@@ -1016,6 +1022,7 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+     pci_dev->irq_state = 0;
+     pci_config_alloc(pci_dev);
+ 
++    printf("set vendor id(%x) for devfn(%x)\n", pc->vendor_id, devfn);
+     pci_config_set_vendor_id(pci_dev->config, pc->vendor_id);
+     pci_config_set_device_id(pci_dev->config, pc->device_id);
+     if (pci_dev->revision_id > 0xff) {
+@@ -1061,6 +1068,11 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+         config_read = pci_default_read_config;
+     if (!config_write)
+         config_write = pci_default_write_config;
++    if (vgt_vga_enabled &&
++        config_write == i440fx_write_config) {
++        config_write = vgt_bridge_pci_write;
++    }
++
+     pci_dev->config_read = config_read;
+     pci_dev->config_write = config_write;
+     bus->devices[devfn] = pci_dev;
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index e8ff0cb..50ce7f7 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -332,6 +332,17 @@ int isa_vga_mm_init(hwaddr vram_base,
+                     hwaddr ctrl_base, int it_shift,
+                     MemoryRegion *address_space);
+ 
++/* vgt_vga.c */
++extern int vgt_low_gm_sz;
++extern int vgt_high_gm_sz;
++extern int vgt_fence_sz;
++extern int vgt_cap;
++
++DeviceState *vgt_vga_init(PCIBus *pci_bus);
++void vgt_bridge_pci_conf_init(PCIDevice *dev);
++void vgt_bridge_pci_write(PCIDevice *dev,
++                          uint32_t address, uint32_t val, int len);
++
+ /* ne2000.c */
+ static inline bool isa_ne2000_init(ISABus *bus, int base, int irq, NICInfo *nd)
+ {
+diff --git a/include/hw/pci/pci_host.h b/include/hw/pci/pci_host.h
+index ba31595..dc7d266 100644
+--- a/include/hw/pci/pci_host.h
++++ b/include/hw/pci/pci_host.h
+@@ -70,4 +70,7 @@ extern const MemoryRegionOps pci_host_conf_be_ops;
+ extern const MemoryRegionOps pci_host_data_le_ops;
+ extern const MemoryRegionOps pci_host_data_be_ops;
+ 
++void i440fx_write_config(PCIDevice *dev,
++                         uint32_t address, uint32_t val, int len);
++
+ #endif /* PCI_HOST_H */
 diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
-index dd7c7c4..74dda55 100644
+index b064a55..daea542 100644
 --- a/include/sysemu/sysemu.h
 +++ b/include/sysemu/sysemu.h
-@@ -143,6 +143,10 @@ extern int vga_interface_type;
+@@ -99,12 +99,19 @@ extern int autostart;
  
- extern const char *vgt_monitor_config_file;
+ typedef enum {
+     VGA_NONE, VGA_STD, VGA_CIRRUS, VGA_VMWARE, VGA_XENFB, VGA_QXL,
+-    VGA_TCX, VGA_CG3, VGA_DEVICE, VGA_VIRTIO,
++    VGA_TCX, VGA_CG3, VGA_DEVICE, VGA_VIRTIO, VGA_VGT,
+     VGA_TYPE_MAX,
+ } VGAInterfaceType;
  
+ extern int vga_interface_type;
+ #define xenfb_enabled (vga_interface_type == VGA_XENFB)
++#define vgt_vga_enabled (vga_interface_type == VGA_VGT)
++
++extern const char *vgt_monitor_config_file;
++
 +void xengt_drm_init(void);
 +bool xengt_is_enabled(void);
 +void xengt_draw_primary(QemuConsole *con, int full_update);
-+
+ 
  extern int graphic_width;
  extern int graphic_height;
- extern int graphic_depth;
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 8d7dac9..2f869fd 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -1277,6 +1277,8 @@ old style -sdl/-curses/... options. Valid values for @var{type} are
+ @item sdl
+ Display video output via SDL (usually in a separate graphics
+ window; see the SDL documentation for other possibilities).
++@item vgt
++Intel GVT-g technology
+ @item curses
+ Display video output via curses. For graphics device models which
+ support a text mode, QEMU can display this output using a
+@@ -1510,7 +1512,7 @@ Rotate graphical output some deg left (only PXA LCD).
+ ETEXI
+ 
+ DEF("vga", HAS_ARG, QEMU_OPTION_vga,
+-    "-vga [std|cirrus|vmware|qxl|xenfb|tcx|cg3|virtio|none]\n"
++    "-vga [std|cirrus|vmware|qxl|xenfb|tcx|cg3|xengt|none]\n"
+     "                select video card type\n", QEMU_ARCH_ALL)
+ STEXI
+ @item -vga @var{type}
+@@ -1545,11 +1547,42 @@ for sun4m machines available in both 1024x768 (OpenBIOS) and 1152x900 (OBP)
+ resolutions aimed at people wishing to run older Solaris versions.
+ @item virtio
+ Virtio VGA card.
++@item xengt
++Intel IGD card based on mediated pass-through technique. A single
++IGD card can be used to accelerate multiple VMs, which each run
++native graphics driver inside.
+ @item none
+ Disable VGA card.
+ @end table
+ ETEXI
+ 
++DEF("vgt_low_gm_sz", 1, QEMU_OPTION_vgt_low_gm_sz,
++    "-vgt_low_gm_sz [MB] allocated aperture size\n",
++    QEMU_ARCH_ALL)
++STEXI
++@item -vgt_low_gm_sz @var{size}
++@findex -vgt_low_gm_sz
++Set the allocated aperture size.
++ETEXI
++
++DEF("vgt_high_gm_sz", 1, QEMU_OPTION_vgt_high_gm_sz,
++    "-vgt_high_gm_sz [MB] allocated GM size\n",
++    QEMU_ARCH_ALL)
++STEXI
++@item -vgt_high_gm_sz @var{size}
++@findex -vgt_high_gm_sz
++Set the allocated aperture size.
++ETEXI
++
++DEF("vgt_fence_sz", 1, QEMU_OPTION_vgt_fence_sz,
++    "-vgt_fence_sz [num] allocated number of fence registers\n",
++    QEMU_ARCH_ALL)
++STEXI
++@item -vgt_fence_sz @var{size}
++@findex -vgt_fence_sz
++Set the allocated aperture size.
++ETEXI
++
+ DEF("full-screen", 0, QEMU_OPTION_full_screen,
+     "-full-screen    start in full screen\n", QEMU_ARCH_ALL)
+ STEXI
+@@ -1558,6 +1591,24 @@ STEXI
+ Start in full screen.
+ ETEXI
+ 
++DEF("vgt_cap", 1, QEMU_OPTION_vgt_cap,
++    "-vgt_cap [num] allocated percentage for GPU resource portion\n",
++    QEMU_ARCH_ALL)
++STEXI
++@item -vgt_cap @var{size}
++@findex -vgt_cap
++Set the allocated GPU resource portion.
++ETEXI
++
++DEF("vgt_monitor_config_file", 1, QEMU_OPTION_vgt_monitor_config_file,
++    "-vgt_monitor_config_file [str] path to vgt monitor config file\n",
++    QEMU_ARCH_ALL)
++STEXI
++@item -vgt_monitor_config_file @var{path}
++@findex -vgt_monitor_config_file
++Set the path to the vgt monitor config file.
++ETEXI
++
+ DEF("g", 1, QEMU_OPTION_g ,
+     "-g WxH[xDEPTH]  Set the initial graphical resolution and depth\n",
+     QEMU_ARCH_PPC | QEMU_ARCH_SPARC)
+diff --git a/vl.c b/vl.c
+index bbafe4c..cc5db63 100644
+--- a/vl.c
++++ b/vl.c
+@@ -2095,6 +2095,11 @@ static VGAInterfaceInfo vga_interfaces[VGA_TYPE_MAX] = {
+     [VGA_XENFB] = {
+         .opt_name = "xenfb",
+     },
++    [VGA_VGT] = {
++        .opt_name = "xengt",
++        .name = "Intel GVT-g",
++        .class_names = { "vgt-vga" },
++    },
+ };
+ 
+ static bool vga_interface_available(VGAInterfaceType t)
+@@ -2120,9 +2125,10 @@ static void select_vgahw(const char *p)
+                 error_report("%s not available", ti->name);
+                 exit(1);
+             }
+-            vga_interface_type = t;
+-            break;
+-        }
++	    vga_interface_type = t;
++	    printf("%s vga is %s\n", __func__, ti->opt_name);           
++	    break;
++	}
+     }
+     if (t == VGA_TYPE_MAX) {
+     invalid_vga:
+@@ -2142,6 +2148,7 @@ static void select_vgahw(const char *p)
+         } else goto invalid_vga;
+         opts = nextopt;
+     }
++
+ }
+ 
+ typedef enum DisplayType {
+@@ -4195,6 +4202,37 @@ int main(int argc, char **argv, char **envp)
+                     exit(1);
+                 }
+                 break;
++#ifdef CONFIG_VGT
++            case QEMU_OPTION_vgt_low_gm_sz:
++                {
++                    char *ptr;
++                    vgt_low_gm_sz = strtol(optarg, &ptr, 10);
++                }
++                break;
++            case QEMU_OPTION_vgt_high_gm_sz:
++                {
++                    char *ptr;
++                    vgt_high_gm_sz = strtol(optarg, &ptr, 10);
++                }
++                break;
++            case QEMU_OPTION_vgt_fence_sz:
++                {
++                    char *ptr;
++                    vgt_fence_sz = strtol(optarg, &ptr, 10);
++                }
++                break;
++            case QEMU_OPTION_vgt_cap:
++                {
++                   char *ptr;
++                   vgt_cap = strtol(optarg, &ptr, 10);
++                }
++		break;
++            case QEMU_OPTION_vgt_monitor_config_file:
++                {
++                   vgt_monitor_config_file = strdup(optarg);
++                }
++		break;
++#endif
+             default:
+                 os_parse_cmd_args(popt->index, optarg);
+             }

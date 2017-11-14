@@ -70,18 +70,8 @@ force-lba-geometry.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
 
-# Intel GVT-g support backported from a 2.9-based branch
-0001-vgt-class-introduction-and-adaption.patch
-0002-vgt-clean-up-vgt_vga-class.patch
-0003-Add-vgt-as-a-configure-parameter.patch
-0004-fix-the-bug-that-qemu-will-crash-when-reboot-windows.patch
-0005-add-a-new-parameter-to-define-cap.patch
-
-# Local Intel GVT-g patches
-gvt-g-set-vbe_extended.patch
-gvt-g-add-monitor-support.patch
-gvt-g-cleanup-on-exit.patch
-gvt-g-console-support.patch
+# Intel GVT-g support
+gvt-g.patch
 
 # AMD MxGPU patches
 0001-Update-fd-handlers-to-support-sysfs_notify.patch
