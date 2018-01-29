@@ -43,8 +43,8 @@ index e3dfdf8..56bc993 100644
 -    xc_domain_pin_memory_cacheattr(xen_xc, xen_domid,
 -                                   start_addr >> TARGET_PAGE_BITS,
 +    num_pfns = size >> TARGET_PAGE_BITS;
-+    rc = xendevicemodel_add_to_physmap(xen_dmod, xen_domid,
-+                                       num_pfns, start_mfn, start_gpfn);
++    rc = xendevicemodel_relocate_memory(xen_dmod, xen_domid,
++                                        num_pfns, start_mfn, start_gpfn);
 +    if (rc) {
 +        DPRINTF("add_to_physmap size %u start_mfn %"PRI_xen_pfn" start_gpfn %"
 +                PRI_xen_pfn" failed: %d (errno: %d)\n",
