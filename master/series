@@ -80,6 +80,7 @@ remove-ioapic.patch
 0002-io-Fix-QIOChannelFile-when-creating-and-opening-read.patch
 0003-io-Don-t-call-close-multiple-times-in-QIOChannelFile.patch
 0004-io-Add-dev-fdset-support-to-QIOChannelFile.patch
+save-device-check-return.patch
 
 # QEMU deprivileging
 0001-xen-link-against-xentoolcore.patch
