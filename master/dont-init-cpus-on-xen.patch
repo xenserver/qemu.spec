@@ -6,19 +6,45 @@ initializing the CPUs serves no purpose other than using resources
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 
-diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index a54a468..20f8542 100644
---- a/hw/i386/pc_piix.c
-+++ b/hw/i386/pc_piix.c
-@@ -144,9 +144,9 @@ static void pc_init1(MachineState *machine,
-             pcms->above_4g_mem_size = 0;
-             pcms->below_4g_mem_size = machine->ram_size;
-         }
--    }
+diff --git a/cpus.c b/cpus.c
+index c9a6240..471727b 100644
+--- a/cpus.c
++++ b/cpus.c
+@@ -51,6 +51,7 @@
+ #include "hw/nmi.h"
+ #include "sysemu/replay.h"
+ #include "hw/boards.h"
++#include "hw/xen/xen.h"
  
--    pc_cpus_init(pcms);
-+        pc_cpus_init(pcms);
-+    }
+ #ifdef CONFIG_LINUX
  
-     if (kvm_enabled() && pcmc->kvmclock_enabled) {
-         kvmclock_create();
+@@ -1535,6 +1536,9 @@ static void qemu_cpu_kick_thread(CPUState *cpu)
+ 
+ void qemu_cpu_kick(CPUState *cpu)
+ {
++    if (xen_enabled())
++        return;
++
+     qemu_cond_broadcast(cpu->halt_cond);
+     if (tcg_enabled()) {
+         cpu_exit(cpu);
+@@ -1612,6 +1616,9 @@ void pause_all_vcpus(void)
+         qemu_cpu_kick(cpu);
+     }
+ 
++    if (xen_enabled())
++        return;
++
+     if (qemu_in_vcpu_thread()) {
+         cpu_stop_current();
+     }
+@@ -1756,6 +1763,9 @@ static void qemu_dummy_start_vcpu(CPUState *cpu)
+ 
+ void qemu_init_vcpu(CPUState *cpu)
+ {
++    if (xen_enabled())
++        return;
++
+     cpu->nr_cores = smp_cores;
+     cpu->nr_threads = smp_threads;
+     cpu->stopped = true;

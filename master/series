@@ -86,6 +86,10 @@ dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
 remove-ioapic.patch
 
+0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
+0003-xen-apic-Implement-unrealize.patch
+0004-hotplug-Implement-legacy-CPU-hot-unplug.patch
+
 0001-migration-Don-t-leak-IO-channels.patch
 0002-io-Fix-QIOChannelFile-when-creating-and-opening-read.patch
 0003-io-Don-t-call-close-multiple-times-in-QIOChannelFile.patch
