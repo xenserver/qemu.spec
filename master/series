@@ -23,6 +23,14 @@
 0005-ui-add-tracing-of-VNC-authentication-process.patch
 # a75d6f07613af7ec5b016b31b117436e32ce7a5f (2.11.0-rc1)
 0006-ui-Always-remove-an-old-VNC-channel-watch-before-add.patch
+# 138bc2df843105edb22978284fc2e16307f16211 (2.11.0-rc1)
+0004-vga-migration-Update-memory-map-in-post_load.patch
+# b0898b42ef099bc125db1fbf62b7f02b505ef3a2 (2.11.0-rc1)
+0007-vga-add-ram_addr_t-cast.patch
+# eb38e1bc3740725ca29a535351de94107ec58d51 (2.11.0-rc1)
+0008-cirrus-fix-oob-access-in-mode4and5-write-functions.patch
+# 115788d7a70e9ae255511ca00fc69cce06967472 (2.11.0-rc1)
+0009-vga-fix-region-checks-in-wraparound-case.patch
 # 090fdc83b0960f68d204624a73c6814780da52d9 (expected 2.12.0-rc1)
 0007-vnc-fix-debug-spelling.patch
 # 6af998db05aec9af95a06f84ad94f1b96785e667 (expected 2.12.0-rc1)
@@ -53,6 +61,8 @@
 0020-ui-mix-misleading-comments-return-types-of-VNC-I-O-h.patch
 # 4c956bd81e2e16afd19d38d1fdeba6d9faa8a1ae (expected 2.12.0-rc1)
 0021-ui-avoid-sign-extension-using-client-width-height.patch
+# 191f59dc17396bb5a8da50f8c59b6e0a430711a4 (expected 2.12.0-rc1)
+0010-vga-check-the-validation-of-memory-addr-when-draw-te.patch
 
 #
 # ABI Changes
