@@ -106,7 +106,7 @@ save-device-check-return.patch
 0007-os-posix-Provide-new--runas-uid-.-gid-facility.patch
 
 use-new-dmops-for-vram.patch
-xenstore-remove-record-state.patch
+xenstore-ignore-state-write-error.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
