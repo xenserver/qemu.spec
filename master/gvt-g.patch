@@ -6103,8 +6103,8 @@ index 0000000..50de787
 +    int err = 0;
 +
 +    if ((vgt_file = fopen(path, "w")) == NULL) {
-+        error_report("vgt: error: open %s failed", path);
 +        err = errno;
++        error_report("vgt: error: open %s failed", path);
 +    }
 +
 +    /* -domid means we want the vgt driver to free the vgt instance
