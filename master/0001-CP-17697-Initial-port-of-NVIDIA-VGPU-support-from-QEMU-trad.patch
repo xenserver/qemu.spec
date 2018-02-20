@@ -16,10 +16,10 @@ index 551c050..86c0e28 100644
 +obj-y += vgpu_fb.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..29feab5
+index 0000000..3cf077a
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,165 @@
 +#include "qemu/osdep.h"
 +#include "cpu.h"
 +#include "hw/hw.h"
@@ -69,9 +69,18 @@ index 0000000..29feab5
 +    VGPUState *s = VGPU(opaque);
 +    DisplaySurface *surface;
 +    pixman_format_code_t format;
++    ssize_t rc;
 +    char buf = 'S';
 +
-+    sendto(s->surface_fd, &buf, 1, MSG_DONTWAIT, &s->server, sizeof (s->server));
++    rc = sendto(s->surface_fd, &buf, 1, MSG_DONTWAIT,
++                &s->server, sizeof (s->server));
++    if ( rc < 0 ) {
++        fprintf(stderr, "%s: sendto() failed: %d, %s",
++                __func__, errno, strerror(errno));
++    } else if (rc != 1) {
++        fprintf(stderr, "%s: sendto() wrote %ld, expected 1",
++                __func__, rc);
++    }
 +
 +    if (s->surface_offset != s->shared->offset ||
 +        s->surface_linesize != s->shared->linesize ||
