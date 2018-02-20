@@ -179,10 +179,10 @@ index 0000000..d424f72
 +#endif /* IGT_DEBUG_H */
 diff --git a/hw/display/intel-tools/intel_batchbuffer.c b/hw/display/intel-tools/intel_batchbuffer.c
 new file mode 100644
-index 0000000..f61736e
+index 0000000..76ef53a
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.c
-@@ -0,0 +1,390 @@
+@@ -0,0 +1,393 @@
 +/**************************************************************************
 + *
 + * Copyright 2006 Tungsten Graphics, Inc., Cedar Park, Texas.
@@ -281,6 +281,9 @@ index 0000000..f61736e
 +intel_batchbuffer_alloc(drm_intel_bufmgr *bufmgr, uint32_t devid)
 +{
 +	struct intel_batchbuffer *batch = calloc(sizeof(*batch), 1);
++
++	if (!batch)
++		return NULL;
 +
 +	batch->bufmgr = bufmgr;
 +	batch->devid = devid;
@@ -5053,10 +5056,10 @@ index 0000000..0ffa803
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index 360c48e..a65353f 100644
+index 0876221..662e0cf 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
-@@ -1728,6 +1728,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
+@@ -1744,6 +1744,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
  #define GMODE_TEXT     0
  #define GMODE_GRAPH    1
  #define GMODE_BLANK 2
@@ -5064,7 +5067,7 @@ index 360c48e..a65353f 100644
  
  static void vga_update_display(void *opaque)
  {
-@@ -1741,7 +1742,9 @@ static void vga_update_display(void *opaque)
+@@ -1757,7 +1758,9 @@ static void vga_update_display(void *opaque)
          /* nothing to do */
      } else {
          full_update = 0;
@@ -5075,7 +5078,7 @@ index 360c48e..a65353f 100644
              graphic_mode = GMODE_BLANK;
          } else {
              graphic_mode = s->gr[VGA_GFX_MISC] & VGA_GR06_GRAPHICS_MODE;
-@@ -1752,6 +1755,9 @@ static void vga_update_display(void *opaque)
+@@ -1768,6 +1771,9 @@ static void vga_update_display(void *opaque)
              full_update = 1;
          }
          switch(graphic_mode) {
@@ -5662,7 +5665,7 @@ index 0000000..c81b6ec
 +}
 diff --git a/hw/display/vgt_vga.c b/hw/display/vgt_vga.c
 new file mode 100644
-index 0000000..50de787
+index 0000000..e5027be
 --- /dev/null
 +++ b/hw/display/vgt_vga.c
 @@ -0,0 +1,635 @@
@@ -6302,7 +6305,7 @@ index 0000000..50de787
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 4e61655..3394422 100644
+index 152fddb..12d4c0a 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -228,6 +228,14 @@ static void pc_init1(MachineState *machine,
@@ -6321,7 +6324,7 @@ index 4e61655..3394422 100644
  
      assert(pcms->vmport != ON_OFF_AUTO__MAX);
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index ec071c4..6e34581 100644
+index 51f9a39..cb85541 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -1425,6 +1425,35 @@ void destroy_hvm_domain(bool reboot)
