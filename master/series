@@ -31,6 +31,8 @@
 0008-cirrus-fix-oob-access-in-mode4and5-write-functions.patch
 # 115788d7a70e9ae255511ca00fc69cce06967472 (2.11.0-rc1)
 0009-vga-fix-region-checks-in-wraparound-case.patch
+# a8036336609d2e184fc3543a4c439c0ba7d7f3a2 (2.11.0-rc1)
+0001-xen-pt-allow-QEMU-to-request-MSI-unmasking-at-bind-t.patch
 # 090fdc83b0960f68d204624a73c6814780da52d9 (expected 2.12.0-rc1)
 0007-vnc-fix-debug-spelling.patch
 # 6af998db05aec9af95a06f84ad94f1b96785e667 (expected 2.12.0-rc1)
