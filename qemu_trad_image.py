@@ -450,10 +450,9 @@ class Section(object):
     def load_xen_pvdevice(self, i):
         self.load_generic_pci_device(i)
 
-        # FIXME: Discard this section as QEMU does not yet save/load
-        # any state for this device. It should at least save/load
-        # PCI configuration.
-        self.data = None
+        # The address is supposed to be right after the last NIC
+        last_nic = i.find_last_section("rtl8139")
+        self.new_idstr = "0000:00:%02d.0/xen-pvdevice" % (4 + last_nic.instance_id + 1)
 
     def load_generic_pci_device(self, i):
         # version + config + 4 * irq_state

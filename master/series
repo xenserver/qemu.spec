@@ -87,6 +87,7 @@ dont-set-a20-on-xen.patch
 dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
 remove-ioapic.patch
+0001-xen-pvdevice-Introduce-a-simplistic-xen-pvdevice-sav.patch
 
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
 0003-xen-apic-Implement-unrealize.patch
