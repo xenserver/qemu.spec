@@ -66,6 +66,8 @@
 # 191f59dc17396bb5a8da50f8c59b6e0a430711a4 (expected 2.12.0-rc1)
 0010-vga-check-the-validation-of-memory-addr-when-draw-te.patch
 
+vga-fix-region-calculation.patch
+
 #
 # ABI Changes
 #
