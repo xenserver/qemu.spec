@@ -124,6 +124,7 @@ force-lba-geometry.patch
 0001-CP-21767-Don-t-accidently-unplug-ourselves-if-PCI_CL.patch
 0001-CP-21434-Implement-VBE-LFB-physical-address-register.patch
 0001-CA-256542-Workaround-unassigned-accesses-caused-by-b.patch
+ignore-rtc-century-changes.patch
 
 #
 # General compatibility with qemu trad (no need for an option)
@@ -140,6 +141,8 @@ gvt-g.patch
 0002-Fix-up-PCI-command-register-for-AMD-ATI-GPU-VFs.patch
 0003-Add-interception-layer-for-BAR-ops.patch
 0004-Add-AMD-code.patch
+
+rtc-no-ratelimit.patch
 
 #
 # Technical debt to unblock further development.  Needs removing
