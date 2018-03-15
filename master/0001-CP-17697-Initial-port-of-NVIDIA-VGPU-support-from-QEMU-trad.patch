@@ -16,10 +16,10 @@ index 551c050..86c0e28 100644
 +obj-y += vgpu_fb.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..3cf077a
+index 0000000..ee92458
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,267 @@
 +#include "qemu/osdep.h"
 +#include "cpu.h"
 +#include "hw/hw.h"
@@ -38,7 +38,6 @@ index 0000000..3cf077a
 +    uint32_t    height;
 +    uint32_t    depth;
 +    uint32_t    update;
-+    uint16_t    port;
 +} QEMU_PACKED shared_surface_t;
 +
 +typedef struct VGPUState {
@@ -56,30 +55,138 @@ index 0000000..3cf077a
 +
 +    uint8_t *surface_buffer;
 +
-+    struct sockaddr_in server;
 +    int surface_fd;
 +} VGPUState;
++
++#define DEMU_FIFO_PATH     "/var/xen/vgpu/%d/fifo"
++#define DEMU_FIFO_TIMEOUT   (60 * 5)
 +
 +#define TYPE_VGPU "vgpu"
 +#define VGPU(obj) \
 +    OBJECT_CHECK(VGPUState, (obj), TYPE_VGPU)
 +
++static bool out_of_time = false;
++
++static void fifo_open_alarm_sig_handler(int sig)
++{
++    (void)(sig);
++    out_of_time = true;
++}
++
++static int create_fifo(char *path, int mode, int timeout)
++{
++    int fd;
++    int rc;
++    struct sigaction sa;
++    struct sigaction old_sa;
++    sigset_t unblock;
++    sigset_t oldblock;
++
++    /* Create fifo, if doest already exist */
++    rc = mkfifo(path, S_IRUSR | S_IWUSR);
++
++    if (rc == -1 && errno != EEXIST) {
++        error_report("Error, mkfifo: %s\n", strerror(errno));
++        return -errno;
++    }
++
++    info_report("Fifo %s!\n", rc ? "exists" : "created");
++
++    /* set alarm */
++    sa.sa_handler = fifo_open_alarm_sig_handler;
++    sa.sa_flags = 0;
++    sigemptyset(&sa.sa_mask);
++    if (sigaction(SIGALRM, &sa, &old_sa)) {
++        fd = -errno;
++        error_report("Error waiting on SIGALRM %d, %s\n", errno, strerror(errno));
++        goto unlink_and_exit;
++    }
++    sigemptyset(&unblock);
++    sigaddset(&unblock, SIGALRM);
++    pthread_sigmask(SIG_UNBLOCK, &unblock, &oldblock);
++
++    alarm(timeout);
++
++    /* open fifo - will block until other end connects */
++    do {
++        fd = open(path, mode);
++        if (fd == -1)
++            fd = -errno;
++    } while (fd == -EINTR && !out_of_time);
++
++    /* unset alarm */
++    alarm(0);
++    pthread_sigmask(SIG_SETMASK, &oldblock, NULL);
++    if (sigaction(SIGALRM, &old_sa, NULL)) {
++        fd = -errno;
++        error_report("Error restoring old  SIGALRM %d, %s\n", errno, strerror(errno));
++    }
++
++    if (fd == -EINTR)
++        fd = -ETIME;
++
++unlink_and_exit:
++    unlink(path);
++
++    if (fd < 0)
++        error_report("create_fifo failed with %s\n", strerror(-fd));
++    else
++        info_report("Rendezvous successful");
++    return fd;
++}
++
++static int create_demu_fifo(void)
++{
++    char *buffer;
++    int rc, fd, flags;
++
++    rc = asprintf(&buffer, DEMU_FIFO_PATH, xen_domid);
++    if (rc < 0)
++        return -errno;
++
++    fd = create_fifo(buffer, O_WRONLY, DEMU_FIFO_TIMEOUT);
++
++    free (buffer);
++    if (fd < 0)
++        return fd;
++
++    flags = fcntl(fd, F_GETFL, 0);
++    rc = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
++
++    return  rc ? rc : fd;
++}
++
++#define BLOCK_SUPPRESS_LIMIT 200
++
 +static void vgpu_fb_update(void *opaque)
 +{
++    static int block_count = 0;
 +    VGPUState *s = VGPU(opaque);
 +    DisplaySurface *surface;
 +    pixman_format_code_t format;
 +    ssize_t rc;
 +    char buf = 'S';
 +
-+    rc = sendto(s->surface_fd, &buf, 1, MSG_DONTWAIT,
-+                &s->server, sizeof (s->server));
-+    if ( rc < 0 ) {
-+        fprintf(stderr, "%s: sendto() failed: %d, %s",
-+                __func__, errno, strerror(errno));
-+    } else if (rc != 1) {
-+        fprintf(stderr, "%s: sendto() wrote %ld, expected 1",
-+                __func__, rc);
++    rc = write(s->surface_fd, &buf, 1);
++    if (rc < 0) {
++        if (errno == EAGAIN) {
++            block_count++;
++            if (block_count == BLOCK_SUPPRESS_LIMIT)
++                error_report("%s: write() was blocked %d times without success",
++                             __func__, block_count);
++        } else {
++            error_report("%s: write() failed: %d, %s",
++                         __func__, errno, strerror(errno));
++        }
++    } else {
++        if (block_count >= BLOCK_SUPPRESS_LIMIT)
++            info_report("%s: write() was unblocked after %d attempts",
++                        __func__, block_count);
++        block_count = 0;
++
++        if (rc != 1)
++            error_report("%s: write() wrote %ld, expected 1",
++                         __func__, rc);
 +    }
 +
 +    if (s->surface_offset != s->shared->offset ||
@@ -94,7 +201,7 @@ index 0000000..3cf077a
 +        s->surface_height = s->shared->height;
 +        s->surface_depth = s->shared->depth;
 +
-+        fprintf(stderr, "%s: %dx%dx%d @ %x (linesize = %x)\n", __func__,
++        info_report("%s: %dx%dx%d @ %x (linesize = %x)\n", __func__,
 +                s->surface_width, s->surface_height, s->surface_depth,
 +                s->surface_offset, s->surface_linesize);
 +
@@ -138,7 +245,7 @@ index 0000000..3cf077a
 +                                             PROT_READ | PROT_WRITE,
 +                                             n, pfn, NULL);
 +    if (s->surface_buffer == NULL) {
-+        fprintf(stderr, "mmap failed\n");
++        error_report("mmap failed\n");
 +        exit(1);
 +    }
 +
@@ -146,19 +253,14 @@ index 0000000..3cf077a
 +                                     SURFACE_RESERVED_SIZE -
 +                                     TARGET_PAGE_SIZE);
 +
-+    fprintf(stderr, "vgpu: port = %u\n", s->shared->port);
 +
-+    fd = socket(AF_INET, SOCK_DGRAM, 0);
++    fd = create_demu_fifo();
 +    if (fd < 0) {
-+        fprintf(stderr, "socket failed\n");
++        error_report("fifo failed\n");
 +        exit(1);
 +    }
-+
 +    s->surface_fd = fd;
-+
-+    s->server.sin_family = AF_INET;
-+    s->server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-+    s->server.sin_port = htons(s->shared->port);
++    info_report("Rendezvous successful\n");
 +}
 +
 +static void vgpu_class_init(ObjectClass *klass, void *data)
