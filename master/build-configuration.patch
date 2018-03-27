@@ -6,7 +6,7 @@ This is made up of:
 * Disabling many devices which are not needed/used.
 
 diff --git a/block/Makefile.objs b/block/Makefile.objs
-index 2aaede4..9907714 100644
+index 2aaede4..13b0c75 100644
 --- a/block/Makefile.objs
 +++ b/block/Makefile.objs
 @@ -1,10 +1,12 @@
@@ -25,12 +25,13 @@ index 2aaede4..9907714 100644
  block-obj-y += block-backend.o snapshot.o qapi.o
  block-obj-$(CONFIG_WIN32) += file-win32.o win32-aio.o
  block-obj-$(CONFIG_POSIX) += file-posix.o
-@@ -12,7 +14,7 @@ block-obj-$(CONFIG_LINUX_AIO) += linux-aio.o
+@@ -12,7 +14,8 @@ block-obj-$(CONFIG_LINUX_AIO) += linux-aio.o
  block-obj-y += null.o mirror.o commit.o io.o
  block-obj-y += throttle-groups.o
  
 -block-obj-y += nbd.o nbd-client.o sheepdog.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += nbd.o nbd-client.o sheepdog.o
++block-obj-$(call lnot,$(CONFIG_XEN)) += sheepdog.o
++block-obj-y += nbd.o nbd-client.o
  block-obj-$(CONFIG_LIBISCSI) += iscsi.o
  block-obj-$(if $(CONFIG_LIBISCSI),y,n) += iscsi-opts.o
  block-obj-$(CONFIG_LIBNFS) += nfs.o
@@ -114,7 +115,7 @@ index d2ab2f6..0d73182 100644
 +CONFIG_PXB=n
  CONFIG_ACPI_VMGENID=y
 diff --git a/default-configs/pci.mak b/default-configs/pci.mak
-index a758630..106ee63 100644
+index a758630..b337fe4 100644
 --- a/default-configs/pci.mak
 +++ b/default-configs/pci.mak
 @@ -1,46 +1,46 @@

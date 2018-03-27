@@ -154,3 +154,12 @@ pci-permissive-mode.patch
 
 # Build configuration
 build-configuration.patch
+
+#
+# qemu-dp patches
+#
+# Still very preliminary will only affect use of GFS2 SR which is
+# at TP stage and should not interfere with qemu emulation part
+# at all.
+#
+do_not_register_xen_backend_for_qdisk.patch
