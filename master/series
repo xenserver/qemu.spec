@@ -144,6 +144,8 @@ gvt-g.patch
 
 rtc-no-ratelimit.patch
 
+pci-permissive-mode.patch
+
 #
 # Technical debt to unblock further development.  Needs removing
 #
