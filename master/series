@@ -152,9 +152,6 @@ pci-permissive-mode.patch
 # remove after 2.11
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
 
-# Build configuration
-build-configuration.patch
-
 #
 # qemu-dp patches
 #
@@ -163,3 +160,6 @@ build-configuration.patch
 # at all.
 #
 do_not_register_xen_backend_for_qdisk.patch
+
+# Build configuration
+build-configuration.patch
