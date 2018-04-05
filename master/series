@@ -114,6 +114,9 @@ use-new-dmops-for-vram.patch
 xenstore-ignore-state-write-error.patch
 igd-upt.patch
 
+xen-pt-use-address_space_memory-object-for-memory-region-hooks.patch
+pt-avoid-invalid-bar-registers.patch
+
 #
 # Binary compatability with qemu trad (must be behind an option)
 #
@@ -143,8 +146,6 @@ gvt-g.patch
 0004-Add-AMD-code.patch
 
 rtc-no-ratelimit.patch
-
-pci-permissive-mode.patch
 
 #
 # Technical debt to unblock further development.  Needs removing

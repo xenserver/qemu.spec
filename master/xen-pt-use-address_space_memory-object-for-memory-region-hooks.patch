@@ -1,0 +1,37 @@
+From patchwork Fri Apr  6 21:21:23 2018
+Subject: xen/pt: use address_space_memory object for memory region hooks
+To: <xen-devel@lists.xenproject.org>, <qemu-devel@nongnu.org>
+Cc: anthony.perard@citrix.com, ross.lagerwall@citrix.com,
+ sstabellini@kernel.org, Igor Druzhinin <igor.druzhinin@citrix.com>
+Date: Fri, 6 Apr 2018 22:21:23 +0100
+From: Igor Druzhinin <igor.druzhinin@citrix.com>
+
+Commit 99605175c (xen-pt: Fix PCI devices re-attach failed) introduced
+a subtle bug. As soon as the guest switches off Bus Mastering on the
+device it immediately causes all the BARs be unmapped due to the DMA
+address space of the device being changed. This is undesired behavior
+because the guest may try to communicate with the device after that
+which triggers the following errors in the logs:
+
+[00:05.0] xen_pt_bar_read: Error: Should not read BAR through QEMU. @0x0000000000000200
+[00:05.0] xen_pt_bar_write: Error: Should not write BAR through QEMU. @0x0000000000000200
+
+The issue that the original patch tried to workaround (uneven number of
+region_add/del calls on device attach/detach) was fixed in later QEMU
+versions.
+
+Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+Reported-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
+index d6bd5a0..8dad2db 100644
+--- a/hw/xen/xen_pt.c
++++ b/hw/xen/xen_pt.c
+@@ -908,7 +908,7 @@ out:
+         }
+     }
+ 
+-    memory_listener_register(&s->memory_listener, &s->dev.bus_master_as);
++    memory_listener_register(&s->memory_listener, &address_space_memory);
+     memory_listener_register(&s->io_listener, &address_space_io);
+     s->listener_set = true;
+     XEN_PT_LOG(d,
