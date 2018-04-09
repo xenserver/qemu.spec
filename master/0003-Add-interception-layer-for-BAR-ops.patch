@@ -1,5 +1,5 @@
 diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
-index 375efa6..4750e2c 100644
+index d6bd5a0..29835e0 100644
 --- a/hw/xen/xen_pt.c
 +++ b/hw/xen/xen_pt.c
 @@ -259,7 +259,7 @@ static void xen_pt_pci_write_config(PCIDevice *d, uint32_t addr,
@@ -11,7 +11,7 @@ index 375efa6..4750e2c 100644
              XEN_PT_WARN(d, "Guest attempt to set address to unused "
                          "Base Address Register. (addr: 0x%02x, len: %d)\n",
                          addr, len);
-@@ -416,31 +416,139 @@ out:
+@@ -416,31 +416,149 @@ out:
  
  /* register regions */
  
@@ -20,41 +20,28 @@ index 375efa6..4750e2c 100644
 +static uint64_t xen_pt_mr_read(void *o, hwaddr addr, unsigned size)
  {
 -    PCIDevice *d = o;
--    /* if this function is called, that probably means that there is a
--     * misconfiguration of the IOMMU. */
--    XEN_PT_ERR(d, "Should not read BAR through QEMU. @0x"TARGET_FMT_plx"\n",
--               addr);
--    return 0;
 +    XenPTBAR *bar = o;
 +    uint64_t value;
 +
 +    bar->read(bar, addr, size, &value);
 +
 +    return value;
- }
--static void xen_pt_bar_write(void *o, hwaddr addr, uint64_t val,
--                             unsigned size)
++}
 +
 +static void xen_pt_mr_write(void *o, hwaddr addr, uint64_t value,
 +                            unsigned size)
- {
--    PCIDevice *d = o;
--    /* Same comment as xen_pt_bar_read function */
--    XEN_PT_ERR(d, "Should not write BAR through QEMU. @0x"TARGET_FMT_plx"\n",
--               addr);
++{
 +    XenPTBAR *bar = o;
 +
 +    bar->write(bar, addr, size, value);
- }
- 
- static const MemoryRegionOps ops = {
-     .endianness = DEVICE_NATIVE_ENDIAN,
--    .read = xen_pt_bar_read,
--    .write = xen_pt_bar_write,
++}
++
++static const MemoryRegionOps ops = {
++    .endianness = DEVICE_NATIVE_ENDIAN,
 +    .read = xen_pt_mr_read,
 +    .write = xen_pt_mr_write,
- };
- 
++};
++
 +static void xen_pt_io_bar_update(struct XenPCIPassthroughState *s,
 +                                 unsigned int index,
 +                                 MemoryRegionSection *sec, int op)
@@ -157,17 +144,38 @@ index 375efa6..4750e2c 100644
 +static void xen_pt_memory_bar_read(XenPTBAR *bar, hwaddr addr,
 +                                   unsigned int size, uint64_t *value)
 +{
-+}
++    PCIDevice *d = &bar->s->dev;
+     /* if this function is called, that probably means that there is a
+      * misconfiguration of the IOMMU. */
+     XEN_PT_ERR(d, "Should not read BAR through QEMU. @0x"TARGET_FMT_plx"\n",
+                addr);
+-    return 0;
+ }
+-static void xen_pt_bar_write(void *o, hwaddr addr, uint64_t val,
+-                             unsigned size)
 +
 +static void xen_pt_memory_bar_write(XenPTBAR *bar, hwaddr addr,
 +                                    unsigned int size, uint64_t value)
-+{
-+}
-+
+ {
+-    PCIDevice *d = o;
+-    /* Same comment as xen_pt_bar_read function */
++    PCIDevice *d = &bar->s->dev;
++    /* if this function is called, that probably means that there is a
++     * misconfiguration of the IOMMU. */
+     XEN_PT_ERR(d, "Should not write BAR through QEMU. @0x"TARGET_FMT_plx"\n",
+                addr);
+ }
+ 
+-static const MemoryRegionOps ops = {
+-    .endianness = DEVICE_NATIVE_ENDIAN,
+-    .read = xen_pt_bar_read,
+-    .write = xen_pt_bar_write,
+-};
+-
  static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
  {
      int i = 0;
-@@ -455,7 +563,9 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -455,7 +573,9 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              continue;
          }
  
@@ -178,7 +186,7 @@ index 375efa6..4750e2c 100644
  
          if (r->type & XEN_HOST_PCI_REGION_TYPE_IO) {
              type = PCI_BASE_ADDRESS_SPACE_IO;
-@@ -471,9 +581,21 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -471,9 +591,21 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              *cmd |= PCI_COMMAND_MEMORY;
          }
  
@@ -202,7 +210,7 @@ index 375efa6..4750e2c 100644
  
          XEN_PT_LOG(&s->dev, "IO region %i registered (size=0x%08"PRIx64
                     " base_addr=0x%08"PRIx64" type: %#x)\n",
-@@ -493,19 +615,27 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -493,19 +625,27 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              xen_host_pci_set_long(d, PCI_ROM_ADDRESS, bar_data);
          }
  
@@ -237,7 +245,7 @@ index 375efa6..4750e2c 100644
      return 0;
  }
  
-@@ -515,14 +645,11 @@ static int xen_pt_bar_from_region(XenPCIPassthroughState *s, MemoryRegion *mr)
+@@ -515,14 +655,11 @@ static int xen_pt_bar_from_region(XenPCIPassthroughState *s, MemoryRegion *mr)
  {
      int i = 0;
  
@@ -254,7 +262,7 @@ index 375efa6..4750e2c 100644
      return -1;
  }
  
-@@ -578,64 +705,43 @@ static void xen_pt_region_update(XenPCIPassthroughState *s,
+@@ -578,64 +715,43 @@ static void xen_pt_region_update(XenPCIPassthroughState *s,
  {
      PCIDevice *d = &s->dev;
      MemoryRegion *mr = sec->mr;
@@ -330,7 +338,7 @@ index 375efa6..4750e2c 100644
      }
  }
  
-@@ -702,7 +808,6 @@ xen_igd_passthrough_isa_bridge_create(XenPCIPassthroughState *s,
+@@ -702,7 +818,6 @@ xen_igd_passthrough_isa_bridge_create(XenPCIPassthroughState *s,
  static void xen_pt_destroy(PCIDevice *d) {
  
      XenPCIPassthroughState *s = XEN_PT_DEVICE(d);
@@ -338,7 +346,7 @@ index 375efa6..4750e2c 100644
      uint8_t machine_irq = s->machine_irq;
      uint8_t intx;
      int rc;
-@@ -749,7 +854,7 @@ static void xen_pt_destroy(PCIDevice *d) {
+@@ -749,7 +864,7 @@ static void xen_pt_destroy(PCIDevice *d) {
      /* delete all emulated config registers */
      xen_pt_config_delete(s);
  
@@ -347,7 +355,7 @@ index 375efa6..4750e2c 100644
  
      if (s->listener_set) {
          memory_listener_unregister(&s->memory_listener);
-@@ -917,10 +1022,9 @@ out:
+@@ -918,10 +1033,9 @@ out:
      return;
  
  err_out:
@@ -361,7 +369,7 @@ index 375efa6..4750e2c 100644
      xen_pt_destroy(d);
      assert(rc);
 diff --git a/hw/xen/xen_pt.h b/hw/xen/xen_pt.h
-index 191d9ca..d422482 100644
+index aa39a9a..89645e4 100644
 --- a/hw/xen/xen_pt.h
 +++ b/hw/xen/xen_pt.h
 @@ -95,6 +95,7 @@ typedef struct XenPTRegion {
@@ -372,7 +380,7 @@ index 191d9ca..d422482 100644
  } XenPTRegion;
  
  /* XenPTRegInfo declaration
-@@ -192,6 +193,7 @@ typedef struct XenPTMSIXEntry {
+@@ -193,6 +194,7 @@ typedef struct XenPTMSIXEntry {
      uint32_t latch[4];
      bool updated; /* indicate whether MSI ADDR or DATA is updated */
  } XenPTMSIXEntry;
@@ -380,7 +388,7 @@ index 191d9ca..d422482 100644
  typedef struct XenPTMSIX {
      uint32_t ctrl_offset;
      bool enabled;
-@@ -206,6 +208,18 @@ typedef struct XenPTMSIX {
+@@ -207,6 +209,18 @@ typedef struct XenPTMSIX {
      XenPTMSIXEntry msix_entry[0];
  } XenPTMSIX;
  
@@ -399,7 +407,7 @@ index 191d9ca..d422482 100644
  struct XenPCIPassthroughState {
      PCIDevice dev;
  
-@@ -214,16 +228,13 @@ struct XenPCIPassthroughState {
+@@ -215,16 +229,13 @@ struct XenPCIPassthroughState {
      bool permissive;
      bool permissive_warned;
      XenHostPCIDevice real_device;
@@ -417,7 +425,7 @@ index 191d9ca..d422482 100644
  
      MemoryListener memory_listener;
      MemoryListener io_listener;
-@@ -328,8 +339,8 @@ static inline bool is_igd_vga_passthrough(XenHostPCIDevice *dev)
+@@ -329,8 +340,8 @@ static inline bool is_igd_vga_passthrough(XenHostPCIDevice *dev)
      return (has_igd_gfx_passthru
              && ((dev->class_code >> 0x8) == PCI_CLASS_DISPLAY_VGA));
  }
@@ -429,7 +437,7 @@ index 191d9ca..d422482 100644
                       Error **errp);
  #endif /* XEN_PT_H */
 diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
-index 6baf5d7..dc31072 100644
+index 4efa44e..b9626e5 100644
 --- a/hw/xen/xen_pt_config_init.c
 +++ b/hw/xen/xen_pt_config_init.c
 @@ -408,7 +408,7 @@ static XenPTBarFlag xen_pt_bar_reg_parse(XenPCIPassthroughState *s,
@@ -559,10 +567,10 @@ index 0f4c8d7..511778c 100644
      }
  
 diff --git a/hw/xen/xen_pt_msi.c b/hw/xen/xen_pt_msi.c
-index 62add06..7f093c7 100644
+index 6d1e3bd..e6b6fec 100644
 --- a/hw/xen/xen_pt_msi.c
 +++ b/hw/xen/xen_pt_msi.c
-@@ -588,7 +588,7 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
+@@ -603,7 +603,7 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
      XEN_PT_LOG(d, "mapping physical MSI-X table to %p\n",
                 msix->phys_iomem_base);
  
@@ -571,7 +579,7 @@ index 62add06..7f093c7 100644
                                          &msix->mmio,
                                          2); /* Priority: pci default + 1 */
  
-@@ -616,7 +616,7 @@ void xen_pt_msix_unmap(XenPCIPassthroughState *s)
+@@ -631,7 +631,7 @@ void xen_pt_msix_unmap(XenPCIPassthroughState *s)
                 + msix->table_offset_adjust);
      }
  
