@@ -162,5 +162,11 @@ rtc-no-ratelimit.patch
 #
 do_not_register_xen_backend_for_qdisk.patch
 
+#
+# Small change to qemu emulation part which adds an IDE
+# read cache to improve performance of sequential short reads
+# (e.g. windows boot)
+add-an-ide-read-cache.patch
+
 # Build configuration
 build-configuration.patch
