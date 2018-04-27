@@ -3,6 +3,7 @@
 import string
 import struct
 import sys
+import re
 
 QEMU_VM_FILE_MAGIC = 0x5145564d
 QEMU_VM_FILE_VERSION = 0x00000003
@@ -55,7 +56,8 @@ class Image(object):
         f.write(struct.pack(">B", QEMU_VM_EOF))
         f.flush()
 
-    def load(self):
+    def load(self, args):
+        self.args = args
         self.load_header()
         while self.load_one_section():
             pass
@@ -113,6 +115,18 @@ class Image(object):
                 return s
         return None
 
+    def get_pci_addr(self, dev, id):
+        addrs = []
+        for arg in self.args:
+            r = re.match(dev + ".*,addr=([0-9a-fA-F]+).*", arg)
+            if r:
+                addrs.append(int(r.group(1), 16))
+
+        addrs.sort()
+        if id < len(addrs):
+            return addrs[id]
+        else:
+            self.error("no pci addr supplied: %s:%d" % (dev, id))
 
 class Section(object):
     def __init__(self, section_type):
@@ -294,7 +308,8 @@ class Section(object):
         # + TxUndrn) + cplus_enabled
         self.data += i.read_buffer(4*2+8*4+4+2*2+4*2+8*2+4+2*2+4)
 
-        self.new_idstr = "0000:00:%02d.0/rtl8139" % (4 + self.instance_id)
+        addr = i.get_pci_addr("rtl8139", self.instance_id)
+        self.new_idstr = "0000:00:%02x.0/rtl8139" % addr
         self.new_instance_id = 0
         self.version_id = 5
 
@@ -450,9 +465,8 @@ class Section(object):
     def load_xen_pvdevice(self, i):
         self.load_generic_pci_device(i)
 
-        # The address is supposed to be right after the last NIC
-        last_nic = i.find_last_section("rtl8139")
-        self.new_idstr = "0000:00:%02d.0/xen-pvdevice" % (4 + last_nic.instance_id + 1)
+        addr = i.get_pci_addr("xen-pvdevice", 0)
+        self.new_idstr = "0000:00:%02x.0/xen-pvdevice" % addr
 
     def load_generic_pci_device(self, i):
         # version + config + 4 * irq_state
@@ -524,9 +538,9 @@ class GenericTimer(object):
         return struct.pack(">Q", self.expires)
 
 
-def convert_file(f1, f2):
+def convert_file(f1, f2, args):
     image = Image(f1)
-    image.load()
+    image.load(args)
 
     if image.find_section("UHCI usb controller"):
         usb_ptr = CompleteSection(QEMU_VM_SECTION_FULL)
@@ -557,11 +571,11 @@ def is_trad_image(s1):
     return section_type == QEMU_VM_SECTION_START
 
 
-def trad_upgrade(s1, s2):
+def trad_upgrade(s1, s2, args):
     f1 = open(s1, 'rb')
     f2 = open(s2, 'wb')
 
-    image = convert_file(f1, f2)
+    image = convert_file(f1, f2, args)
 
     f1.close()
     f2.close()
