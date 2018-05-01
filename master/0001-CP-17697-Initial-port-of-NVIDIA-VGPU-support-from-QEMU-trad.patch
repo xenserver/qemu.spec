@@ -16,10 +16,10 @@ index 551c050..86c0e28 100644
 +obj-y += vgpu_fb.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..2cef000
+index 0000000..e6250bd
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,292 @@
+@@ -0,0 +1,316 @@
 +#include "qemu/osdep.h"
 +#include "cpu.h"
 +#include "hw/hw.h"
@@ -38,6 +38,7 @@ index 0000000..2cef000
 +    uint32_t    height;
 +    uint32_t    depth;
 +    uint32_t    update;
++    uint64_t    vram_addr;
 +} QEMU_PACKED shared_surface_t;
 +
 +typedef struct VGPUState {
@@ -60,6 +61,7 @@ index 0000000..2cef000
 +
 +#define DEMU_FIFO_PATH     "/var/xen/vgpu/%d/fifo"
 +#define DEMU_FIFO_TIMEOUT   (60 * 5)
++#define DEMU_SURFACE_PATH    "/xen.vgpu.%d"
 +
 +#define TYPE_VGPU "vgpu"
 +#define VGPU(obj) \
@@ -135,6 +137,49 @@ index 0000000..2cef000
 +    return fd;
 +}
 +
++static int open_surface_shm(shared_surface_t **shared)
++{
++    int rc = 0;
++    int shm_fd;
++    void *ptr;
++    char *sh_name;
++
++    if (asprintf(&sh_name, DEMU_SURFACE_PATH, xen_domid) < 0)
++        return -errno;
++
++    /* open the shared memory segment */
++    shm_fd = shm_open(sh_name, O_RDONLY, 0666);
++    if (shm_fd < 0) {
++        rc = -errno;
++        error_report("shm_open error %s\n", strerror(-rc));
++        goto out;
++    }
++
++    /* now map the shared memory segment in the address space of the process */
++    ptr = mmap(0, sizeof(shared_surface_t), PROT_READ, MAP_SHARED, shm_fd, 0);
++    if (ptr == MAP_FAILED) {
++        rc = -errno;
++        error_report("mmap error %s\n", strerror(-rc));
++    } else {
++        *shared = ptr;
++    }
++
++    if (close(shm_fd)) {
++        if (!rc)
++            rc = -errno;
++        error_report("close error %s\n", strerror(errno));
++    }
++
++    if (shm_unlink(sh_name)) {
++        if (!rc)
++            rc = -errno;
++        error_report("shm_unlink error %s\n", strerror(errno));
++    }
++out:
++    free(sh_name);
++    return rc;
++}
++
 +static int create_demu_fifo(void)
 +{
 +    char *buffer;
@@ -156,26 +201,6 @@ index 0000000..2cef000
 +    return  rc ? rc : fd;
 +}
 +
-+static uint64_t xenstore_parse_vgpu_address(void)
-+{
-+    char *params = NULL, *buf = NULL;
-+    uint64_t address = ~0ULL;
-+    unsigned int len;
-+
-+    if (asprintf(&buf, "/local/domain/%u/vm-data/vram", xen_domid) == -1) {
-+        goto out;
-+    }
-+
-+    params = xs_read(xenstore, XBT_NULL, buf, &len);
-+    if (params != NULL) {
-+        address = strtoull(params, NULL, 16);
-+    }
-+
-+ out:
-+    free(buf);
-+    free(params);
-+    return address;
-+}
 +
 +#define BLOCK_SUPPRESS_LIMIT 200
 +
@@ -254,7 +279,7 @@ index 0000000..2cef000
 +    VGPUState *s = VGPU(dev);
 +    const int n = SURFACE_RESERVED_SIZE >> TARGET_PAGE_BITS;
 +    xen_pfn_t pfn[n];
-+    int fifo_fd, i;
++    int fifo_fd, i, rc;
 +    uint64_t address;
 +
 +    s->con = graphic_console_init(dev, 0, &vgpu_ops, s);
@@ -265,11 +290,13 @@ index 0000000..2cef000
 +        exit(1);
 +    }
 +
-+    address = xenstore_parse_vgpu_address();
-+    if (address == ~0ULL) {
-+        error_report("Failed to read vgpu fb address");
++    rc = open_surface_shm(&s->shared);
++    if (rc) {
++        error_report("Failed to open shared surface.  %s", strerror(-rc));
 +        exit(1);
 +    }
++
++    address = s->shared->vram_addr;
 +
 +    for (i = 0; i < n; i++)
 +        pfn[i] = (address >> TARGET_PAGE_BITS) + i;
@@ -282,9 +309,6 @@ index 0000000..2cef000
 +        exit(1);
 +    }
 +
-+    s->shared = (shared_surface_t *)(s->surface_buffer +
-+                                     SURFACE_RESERVED_SIZE -
-+                                     TARGET_PAGE_SIZE);
 +    s->surface_fd = fifo_fd;
 +}
 +
