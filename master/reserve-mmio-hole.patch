@@ -1,0 +1,68 @@
+xen-hvm: Reserve the MMIO hole region
+
+When allocating the VRAM, QEMU allocates it immediately after RAM. This
+mostly works fine as there is a gap between the end of RAM and the start
+of the MMIO region.  However, when QEMU has 2G and the MMIO region is
+2G, there is no gap and QEMU will allocate the VRAM at 2G which causes
+breakage since a BAR may be mapped to the same location.
+
+Fake up a reserved RAM region to avoid having QEMU allocate the VRAM
+over the MMIO hole.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
+index 8e471bf..b0b93f6 100644
+--- a/hw/i386/xen/xen-hvm.c
++++ b/hw/i386/xen/xen-hvm.c
+@@ -39,7 +39,7 @@
+     do { } while (0)
+ #endif
+ 
+-static MemoryRegion ram_memory, ram_640k, ram_lo, ram_hi;
++static MemoryRegion ram_memory, ram_640k, ram_lo, ram_hi, reserved_memory;
+ static MemoryRegion *framebuffer;
+ static bool xen_in_migration;
+ 
+@@ -237,6 +237,13 @@ static void xen_ram_init(PCMachineState *pcms,
+                                  pcms->above_4g_mem_size);
+         memory_region_add_subregion(sysmem, 0x100000000ULL, &ram_hi);
+     }
++
++    /* Prevent allocating RAM where the MMIO hole is. */
++    memory_region_init_ram_nomigrate(&reserved_memory, NULL, "xen.reserved",
++                                     VRAM_RESERVED_ADDRESS - user_lowmem,
++                                     &error_fatal);
++    memory_region_add_subregion_overlap(sysmem, user_lowmem, &reserved_memory,
++                                        -1);
+ }
+ 
+ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -254,7 +261,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+         return;
+     }
+ 
+-    if (mr == &ram_memory) {
++    if (mr == &ram_memory || mr == &reserved_memory) {
+         return;
+     }
+ 
+@@ -466,7 +473,7 @@ static void xen_set_memory(struct MemoryListener *listener,
+     bool log_dirty = memory_region_is_logging(section->mr, DIRTY_MEMORY_VGA);
+     hvmmem_type_t mem_type;
+ 
+-    if (section->mr == &ram_memory) {
++    if (section->mr == &ram_memory || section->mr == &reserved_memory) {
+         return;
+     } else {
+         if (add) {
+diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
+index 7efcdaa..72b117a 100644
+--- a/include/hw/xen/xen.h
++++ b/include/hw/xen/xen.h
+@@ -48,4 +48,6 @@ void xen_hvm_modified_memory(ram_addr_t start, ram_addr_t length);
+ 
+ void xen_register_framebuffer(struct MemoryRegion *mr);
+ 
++#define VRAM_RESERVED_ADDRESS	0xff000000
++
+ #endif /* QEMU_HW_XEN_H */
