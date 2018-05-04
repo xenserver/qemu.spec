@@ -116,6 +116,8 @@ igd-upt.patch
 
 xen-pt-use-address_space_memory-object-for-memory-region-hooks.patch
 pt-avoid-invalid-bar-registers.patch
+pt-fix-bar64-size.patch
+reserve-mmio-hole.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
