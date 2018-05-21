@@ -1,0 +1,14 @@
+diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
+index fa086e1..f823727 100644
+--- a/hw/i386/xen/xen-mapcache.c
++++ b/hw/i386/xen/xen-mapcache.c
+@@ -224,6 +224,9 @@ static void xen_remap_bucket(MapCacheEntry *entry,
+     for (i = 0; i < nb_pfn; i++) {
+         if (!err[i]) {
+             bitmap_set(entry->valid_mapping, i, 1);
++        } else {
++            fprintf(stderr, "Foreing map failed for %u: pfn %lx status %d\n",
++                    i, pfns[i], err[i]);
+         }
+     }
+ 

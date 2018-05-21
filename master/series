@@ -173,3 +173,6 @@ add-an-ide-read-cache.patch
 
 # Build configuration
 build-configuration.patch
+
+# Debug patches
+mapcache-error-print.patch
