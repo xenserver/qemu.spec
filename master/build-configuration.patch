@@ -60,7 +60,7 @@ index 2b99e08..b505b64 100644
 +crypto-obj-y = hash.o
 +crypto-obj-$(if $(CONFIG_NETTLE),n,$(if $(CONFIG_GCRYPT),n,y)) += hash-glib.o
 diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index d2ab2f6..0d73182 100644
+index d2ab2f6..dd14725 100644
 --- a/default-configs/i386-softmmu.mak
 +++ b/default-configs/i386-softmmu.mak
 @@ -6,19 +6,19 @@ include usb.mak
@@ -108,12 +108,11 @@ index d2ab2f6..0d73182 100644
  CONFIG_MC146818RTC=y
  CONFIG_PCI_PIIX=y
 -CONFIG_WDT_IB700=y
--CONFIG_ISA_DEBUG=y
++CONFIG_WDT_IB700=n
+ CONFIG_ISA_DEBUG=y
 -CONFIG_ISA_TESTDEV=y
 -CONFIG_VMPORT=y
 -CONFIG_SGA=y
-+CONFIG_WDT_IB700=n
-+CONFIG_ISA_DEBUG=n
 +CONFIG_ISA_TESTDEV=n
 +CONFIG_VMPORT=n
 +CONFIG_SGA=n
