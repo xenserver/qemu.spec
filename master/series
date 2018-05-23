@@ -132,6 +132,7 @@ force-lba-geometry.patch
 0001-CA-256542-Workaround-unassigned-accesses-caused-by-b.patch
 ignore-rtc-century-changes.patch
 match-xen-pvdevice-location.patch
+0001-CA-289906-Use-legacy-HID-descriptors-for-USB-Tablet-.patch
 
 #
 # General compatibility with qemu trad (no need for an option)

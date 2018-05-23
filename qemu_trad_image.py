@@ -546,7 +546,7 @@ def convert_file(f1, f2, args):
         usb_ptr = CompleteSection(QEMU_VM_SECTION_FULL)
         usb_ptr.new(0, "2/usb-ptr", 0, 1)
         # addr + state + remote_wakeup + setup_state + setup_len + setup_index
-        usb_ptr.data += struct.pack(">BIIIII", 1, 3, 0, 0, 0, 0)
+        usb_ptr.data += struct.pack(">BIIIII", 0, 3, 0, 0, 0, 0)
         for i in range(8):
             usb_ptr.data += struct.pack(">B", 0) # setup_buf
         for i in range(16):
