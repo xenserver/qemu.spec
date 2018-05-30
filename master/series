@@ -131,6 +131,7 @@ force-lba-geometry.patch
 0001-CP-21434-Implement-VBE-LFB-physical-address-register.patch
 0001-CA-256542-Workaround-unassigned-accesses-caused-by-b.patch
 ignore-rtc-century-changes.patch
+match-xen-pvdevice-location.patch
 
 #
 # General compatibility with qemu trad (no need for an option)
