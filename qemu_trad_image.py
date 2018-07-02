@@ -419,8 +419,12 @@ class Section(object):
         self.gpe_sts |= (i.read_u8() << 8)
         self.gpe_en |= (i.read_u8() << 8)
 
-        # (gpe_sts + gpe_en) * 2 + sci_asserted + gpe0_blk_address + gpe0_blk_half_len
-        i.read_buffer((1+1)*2+1+4*2) # discard remaining fields
+        # (gpe_sts + gpe_en) * 2 + sci_asserted
+        i.read_buffer((1+1)*2+1) # discard remaining fields
+        if self.version_id > 1:
+            # For versions after Clearwater
+            # gpe0_blk_address + gpe0_blk_half_len
+            i.read_buffer(4*2) # discard remaining fields
 
         # This section is merged into the piix4_pm section.
         self.data = None
@@ -435,7 +439,9 @@ class Section(object):
     def load_piix4acpi(self, i):
         self.load_generic_pci_device(i)
         pm1_control = i.read_be16()
-        i.read_buffer(4) # pm1a_evt_blk_address
+        if self.version_id > 2:
+            # For versions after Clearwater
+            i.read_buffer(4) # pm1a_evt_blk_address
 
         pm1_evt_sts = 0
         pm1_evt_en = 0
