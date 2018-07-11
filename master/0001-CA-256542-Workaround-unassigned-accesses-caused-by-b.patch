@@ -110,10 +110,10 @@ index 7ee9643..e817bc9 100644
 +    /* XXX How do we know if this is for DMA? Assume it is for now... */
 +    host = xen_map_cache(addr, 0, 0, true);
 +    if (!host) {
-+         DPRINTF("unhandled unassigned %s: addr=0x%lx size=%u\n",
-+                 is_write ? "write": "read", addr, size);
++         error_report("unhandled unassigned %s: addr=0x%lx size=%u",
++                      is_write ? "write": "read", addr, size);
 +         if (!is_write) {
-+             memset(val, 0, size);
++             memset(val, 0xff, size);
 +         }
 +         return;
 +    }
