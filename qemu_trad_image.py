@@ -15,10 +15,14 @@ QEMU_VM_SECTION_END = 0x03
 QEMU_VM_SECTION_FULL = 0x04
 QEMU_VM_SUBSECTION = 0x05
 
+PCI_COMMAND = 0x04
+PCI_COMMAND_INTX_DISABLE = 0x400
+
 class Image(object):
     def __init__(self, f):
         self.f = f
         self.sections = []
+        self.irq_count = [0] * 128
 
     def error(self, msg):
         sys.stderr.write("%s: %s\n" % (sys.argv[0], msg))
@@ -179,19 +183,19 @@ class Section(object):
         self.data = None
 
     def load_I440FX(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 0)
         self.data += struct.pack(">B", 0) # smm_enabled
 
         self.new_idstr = "0000:00:00.0/I440FX"
         self.version_id = 3
 
     def load_PIIX3(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 1)
 
         self.new_idstr = "0000:00:01.0/PIIX3"
 
     def load_vga(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 2)
         # latch + sr_index + sr + gr_index + gr + ar_index + ar + ar_flip_flop
         # + cr_index + cr + msr + fcr + st00 + st01 + dac_state + dac_sub_index
         # + dac_read_index + dac_write_index + dac_cache + palette + bank_offset
@@ -219,7 +223,7 @@ class Section(object):
         self.version_id = 2
 
     def load_cirrus_vga(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 2)
         # latch + sr_index + sr + gr_index + cirrus_shadow_gr0 + cirrus_shadow_gr1
         # + gr + ar_index + ar + ar_flip_flop + cr_index + cr + msr + fcr + st00
         # + st01 + dac_state + dac_sub_index + dac_read_index + dac_write_index
@@ -263,7 +267,7 @@ class Section(object):
         self.version_id = 2
 
     def load_platform(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 3)
 
         i.read_be64() # Discard padding
 
@@ -288,7 +292,8 @@ class Section(object):
         self.version_id = 3
 
     def load_rtl8139(self, i):
-        self.load_generic_pci_device(i)
+        addr = i.get_pci_addr("rtl8139", self.instance_id)
+        self.load_generic_pci_device(i, addr)
 
         # phys + mult + TxStatus*4 + TxAddr*4 + RxBuf + RxBufferSize + RxBufPtr
         # + RxBufAddr + IntrStatus + IntrMask + TxConfig + RxConfig + RxMissed
@@ -308,13 +313,12 @@ class Section(object):
         # + TxUndrn) + cplus_enabled
         self.data += i.read_buffer(4*2+8*4+4+2*2+4*2+8*2+4+2*2+4)
 
-        addr = i.get_pci_addr("rtl8139", self.instance_id)
         self.new_idstr = "0000:00:%02x.0/rtl8139" % addr
         self.new_instance_id = 0
         self.version_id = 5
 
     def load_ide(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 1)
 
         # dma_state
         for s in range(2):
@@ -394,7 +398,7 @@ class Section(object):
             self.data += i.read_buffer(1*3)
 
     def load_UHCI_usb_controller(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 1)
 
         num_ports = i.read_u8()
         self.data += struct.pack(">B", num_ports)
@@ -437,7 +441,7 @@ class Section(object):
         self.data = None
 
     def load_piix4acpi(self, i):
-        self.load_generic_pci_device(i)
+        self.load_generic_pci_device(i, 1)
         pm1_control = i.read_be16()
         if self.version_id > 2:
             # For versions after Clearwater
@@ -469,14 +473,26 @@ class Section(object):
         self.version_id = 3
 
     def load_xen_pvdevice(self, i):
-        self.load_generic_pci_device(i)
-
         addr = i.get_pci_addr("xen-pvdevice", 0)
+        self.load_generic_pci_device(i, addr)
+
         self.new_idstr = "0000:00:%02x.0/xen-pvdevice" % addr
 
-    def load_generic_pci_device(self, i):
+    def load_generic_pci_device(self, i, addr):
         # version + config + 4 * irq_state
         self.data = i.read_buffer(4 + 256 + 4*4)
+
+        fields = struct.unpack('>I256B4I', self.data)
+        config = fields[1:257]
+        irq_state = fields[257:301]
+
+        command = config[PCI_COMMAND] + (config[PCI_COMMAND + 1] << 8)
+        if command & PCI_COMMAND_INTX_DISABLE:
+            return
+
+        for x in range(4):
+            if irq_state[x] != 0:
+                i.irq_count[x + (addr << 2)] += 1
 
     def load_generic_timer(self, i):
         timer = GenericTimer()
@@ -547,6 +563,13 @@ class GenericTimer(object):
 def convert_file(f1, f2, args):
     image = Image(f1)
     image.load(args)
+
+    pci_bus = CompleteSection(QEMU_VM_SECTION_FULL)
+    pci_bus.new(0, "PCIBUS", 0, 1)
+    pci_bus.data += struct.pack(">I", 128) # nirq
+    for i in range(128):
+        pci_bus.data += struct.pack(">I", image.irq_count[i]) # irq_count
+    image.sections.insert(0, pci_bus)
 
     if image.find_section("UHCI usb controller"):
         usb_ptr = CompleteSection(QEMU_VM_SECTION_FULL)
