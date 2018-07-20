@@ -7,7 +7,7 @@ index fa086e1..f823727 100644
          if (!err[i]) {
              bitmap_set(entry->valid_mapping, i, 1);
 +        } else {
-+            fprintf(stderr, "Foreing map failed for %u: pfn %lx status %d\n",
++            fprintf(stderr, "(Debug for CA-290135) Foreign map failed for %u: pfn %lx status %d\n",
 +                    i, pfns[i], err[i]);
          }
      }
