@@ -63,7 +63,7 @@ index b14c7f3..6c8c93c 100644
  
  static const TypeInfo pc_machine_info = {
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 7ee9643..e817bc9 100644
+index 5f633fa..85ce82c 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -24,6 +24,7 @@
@@ -75,14 +75,14 @@ index 7ee9643..e817bc9 100644
  #include <xen/hvm/ioreq.h>
  #include <xen/hvm/params.h>
 @@ -42,6 +43,7 @@
- static MemoryRegion ram_memory, ram_640k, ram_lo, ram_hi, reserved_memory;
+ static MemoryRegion ram_memory, ram_640k, ram_lo, ram_hi;
  static MemoryRegion *framebuffer;
  static bool xen_in_migration;
 +static bool allow_unassigned;
  
  /* Compatibility with older version */
  
-@@ -1381,6 +1383,10 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1382,6 +1384,10 @@ void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory)
      /* Disable ACPI build because Xen handles it */
      pcms->acpi_build_enabled = false;
  
@@ -93,7 +93,7 @@ index 7ee9643..e817bc9 100644
      return;
  
  err:
-@@ -1470,3 +1476,34 @@ void qmp_xen_set_global_dirty_log(bool enable, Error **errp)
+@@ -1471,3 +1477,34 @@ void qmp_xen_set_global_dirty_log(bool enable, Error **errp)
          memory_global_dirty_log_stop();
      }
  }
@@ -149,7 +149,7 @@ index a081ae1..e8ff0cb 100644
  /**
   * PCMachineClass:
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index 72b117a..31f5469 100644
+index 9d56750..4e85a4d 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
 @@ -48,6 +48,9 @@ void xen_hvm_modified_memory(ram_addr_t start, ram_addr_t length);
@@ -159,7 +159,7 @@ index 72b117a..31f5469 100644
 +void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
 +                           unsigned size);
 +
- #define VRAM_RESERVED_ADDRESS	0xff000000
+ #define VRAM_RESERVED_ADDRESS  0xff000000
  
  #endif /* QEMU_HW_XEN_H */
 diff --git a/memory.c b/memory.c
