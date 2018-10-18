@@ -4,6 +4,7 @@ This is made up of:
 * Removing support for various block device formats.
 * Removing support for VFIO.
 * Disabling many devices which are not needed/used.
+* Enable NVME for guest UEFI
 
 diff --git a/backends/Makefile.objs b/backends/Makefile.objs
 index 0400799..c54a903 100644
@@ -138,7 +139,7 @@ index d2ab2f6..dd14725 100644
 +CONFIG_PXB=n
  CONFIG_ACPI_VMGENID=y
 diff --git a/default-configs/pci.mak b/default-configs/pci.mak
-index a758630..b337fe4 100644
+index a758630..e3e5626 100644
 --- a/default-configs/pci.mak
 +++ b/default-configs/pci.mak
 @@ -1,46 +1,46 @@
@@ -198,15 +199,14 @@ index a758630..b337fe4 100644
 -CONFIG_IPACK=y
 -CONFIG_WDT_IB6300ESB=y
 -CONFIG_PCI_TESTDEV=y
--CONFIG_NVME_PCI=y
--CONFIG_SD=y
--CONFIG_SDHCI=y
--CONFIG_EDU=y
 +CONFIG_SERIAL_PCI=n
 +CONFIG_IPACK=n
 +CONFIG_WDT_IB6300ESB=n
 +CONFIG_PCI_TESTDEV=n
-+CONFIG_NVME_PCI=n
+ CONFIG_NVME_PCI=y
+-CONFIG_SD=y
+-CONFIG_SDHCI=y
+-CONFIG_EDU=y
 +CONFIG_SD=n
 +CONFIG_SDHCI=n
 +CONFIG_EDU=n
