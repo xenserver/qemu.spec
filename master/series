@@ -194,3 +194,4 @@ disable-dirty-vram-tracking.patch
 build-configuration.patch
 
 # Debug patches
+nvme-fix.patch
