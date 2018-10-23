@@ -178,3 +178,4 @@ add-an-ide-read-cache.patch
 build-configuration.patch
 
 # Debug patches
+nvme-fix.patch
