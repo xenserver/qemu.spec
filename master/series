@@ -129,6 +129,8 @@ xenstore-ignore-state-write-error.patch
 igd-upt.patch
 pt-avoid-invalid-bar-registers.patch
 
+check-unmigratable-devices-when-saving.patch
+
 #
 # Binary compatability with qemu trad (must be behind an option)
 #
@@ -189,6 +191,9 @@ add-an-ide-read-cache.patch
 # live migration to avoid downtime increase.
 #
 disable-dirty-vram-tracking.patch
+
+# Remove once PV frontends unplug NVME devices
+unplug-nvme-devices.patch
 
 # Build configuration
 build-configuration.patch
