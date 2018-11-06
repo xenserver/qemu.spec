@@ -130,6 +130,7 @@ igd-upt.patch
 pt-avoid-invalid-bar-registers.patch
 
 check-unmigratable-devices-when-saving.patch
+query-migratable.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
