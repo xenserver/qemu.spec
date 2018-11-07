@@ -1,7 +1,7 @@
-From ff7ec538c71e8280181a92ceb091d25cbecfbe0f Mon Sep 17 00:00:00 2001
+From 902f6e14fc68743ce24efb7d87dc3f8464a78bf3 Mon Sep 17 00:00:00 2001
 From: Ross Lagerwall <ross.lagerwall@citrix.com>
-Date: Tue, 31 Oct 2017 15:39:14 +0000
-Subject: [PATCH 2/4] io: Fix QIOChannelFile when creating and opening
+Date: Wed, 1 Nov 2017 14:25:24 +0000
+Subject: [PATCH 1/1] io: Fix QIOChannelFile when creating and opening
  read-write
 
 The code wrongly passes the mode to open() only if O_WRONLY is set.
@@ -12,6 +12,13 @@ bug and also change the existing testcase to check that the mode of the
 created file is correct.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+---
+ include/io/channel-file.h    |  2 +-
+ io/channel-file.c            |  6 +-----
+ tests/test-io-channel-file.c | 29 +++++++++++++++++++++++++----
+ 3 files changed, 27 insertions(+), 10 deletions(-)
+
 diff --git a/include/io/channel-file.h b/include/io/channel-file.h
 index 79245f1..ebfe54e 100644
 --- a/include/io/channel-file.h
@@ -114,3 +121,6 @@ index 6bfede6..2e94f63 100644
      g_test_add_func("/io/channel/file/fd", test_io_channel_fd);
  #ifndef _WIN32
      g_test_add_func("/io/channel/pipe/sync", test_io_channel_pipe_sync);
+-- 
+2.7.4
+

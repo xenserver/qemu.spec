@@ -1,7 +1,7 @@
-From cdefc0a1e83c54038a6953d988679fb88dd8655f Mon Sep 17 00:00:00 2001
+From b8f244b13ca3c754c34c0ab1c2b0e7241b54318a Mon Sep 17 00:00:00 2001
 From: Ross Lagerwall <ross.lagerwall@citrix.com>
-Date: Wed, 1 Nov 2017 12:11:42 +0000
-Subject: [PATCH 4/4] io: Add /dev/fdset/ support to QIOChannelFile
+Date: Wed, 1 Nov 2017 14:25:26 +0000
+Subject: [PATCH 1/1] io: Add /dev/fdset/ support to QIOChannelFile
 
 Add /dev/fdset/ support to QIOChannelFile by calling qemu_open() instead
 of open() and qemu_close() instead of close(). There is a subtle
@@ -9,6 +9,11 @@ semantic change since qemu_open() automatically sets O_CLOEXEC, but this
 doesn't affect any of the users of the function.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+---
+ io/channel-file.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
 diff --git a/io/channel-file.c b/io/channel-file.c
 index 1f2f710..db948ab 100644
 --- a/io/channel-file.c
@@ -40,3 +45,6 @@ index 1f2f710..db948ab 100644
          error_setg_errno(errp, errno,
                           "Unable to close file");
          return -1;
+-- 
+2.7.4
+

@@ -65,8 +65,26 @@
 0021-ui-avoid-sign-extension-using-client-width-height.patch
 # 191f59dc17396bb5a8da50f8c59b6e0a430711a4 (expected 2.12.0-rc1)
 0010-vga-check-the-validation-of-memory-addr-when-draw-te.patch
-
-vga-fix-region-calculation.patch
+# 7cdc61becd095b64a786b2625f321624e7111f3d (2.12.0-rc1)
+0001-vga-fix-region-calculation.patch
+# 1dd6af7395670f3dcd05ddb64ce6c374a81ae701 (3.0.0-rc1)
+0001-xen-pvdevice-Introduce-a-simplistic-xen-pvdevice-sav.patch
+# 04a8f72e877b9a912ffd7afa84209909577d1d96 (3.0.0-rc1)
+0001-xen-hvm-correct-reporting-of-modified-memory-under-p.patch
+# dc9e46a29aad8ba5d2fb0871268baa9c7edc0f95 (3.0.0-rc1)
+0001-xen_pt-Present-the-size-of-64-bit-BARs-correctly.patch
+# 84201604c77808d6b2fa5139ded83d1e739a3f8c (3.0.0-rc1)
+0001-xen-pt-use-address_space_memory-object-for-memory-re.patch
+# 032b79f7173051e7f8742a43d106c7fc526856f9 (2.12.0-rc1)
+0001-migration-Don-t-leak-IO-channels.patch
+# 902f6e14fc68743ce24efb7d87dc3f8464a78bf3 (2.12.0-rc1)
+0001-io-Fix-QIOChannelFile-when-creating-and-opening-read.patch
+# a2565df12c59362c061084a0c853dace410cac26 (2.12.0-rc1)
+0001-io-Don-t-call-close-multiple-times-in-QIOChannelFile.patch
+# b8f244b13ca3c754c34c0ab1c2b0e7241b54318a (2.12.0-rc1)
+0001-io-Add-dev-fdset-support-to-QIOChannelFile.patch
+# 96994fd1e4e0da2a3b5d585a58621722199c67c9 (2.12.0-rc1)
+0001-migration-xen-Check-return-value-of-qemu_fclose.patch
 
 #
 # ABI Changes
@@ -89,18 +107,11 @@ dont-set-a20-on-xen.patch
 dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
 remove-ioapic.patch
-0001-xen-pvdevice-Introduce-a-simplistic-xen-pvdevice-sav.patch
 
+# vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
 0003-xen-apic-Implement-unrealize.patch
 0004-hotplug-Implement-legacy-CPU-hot-unplug.patch
-
-0001-migration-Don-t-leak-IO-channels.patch
-0002-io-Fix-QIOChannelFile-when-creating-and-opening-read.patch
-0003-io-Don-t-call-close-multiple-times-in-QIOChannelFile.patch
-0004-io-Add-dev-fdset-support-to-QIOChannelFile.patch
-save-device-check-return.patch
-disable-dirty-vram-tracking.patch
 
 # QEMU deprivileging
 0001-xen-link-against-xentoolcore.patch
@@ -113,13 +124,10 @@ disable-dirty-vram-tracking.patch
 
 use-new-dmops-for-vram.patch
 xenstore-ignore-state-write-error.patch
-igd-upt.patch
 
-xen-pt-use-address_space_memory-object-for-memory-region-hooks.patch
+# PCI passthrough
+igd-upt.patch
 pt-avoid-invalid-bar-registers.patch
-0001-xen-hvm-correct-reporting-of-modified-memory-under-p.patch
-pt-fix-bar64-size.patch
-allocate-vram-reserved.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
@@ -141,6 +149,7 @@ match-xen-pvdevice-location.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
+rtc-no-ratelimit.patch
 
 # Intel GVT-g support
 gvt-g.patch
@@ -151,11 +160,10 @@ gvt-g.patch
 0003-Add-interception-layer-for-BAR-ops.patch
 0004-Add-AMD-code.patch
 
-rtc-no-ratelimit.patch
-
 #
 # Technical debt to unblock further development.  Needs removing
 #
+allocate-vram-reserved.patch
 # remove after 2.11
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
 
@@ -169,10 +177,18 @@ rtc-no-ratelimit.patch
 do_not_register_xen_backend_for_qdisk.patch
 
 #
+# Performance improvements
+#
 # Small change to qemu emulation part which adds an IDE
 # read cache to improve performance of sequential short reads
 # (e.g. windows boot)
 add-an-ide-read-cache.patch
+#
+# Disable dirty VRAM tracking as it's CPU consuming and doesn't
+# reduce VNC updates a significantly. Still keep it enabled during
+# live migration to avoid downtime increase.
+#
+disable-dirty-vram-tracking.patch
 
 # Build configuration
 build-configuration.patch

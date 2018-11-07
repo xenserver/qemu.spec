@@ -1,20 +1,30 @@
-From 9699e8f711de0872a02b2a3af34ec0dd751db112 Mon Sep 17 00:00:00 2001
+From 1dd6af7395670f3dcd05ddb64ce6c374a81ae701 Mon Sep 17 00:00:00 2001
 From: Igor Druzhinin <igor.druzhinin@citrix.com>
-Date: Thu, 8 Mar 2018 04:45:44 +0000
-Subject: [PATCH] xen-pvdevice: Introduce a simplistic xen-pvdevice save state
+Date: Tue, 13 Mar 2018 23:14:54 +0000
+Subject: [PATCH 1/1] xen-pvdevice: Introduce a simplistic xen-pvdevice save
+ state
 
 This should help to avoid problems with accessing the device after
-migration/resume without PV drivers. Older systems will acquire
-the new record when migrated which should not change their state for
-worse.
+migration/resume without PV drivers by migrating its PCI configuration
+space state. Without an explicitly defined state record it resets
+every time a VM migrates which confuses the OS and makes every
+access to xen-pvdevice MMIO region to fail. PV tools enable some
+logic to save and restore PCI configuration state from within the VM
+every time it migrates which basically hides the issue.
+
+Older systems will acquire the new record when migrated which should
+not change their state for worse.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+Reviewed-by: Paul Durrant <paul.durrant@citrix.com>
+Acked-by: Anthony PERARD <anthony.perard@citrix.com>
+Signed-off-by: Stefano Stabellini <sstabellini@kernel.org>
 ---
  hw/i386/xen/xen_pvdevice.c | 11 +++++++++++
  1 file changed, 11 insertions(+)
 
 diff --git a/hw/i386/xen/xen_pvdevice.c b/hw/i386/xen/xen_pvdevice.c
-index c093b34..ef22a03 100644
+index f748823..a146f18 100644
 --- a/hw/i386/xen/xen_pvdevice.c
 +++ b/hw/i386/xen/xen_pvdevice.c
 @@ -71,6 +71,16 @@ static const MemoryRegionOps xen_pv_mmio_ops = {
