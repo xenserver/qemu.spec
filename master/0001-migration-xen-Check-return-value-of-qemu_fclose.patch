@@ -13,15 +13,11 @@ Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 Message-Id: <20180206163039.23661-1-ross.lagerwall@citrix.com>
 Signed-off-by: Dr. David Alan Gilbert <dgilbert@redhat.com>
 Reviewed-by: Dr. David Alan Gilbert <dgilbert@redhat.com>
----
- migration/savevm.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 3f611c0..68b652f 100644
+index 5f3bf71751..2b27954265 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
-@@ -2284,8 +2284,7 @@ void qmp_xen_save_devices_state(const char *filename, bool has_live, bool live,
+@@ -2216,8 +2216,7 @@ void qmp_xen_save_devices_state(const char *filename, Error **errp)
      f = qemu_fopen_channel_output(QIO_CHANNEL(ioc));
      object_unref(OBJECT(ioc));
      ret = qemu_save_device_state(f);
@@ -29,8 +25,5 @@ index 3f611c0..68b652f 100644
 -    if (ret < 0) {
 +    if (ret < 0 || qemu_fclose(f) < 0) {
          error_setg(errp, QERR_IO_ERROR);
-     } else {
-         /* libxl calls the QMP command "stop" before calling
--- 
-2.7.4
-
+     }
+ 
