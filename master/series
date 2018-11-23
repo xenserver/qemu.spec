@@ -85,6 +85,12 @@
 0001-io-Add-dev-fdset-support-to-QIOChannelFile.patch
 # 96994fd1e4e0da2a3b5d585a58621722199c67c9 (2.12.0-rc1)
 0001-migration-xen-Check-return-value-of-qemu_fclose.patch
+# 20faf0f5f8aba33405a6206cd26f0d2b49ac174a (3.1.0-rc1)
+0003-nvme-don-t-unref-ctrl_mem-when-device-unrealized.patch
+# a883d6a0bcbff889c932015179a25a1b5ea8e096 (3.1.0-rc1)
+0004-nvme-free-cmbuf-in-nvme_exit.patch
+# 5e3c0220d7e4f0361c4d36c697a8842f2b583402 (3.1.0-rc2)
+0005-nvme-fix-oob-access-issue-CVE-2018-16847.patch
 
 #
 # ABI Changes

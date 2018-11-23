@@ -1,0 +1,27 @@
+From a883d6a0bcbff889c932015179a25a1b5ea8e096 Mon Sep 17 00:00:00 2001
+From: Li Qiang <liq3ea@gmail.com>
+Date: Sun, 28 Oct 2018 23:29:41 -0700
+Subject: [PATCH 4/4] nvme: free cmbuf in nvme_exit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This avoid a memory leak in unhotplug nvme device.
+
+Signed-off-by: Li Qiang <liq3ea@gmail.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Kevin Wolf <kwolf@redhat.com>
+diff --git a/hw/block/nvme.c b/hw/block/nvme.c
+index 36bf4d4bea..5199f24aee 100644
+--- a/hw/block/nvme.c
++++ b/hw/block/nvme.c
+@@ -1058,6 +1058,9 @@ static void nvme_exit(PCIDevice *pci_dev)
+     g_free(n->cq);
+     g_free(n->sq);
+ 
++    if (n->cmb_size_mb) {
++        g_free(n->cmbuf);
++    }
+     msix_uninit_exclusive_bar(pci_dev);
+ }
+ 
