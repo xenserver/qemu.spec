@@ -1,5 +1,5 @@
 diff --git a/Makefile.target b/Makefile.target
-index 7f42c45..33e448d 100644
+index 7f42c45db8..33e448d74a 100644
 --- a/Makefile.target
 +++ b/Makefile.target
 @@ -102,6 +102,7 @@ obj-y += target/$(TARGET_BASE_ARCH)/
@@ -11,7 +11,7 @@ index 7f42c45..33e448d 100644
  obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decContext.o
  obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
 diff --git a/configure b/configure
-index 130e224..4aea2f3 100755
+index 130e224969..4aea2f3331 100755
 --- a/configure
 +++ b/configure
 @@ -303,6 +303,7 @@ libattr=""
@@ -47,19 +47,19 @@ index 130e224..4aea2f3 100755
    vte             vte support for the gtk UI
    curses          curses UI
    vnc             VNC UI support
-@@ -2806,6 +2813,12 @@ EOF
+@@ -2805,6 +2812,12 @@ EOF
+   libs_softmmu="$sdl_libs $libs_softmmu"
  fi
  
- ##########################################
++##########################################
 +# Intel GVT-g detection
 +if test "$vgt" = "yes" ; then
 +  vgt="yes"
 +fi
 +
-+##########################################
+ ##########################################
  # RDMA needs OpenFabrics libraries
  if test "$rdma" != "no" ; then
-   cat > $TMPC <<EOF
 @@ -5309,6 +5322,7 @@ if test "$darwin" = "yes" ; then
  fi
  echo "pixman            $pixman"
@@ -79,7 +79,7 @@ index 130e224..4aea2f3 100755
    echo "CONFIG_COCOA=y" >> $config_host_mak
  fi
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 86c0e28..098d48d 100644
+index 86c0e28654..098d48d1ad 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
 @@ -1,5 +1,9 @@
@@ -94,7 +94,7 @@ index 86c0e28..098d48d 100644
  common-obj-$(CONFIG_PL110) += pl110.o
 diff --git a/hw/display/intel-tools/Makefile.objs b/hw/display/intel-tools/Makefile.objs
 new file mode 100644
-index 0000000..6fa4960
+index 0000000000..6fa4960821
 --- /dev/null
 +++ b/hw/display/intel-tools/Makefile.objs
 @@ -0,0 +1,5 @@
@@ -105,7 +105,7 @@ index 0000000..6fa4960
 +intel_chipset.o-libs := -ldrm -ldrm_intel
 diff --git a/hw/display/intel-tools/igt_debug.h b/hw/display/intel-tools/igt_debug.h
 new file mode 100644
-index 0000000..d424f72
+index 0000000000..d424f72e44
 --- /dev/null
 +++ b/hw/display/intel-tools/igt_debug.h
 @@ -0,0 +1,68 @@
@@ -179,7 +179,7 @@ index 0000000..d424f72
 +#endif /* IGT_DEBUG_H */
 diff --git a/hw/display/intel-tools/intel_batchbuffer.c b/hw/display/intel-tools/intel_batchbuffer.c
 new file mode 100644
-index 0000000..76ef53a
+index 0000000000..992d002c22
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.c
 @@ -0,0 +1,393 @@
@@ -578,7 +578,7 @@ index 0000000..76ef53a
 +
 diff --git a/hw/display/intel-tools/intel_batchbuffer.h b/hw/display/intel-tools/intel_batchbuffer.h
 new file mode 100644
-index 0000000..7f8876f
+index 0000000000..7f8876f8e0
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.h
 @@ -0,0 +1,200 @@
@@ -784,7 +784,7 @@ index 0000000..7f8876f
 +#endif
 diff --git a/hw/display/intel-tools/intel_chipset.c b/hw/display/intel-tools/intel_chipset.c
 new file mode 100644
-index 0000000..d1217ad
+index 0000000000..d1217ad271
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.c
 @@ -0,0 +1,115 @@
@@ -905,7 +905,7 @@ index 0000000..d1217ad
 +}
 diff --git a/hw/display/intel-tools/intel_chipset.h b/hw/display/intel-tools/intel_chipset.h
 new file mode 100644
-index 0000000..378ee00
+index 0000000000..378ee004a5
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.h
 @@ -0,0 +1,522 @@
@@ -1433,7 +1433,7 @@ index 0000000..378ee00
 +#endif /* _INTEL_CHIPSET_H */
 diff --git a/hw/display/intel-tools/intel_reg.h b/hw/display/intel-tools/intel_reg.h
 new file mode 100644
-index 0000000..0ffa803
+index 0000000000..0ffa803dab
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_reg.h
 @@ -0,0 +1,3618 @@
@@ -5056,10 +5056,10 @@ index 0000000..0ffa803
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index 0876221..662e0cf 100644
+index b6be2b429a..fcf25864ef 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
-@@ -1744,6 +1744,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
+@@ -1746,6 +1746,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
  #define GMODE_TEXT     0
  #define GMODE_GRAPH    1
  #define GMODE_BLANK 2
@@ -5067,7 +5067,7 @@ index 0876221..662e0cf 100644
  
  static void vga_update_display(void *opaque)
  {
-@@ -1757,7 +1758,9 @@ static void vga_update_display(void *opaque)
+@@ -1759,7 +1760,9 @@ static void vga_update_display(void *opaque)
          /* nothing to do */
      } else {
          full_update = 0;
@@ -5078,7 +5078,7 @@ index 0876221..662e0cf 100644
              graphic_mode = GMODE_BLANK;
          } else {
              graphic_mode = s->gr[VGA_GFX_MISC] & VGA_GR06_GRAPHICS_MODE;
-@@ -1768,6 +1771,9 @@ static void vga_update_display(void *opaque)
+@@ -1770,6 +1773,9 @@ static void vga_update_display(void *opaque)
              full_update = 1;
          }
          switch(graphic_mode) {
@@ -5088,9 +5088,18 @@ index 0876221..662e0cf 100644
          case GMODE_TEXT:
              vga_draw_text(s, full_update);
              break;
+@@ -2294,7 +2300,7 @@ void vga_init(VGACommonState *s, Object *obj, MemoryRegion *address_space,
+     }
+     s->vbe_extended = object_property_get_bool(qdev_get_machine(),
+                                                PC_MACHINE_TRAD_COMPAT,
+-                                               &error_abort);
++                                               &error_abort) || vgt_vga_enabled;
+ }
+ 
+ void vga_init_vbe(VGACommonState *s, Object *obj, MemoryRegion *system_memory)
 diff --git a/hw/display/vgt-stub.c b/hw/display/vgt-stub.c
 new file mode 100644
-index 0000000..f6571ba
+index 0000000000..f6571ba48e
 --- /dev/null
 +++ b/hw/display/vgt-stub.c
 @@ -0,0 +1,32 @@
@@ -5128,7 +5137,7 @@ index 0000000..f6571ba
 +
 diff --git a/hw/display/vgt_console.c b/hw/display/vgt_console.c
 new file mode 100644
-index 0000000..c81b6ec
+index 0000000000..c81b6ec17d
 --- /dev/null
 +++ b/hw/display/vgt_console.c
 @@ -0,0 +1,531 @@
@@ -5665,7 +5674,7 @@ index 0000000..c81b6ec
 +}
 diff --git a/hw/display/vgt_vga.c b/hw/display/vgt_vga.c
 new file mode 100644
-index 0000000..e5027be
+index 0000000000..e5027be452
 --- /dev/null
 +++ b/hw/display/vgt_vga.c
 @@ -0,0 +1,635 @@
@@ -6305,7 +6314,7 @@ index 0000000..e5027be
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 152fddb..12d4c0a 100644
+index 122f1562dc..f203cc492c 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -228,6 +228,14 @@ static void pc_init1(MachineState *machine,
@@ -6324,10 +6333,10 @@ index 152fddb..12d4c0a 100644
  
      assert(pcms->vmport != ON_OFF_AUTO__MAX);
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 51f9a39..cb85541 100644
+index e75b4a6954..8c48d83e95 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -1425,6 +1425,35 @@ void destroy_hvm_domain(bool reboot)
+@@ -1424,6 +1424,35 @@ void destroy_hvm_domain(bool reboot)
  void xen_register_framebuffer(MemoryRegion *mr)
  {
      framebuffer = mr;
@@ -6364,7 +6373,7 @@ index 51f9a39..cb85541 100644
  
  void xen_shutdown_fatal_error(const char *fmt, ...)
 diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
-index 369c3df..b1bd426 100644
+index 430b4bedcc..fa086e1200 100644
 --- a/hw/i386/xen/xen-mapcache.c
 +++ b/hw/i386/xen/xen-mapcache.c
 @@ -386,7 +386,13 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
@@ -6442,7 +6451,7 @@ index 369c3df..b1bd426 100644
  
      mapcache->last_entry = NULL;
 diff --git a/hw/pci-host/piix.c b/hw/pci-host/piix.c
-index 072a04e..15e818d 100644
+index 072a04e318..15e818d749 100644
 --- a/hw/pci-host/piix.c
 +++ b/hw/pci-host/piix.c
 @@ -309,6 +309,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
@@ -6457,7 +6466,7 @@ index 072a04e..15e818d 100644
  
  PCIBus *i440fx_init(const char *host_type, const char *pci_type,
 diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index e8ff0cb..f3fa855 100644
+index e8ff0cb100..f3fa855fa8 100644
 --- a/include/hw/i386/pc.h
 +++ b/include/hw/i386/pc.h
 @@ -332,6 +332,18 @@ int isa_vga_mm_init(hwaddr vram_base,
@@ -6480,7 +6489,7 @@ index e8ff0cb..f3fa855 100644
  static inline bool isa_ne2000_init(ISABus *bus, int base, int irq, NICInfo *nd)
  {
 diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
-index b064a55..8d2b178 100644
+index b064a5574c..8d2b178760 100644
 --- a/include/sysemu/sysemu.h
 +++ b/include/sysemu/sysemu.h
 @@ -106,6 +106,12 @@ typedef enum {
@@ -6497,7 +6506,7 @@ index b064a55..8d2b178 100644
  extern int graphic_height;
  extern int graphic_depth;
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 8d7dac9..968fcc2 100644
+index 8d7dac995f..968fcc25b6 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
 @@ -1550,6 +1550,62 @@ Disable VGA card.
@@ -6564,7 +6573,7 @@ index 8d7dac9..968fcc2 100644
      "-full-screen    start in full screen\n", QEMU_ARCH_ALL)
  STEXI
 diff --git a/vl.c b/vl.c
-index bbafe4c..4f85a99 100644
+index bbafe4c72f..4f85a99b9b 100644
 --- a/vl.c
 +++ b/vl.c
 @@ -4195,6 +4195,40 @@ int main(int argc, char **argv, char **envp)
