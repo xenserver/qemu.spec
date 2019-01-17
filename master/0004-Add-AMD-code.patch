@@ -1,5 +1,5 @@
 diff --git a/hw/xen/Makefile.objs b/hw/xen/Makefile.objs
-index 64a70bc..5d4b5cf 100644
+index 64a70bc6cb..5d4b5cf26e 100644
 --- a/hw/xen/Makefile.objs
 +++ b/hw/xen/Makefile.objs
 @@ -2,4 +2,4 @@
@@ -10,7 +10,7 @@ index 64a70bc..5d4b5cf 100644
 +obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen_pt.o xen_pt_config_init.o xen_pt_graphics.o xen_pt_amd_graphics.o xen_pt_msi.o
 diff --git a/hw/xen/gim_ioctl.h b/hw/xen/gim_ioctl.h
 new file mode 100644
-index 0000000..d5293d1
+index 0000000000..d5293d1321
 --- /dev/null
 +++ b/hw/xen/gim_ioctl.h
 @@ -0,0 +1,90 @@
@@ -106,10 +106,10 @@ index 0000000..d5293d1
 +#endif
 diff --git a/hw/xen/xen_pt_amd_graphics.c b/hw/xen/xen_pt_amd_graphics.c
 new file mode 100644
-index 0000000..426f134
+index 0000000000..796b0a8053
 --- /dev/null
 +++ b/hw/xen/xen_pt_amd_graphics.c
-@@ -0,0 +1,1031 @@
+@@ -0,0 +1,1038 @@
 +#include "qemu/osdep.h"
 +#include "qemu-common.h"
 +#include "qemu/main-loop.h"
@@ -126,6 +126,14 @@ index 0000000..426f134
 +int xen_pt_unregister_amd_vf_region(XenPCIPassthroughState *s);
 +
 +#define PT_LOG(_f, _a...)  xen_pt_log(NULL, "%s: " _f, __func__, ##_a)
++
++//#define VERBOSE_LOGGING
++
++#ifdef VERBOSE_LOGGING
++#define VERBOSE_LOG(_f, _a...)  xen_pt_log(NULL, "%s: " _f, __func__, ##_a)
++#else
++#define VERBOSE_LOG(_f, _a...)
++#endif
 +
 +#define BLOCK_MMIO 		1
 +#define DO_NOT_BLOCK_MMIO	2
@@ -271,14 +279,13 @@ index 0000000..426f134
 +{
 +    const char *opstr = DPCI_REMOVE_MAPPING ? "REMOVE" : "ADD";
 +
-+    PT_LOG("%s mapping for Base 0x%08x and size 0x%04x\n", opstr, gaddr, size);
-+
 +    if (xc_domain_memory_mapping(xen_xc, xen_domid,
 +                                 XEN_PFN(gaddr),
 +                                 XEN_PFN(maddr),
 +                                 XEN_PFN(size + XC_PAGE_SIZE - 1),
 +                                 op) < 0) {
-+        PT_LOG("%s mapping failed: %d, %s\n", opstr, errno, strerror(errno));
++        PT_LOG("%s mapping failed for base 0x%08x and size 0x%04x (%s)\n",
++               opstr, gaddr, size, strerror(errno));
 +    }
 +}
 +
@@ -298,10 +305,10 @@ index 0000000..426f134
 +    amd_passthrough_ranges[i].ebase = offset;
 +    amd_passthrough_ranges[i].esize = len;
 +
-+    PT_LOG("Create new range entry 0x%04x to 0x%04x\n",
-+           amd_passthrough_ranges[i].ebase,
-+           amd_passthrough_ranges[i].ebase +
-+           amd_passthrough_ranges[i].esize);
++    VERBOSE_LOG("Create new range entry 0x%04x to 0x%04x\n",
++                amd_passthrough_ranges[i].ebase,
++                amd_passthrough_ranges[i].ebase +
++                amd_passthrough_ranges[i].esize);
 +    pt_trap_needed = false;
 +}
 +
@@ -322,7 +329,7 @@ index 0000000..426f134
 +    uint32_t page_offset;
 +    uint32_t first_page, last_page;
 +
-+    PT_LOG("Check if 0x%04x falls in an existing range\n", offset);
++    VERBOSE_LOG("Check if 0x%04x falls in an existing range\n", offset);
 +
 +    /* Check if the offset falls into a pre-defined range */
 +    for (i = 0;
@@ -331,16 +338,16 @@ index 0000000..426f134
 +        if (offset >= amd_passthrough_ranges[i].ebase &&
 +            offset < (amd_passthrough_ranges[i].ebase +
 +                      amd_passthrough_ranges[i].esize)) {
-+            PT_LOG("Offset 0x%04x falls in range from 0x%04x to 0x%04x\n",
-+                   offset, amd_passthrough_ranges[i].ebase,
-+                   amd_passthrough_ranges[i].ebase +
-+                   amd_passthrough_ranges[i].esize - 1);
++            VERBOSE_LOG("Offset 0x%04x falls in range from 0x%04x to 0x%04x\n",
++                        offset, amd_passthrough_ranges[i].ebase,
++                        amd_passthrough_ranges[i].ebase +
++                        amd_passthrough_ranges[i].esize - 1);
 +
 +            page_offset = offset / XC_PAGE_SIZE;
 +
 +            if (amd_passthrough_ranges[i].esize == XC_PAGE_SIZE) {
-+                PT_LOG("Range is only a single page. "
-+                       "Need to shuffle other pages up\n");
++                VERBOSE_LOG("Range is only a single page. "
++                            "Need to shuffle other pages up\n");
 +
 +                /* Shift all entries up by one */
 +                amd_passthrough_ranges[i].esize = 0;
@@ -362,41 +369,41 @@ index 0000000..426f134
 +                             amd_passthrough_ranges[i].esize -
 +                             1) / XC_PAGE_SIZE;
 +
-+                PT_LOG("Offset is on page 0x%d in a range "
-+                       "covering pages 0x%0x to 0x%0x\n",
-+                       page_offset, first_page, last_page);
++                VERBOSE_LOG("Offset is on page 0x%d in a range "
++                            "covering pages 0x%0x to 0x%0x\n",
++                             page_offset, first_page, last_page);
 +
 +                if (page_offset == first_page) {
-+                    PT_LOG("offset is on first page.  Move base up\n");
++                    VERBOSE_LOG("offset is on first page.  Move base up\n");
 +
 +                    amd_passthrough_ranges[i].ebase += XC_PAGE_SIZE;
 +                    amd_passthrough_ranges[i].esize -= XC_PAGE_SIZE;
 +
-+                    PT_LOG("Range entry becomes 0x%04x to 0x%04x\n",
-+                           amd_passthrough_ranges[i].ebase,
-+                           amd_passthrough_ranges[i].ebase +
-+                           amd_passthrough_ranges[i].esize);
++                    VERBOSE_LOG("Range entry becomes 0x%04x to 0x%04x\n",
++                                amd_passthrough_ranges[i].ebase,
++                                amd_passthrough_ranges[i].ebase +
++                                amd_passthrough_ranges[i].esize);
 +                } else if (page_offset == last_page) {
-+                    PT_LOG("offset is one last page, "
-+                           "make the range smaller\n");
++                    VERBOSE_LOG("offset is one last page, "
++                                "make the range smaller\n");
 +
 +                    amd_passthrough_ranges[i].esize -= XC_PAGE_SIZE;
 +
-+                    PT_LOG("Range entry becomes 0x%04x to 0x%04x\n",
-+                           amd_passthrough_ranges[i].ebase,
-+                           amd_passthrough_ranges[i].ebase +
-+                           amd_passthrough_ranges[i].esize);
++                    VERBOSE_LOG("Range entry becomes 0x%04x to 0x%04x\n",
++                                amd_passthrough_ranges[i].ebase,
++                                amd_passthrough_ranges[i].ebase +
++                                amd_passthrough_ranges[i].esize);
 +                } else {
-+                    PT_LOG("Offset is in the middle of a range, "
-+                           "need to split it.\n");
++                    VERBOSE_LOG("Offset is in the middle of a range, "
++                                "need to split it.\n");
 +
 +                    amd_passthrough_ranges[i].esize =
 +                        (page_offset - first_page) * XC_PAGE_SIZE;
 +
-+                    PT_LOG("Range entry becomes 0x%04x to 0x%04x\n",
-+                           amd_passthrough_ranges[i].ebase,
-+                           amd_passthrough_ranges[i].ebase +
-+                           amd_passthrough_ranges[i].esize);
++                    VERBOSE_LOG("Range entry becomes 0x%04x to 0x%04x\n",
++                                amd_passthrough_ranges[i].ebase,
++                                amd_passthrough_ranges[i].ebase +
++                                amd_passthrough_ranges[i].esize);
 +
 +                    add_passthrough_range((page_offset + 1) * XC_PAGE_SIZE,
 +                                          (last_page -
@@ -413,7 +420,7 @@ index 0000000..426f134
 +{
 +    unsigned int i;
 +
-+    PT_LOG("Update the Xen Mapping\n");
++    VERBOSE_LOG("Update the Xen Mapping\n");
 +
 +    for (i = 0;
 +         i < MAX_PASSTHROUGH_RANGES && amd_passthrough_ranges[i].esize != 0;
@@ -438,43 +445,43 @@ index 0000000..426f134
 +               op == DPCI_REMOVE_MAPPING ? "REMOVE" : "ADD");
 +    }
 +
-+    PT_LOG("Xen Mapping complete\n");
++    VERBOSE_LOG("Xen Mapping complete\n");
 +}
 +
 +static void pt_amd_vf_trap_mmio(void)
 +{
-+    PT_LOG("Received a request to start MMIO TRAPPING - "
-+           "needed=%d, mmio_is_xen_mapped=%d\n",
-+           pt_trap_needed, amd_mmio_is_xen_mapped);
++    VERBOSE_LOG("Received a request to start MMIO TRAPPING - "
++                "needed=%d, mmio_is_xen_mapped=%d\n",
++                pt_trap_needed, amd_mmio_is_xen_mapped);
 +
 +    if (amd_mmio_is_xen_mapped) {
-+        PT_LOG("Remove Xen mapping so that readl/writel are called\n");
-+        PT_LOG("Trap all MMIO accesses to readl() and writel()\n");
-+        PT_LOG("Trap guest physical addr %p access on BAR%d. "
-+               "Mapped to local ptr %p in domain %d\n",
-+               (void *)pt_amd_mmio_bar_maddr, pt_amd_mmio_bar_num,
-+               pt_amd_mmio_bar_ptr, xen_domid);
++        VERBOSE_LOG("Remove Xen mapping so that readl/writel are called\n");
++        VERBOSE_LOG("Trap all MMIO accesses to readl() and writel()\n");
++        VERBOSE_LOG("Trap guest physical addr %p access on BAR%d. "
++                    "Mapped to local ptr %p in domain %d\n",
++                    (void *)pt_amd_mmio_bar_maddr, pt_amd_mmio_bar_num,
++                    pt_amd_mmio_bar_ptr, xen_domid);
 +        amd_mmio_is_xen_mapped = 0;
 +        pt_amd_set_mapping(DPCI_REMOVE_MAPPING);
 +    } else {
-+        PT_LOG("MMIO Trapping is already enabled. "
-+               "Therefore it was not enabled again\n");
++        VERBOSE_LOG("MMIO Trapping is already enabled. "
++                    "Therefore it was not enabled again\n");
 +    }
 +}
 +
 +static void pt_amd_vf_passthru_mmio(void)
 +{
-+    PT_LOG("Received a request to stop MMIO TRAPPING - "
-+           "needed=%d, mmio_is_mapped=%d\n",
-+           pt_trap_needed, amd_mmio_is_xen_mapped);
++    VERBOSE_LOG("Received a request to stop MMIO TRAPPING - "
++                "needed=%d, mmio_is_mapped=%d\n",
++                pt_trap_needed, amd_mmio_is_xen_mapped);
 +
 +    if ((!pt_trap_needed && !amd_mmio_is_xen_mapped)) {
-+        PT_LOG("Allow striaght pass through of guest accessing MMIO\n");
++        VERBOSE_LOG("Allow striaght pass through of guest accessing MMIO\n");
 +        amd_mmio_is_xen_mapped = 1;
 +        pt_amd_set_mapping(DPCI_ADD_MAPPING);
 +    } else {
-+        PT_LOG("Trapping was not enabled. "
-+               "Therefore nothing to unregister\n");
++        VERBOSE_LOG("Trapping was not enabled. "
++                    "Therefore nothing to unregister\n");
 +    }
 +}
 +
@@ -650,14 +657,14 @@ index 0000000..426f134
 +        PT_LOG("Failed to open %s (%d)\n", gim_file_name, errno);
 +        return;
 +    }
-+    PT_LOG("Opened device %s\n", gim_file_name);
++    VERBOSE_LOG("Opened device %s\n", gim_file_name);
 +
 +    if (ioctl(ioctl_fd, msg) == -1) {
 +        PT_LOG("IOCTL call failed\n");
 +        close(ioctl_fd);
 +        return;
 +    }
-+    PT_LOG("IOCTL was successful\n");
++    VERBOSE_LOG("IOCTL was successful\n");
 +
 +    close(ioctl_fd);
 +}
@@ -710,12 +717,12 @@ index 0000000..426f134
 +
 +    fd = (int)(intptr_t)opaque;
 +
-+    PT_LOG("received an exception: data = %d\n", fd);
++    VERBOSE_LOG("received an exception: data = %d\n", fd);
 +
 +    memset(sysfs_buf, 0, sizeof(sysfs_buf));
 +    rc = read(fd, sysfs_buf, MAX_SYSFS_READ);
 +
-+    PT_LOG("Read returns %d\n", rc);
++    VERBOSE_LOG("Read returns %d\n", rc);
 +
 +    if (rc > MAX_SYSFS_READ) {
 +        PT_LOG("Message from GIM is too large for %d sized buffer\n",
@@ -738,27 +745,27 @@ index 0000000..426f134
 +            qemu_set_fd_handler3(gim_sysfs_fd, NULL, NULL, NULL, NULL);
 +            return;
 +        }
-+        PT_LOG("Reopening \"%s\" returns fd = %d\n", gim_sysfs_node, fd);
++        VERBOSE_LOG("Reopening \"%s\" returns fd = %d\n", gim_sysfs_node, fd);
 +
 +        memset(sysfs_buf, 0, sizeof(sysfs_buf));
 +
 +        i = 0;
 +        do {
 +            rc = read(fd, &sysfs_buf[i], MAX_SYSFS_READ - i);
-+            PT_LOG("Read returns %d\n", rc);
++            VERBOSE_LOG("Read returns %d\n", rc);
 +            if (rc > 0)
 +                i += rc;
 +        } while (rc > 0);
 +    }
 +
-+    PT_LOG("GIM sent me \"%s\"\n", sysfs_buf);
++    VERBOSE_LOG("GIM sent me \"%s\"\n", sysfs_buf);
 +
 +    dump_bad_mmio();
 +    pt_execute(sysfs_buf);
 +
 +    if (fd != (int)(intptr_t)opaque) {
-+        PT_LOG("File descriptor has changed. "
-+               "Need to re-register QEMU handler\n");
++        VERBOSE_LOG("File descriptor has changed. "
++                    "Need to re-register QEMU handler\n");
 +        gim_sysfs_fd = fd;
 +
 +        qemu_set_fd_handler3((int)(intptr_t)opaque, NULL, NULL, NULL,
@@ -786,18 +793,18 @@ index 0000000..426f134
 +        return;
 +    }
 +
-+    PT_LOG("Opened device %s\n", gim_file_name);
++    VERBOSE_LOG("Opened device %s\n", gim_file_name);
 +
 +    vf.bdf = bdf;
 +
 +    if ((rc = ioctl(ioctl_fd, GIM_IOCTL_ALLOC_VF, &vf)) == -1) {
 +        PT_LOG("IOCTL: GIM_IOCTL_ALLOC_VF failed (%d)\n", errno);
 +    } else {
-+        PT_LOG("IOCTL GIM_IOCTL_ALLOC_VF was successful\n");
++        VERBOSE_LOG("IOCTL GIM_IOCTL_ALLOC_VF was successful\n");
 +    }
 +
 +    if (errno == EAGAIN) {
-+        PT_LOG("FB was not cleared but can still continue on\n");
++        VERBOSE_LOG("FB was not cleared but can still continue on\n");
 +    }
 +
 +    close(ioctl_fd);
@@ -830,7 +837,7 @@ index 0000000..426f134
 +        return;
 +    }
 +
-+    PT_LOG("Opened device %s\n", gim_file_name);
++    VERBOSE_LOG("Opened device %s\n", gim_file_name);
 +
 +    if (ioctl(ioctl_fd, GIM_IOCTL_FREE_VF) == -1) {
 +        PT_LOG("IOCTL: GIM_IOCTL_FREE_VF failed (%d)\n", errno);
@@ -1105,8 +1112,8 @@ index 0000000..426f134
 +    /* Get a local pointer to the MMIO for Trapping emulation */
 +    pt_amd_mmap();
 +
-+    PT_LOG("Map physical MMIO space to local ptr %p\n",
-+           pt_amd_mmio_bar_ptr);
++    VERBOSE_LOG("Map physical MMIO space to local ptr %p\n",
++                pt_amd_mmio_bar_ptr);
 +
 +    /* Hijack the BAR callbacks */
 +    bar = &s->bar[pt_amd_mmio_bar_num];
@@ -1142,7 +1149,7 @@ index 0000000..426f134
 + * End:
 + */
 diff --git a/hw/xen/xen_pt_graphics.c b/hw/xen/xen_pt_graphics.c
-index 511778c..91faa22 100644
+index 511778cdd2..91faa224ef 100644
 --- a/hw/xen/xen_pt_graphics.c
 +++ b/hw/xen/xen_pt_graphics.c
 @@ -47,6 +47,11 @@ static struct VGARegion vga_args[] = {
