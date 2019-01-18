@@ -91,6 +91,8 @@
 0004-nvme-free-cmbuf-in-nvme_exit.patch
 # 5e3c0220d7e4f0361c4d36c697a8842f2b583402 (3.1.0-rc2)
 0005-nvme-fix-oob-access-issue-CVE-2018-16847.patch
+# 6bf7463615752934d7221e5be9820d9da45ab2de (3.1.0-rc3)
+0001-nvme-call-blk_drain-in-NVMe-reset-code-to-avoid-lock.patch
 
 #
 # ABI Changes
@@ -175,6 +177,8 @@ gvt-g.patch
 allocate-vram-reserved.patch
 # remove after 2.11
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
+# Remove once PV frontends unplug NVME devices
+unplug-nvme-devices.patch
 
 #
 # qemu-dp patches
@@ -199,11 +203,7 @@ add-an-ide-read-cache.patch
 #
 disable-dirty-vram-tracking.patch
 
-# Remove once PV frontends unplug NVME devices
-unplug-nvme-devices.patch
-
 # Build configuration
 build-configuration.patch
 
 # Debug patches
-nvme-fix.patch
