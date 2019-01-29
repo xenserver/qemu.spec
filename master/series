@@ -182,6 +182,7 @@ gvt-g.patch
 allocate-vram-reserved.patch
 # remove after 2.11
 0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
+set-so_reuseaddr.patch
 # Remove once PV frontends unplug NVME devices
 unplug-nvme-devices.patch
 
