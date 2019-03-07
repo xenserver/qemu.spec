@@ -144,16 +144,19 @@ if len(commits) == 0:
 
 repo = options.repo + "/.git"
 
-patch_base = ".git/patches"
-patch_repo = patch_base + "/.git"
-patch_dir = patch_base + "/master"
+# planex creates a 'planex/v4.19.19' branch for example
+current_branch = call(["git", "--git-dir", repo, "rev-parse", "--abbrev-ref", "HEAD"]).strip().replace("guilt/", "", 1)
+patch_dir = os.path.realpath(".git/patches/" + current_branch)
+patch_base = patch_dir + "/../"
+# planex symlinks .git/patches/planex/v4.19.19 to ../linux.pg/master
+patch_repo = os.path.realpath(patch_base + "/.git")
 
 if not os.path.isdir(repo):
     sys.stderr.write("%s: `%s' is not a git repository\n" % (sys.argv[0], options.repo))
     sys.exit(1)
 
 if not os.path.isdir(patch_dir):
-    sys.stderr.write("%s: no patch queue present\n" % (sys.argv[0]))
+    sys.stderr.write("%s: no patch queue present at %s\n" % (sys.argv[0], patch_dir))
     sys.exit(1)
 
 patches = []
