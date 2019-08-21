@@ -209,6 +209,7 @@ query-migratable.patch
 0014-nvme-support-multiple-block-requests-per-request.patch
 0015-nvme-support-scatter-gather-lists.patch
 0016-nvme-support-multiple-namespaces.patch
+nvme-ns-fix-null.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
