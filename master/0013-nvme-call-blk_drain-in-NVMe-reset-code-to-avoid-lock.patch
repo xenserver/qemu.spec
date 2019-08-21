@@ -1,7 +1,8 @@
 From 6bf7463615752934d7221e5be9820d9da45ab2de Mon Sep 17 00:00:00 2001
 From: Igor Druzhinin <igor.druzhinin@citrix.com>
 Date: Tue, 6 Nov 2018 12:16:55 +0000
-Subject: [PATCH 1/1] nvme: call blk_drain in NVMe reset code to avoid lockups
+Subject: [PATCH 13/13] nvme: call blk_drain in NVMe reset code to avoid
+ lockups
 
 When blk_flush called in NVMe reset path S/C queues are already freed
 which means that re-entering AIO handling loop having some IO requests
@@ -17,7 +18,7 @@ Signed-off-by: Kevin Wolf <kwolf@redhat.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index d0226e7..28d2843 100644
+index d0226e7fdc..28d284346d 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -797,6 +797,8 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
@@ -30,5 +31,5 @@ index d0226e7..28d2843 100644
          if (n->sq[i] != NULL) {
              nvme_free_sq(n->sq[i], n);
 -- 
-2.7.4
+2.21.0
 

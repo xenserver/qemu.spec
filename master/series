@@ -77,6 +77,8 @@
 0001-io-Add-dev-fdset-support-to-QIOChannelFile.patch
 # 96994fd1e4e0da2a3b5d585a58621722199c67c9 (2.12.0-rc1)
 0001-migration-xen-Check-return-value-of-qemu_fclose.patch
+# 9d3b155186c2788570f4802700d030c84e0f0746 (2.12.0-rc1)
+0001-hw-block-Fix-the-return-type.patch
 # 1dd6af7395670f3dcd05ddb64ce6c374a81ae701 (3.0.0-rc1)
 0001-xen-pvdevice-Introduce-a-simplistic-xen-pvdevice-sav.patch
 # 04a8f72e877b9a912ffd7afa84209909577d1d96 (3.0.0-rc1)
@@ -91,14 +93,55 @@
 0001-xen-hvm-create-separate-function-for-ioreq-server-in.patch
 # d3c49ebbe26b48615e14b8baa88a59cd33761ea6 (3.0.0-rc1)
 0001-xen-hvm-try-to-use-xenforeignmemory_map_resource-to-.patch
+# afa4f6653dca095f63f3fe7f2001e9334f5676c1 (3.0.0-rc1)
+0001-bswap-Add-new-stn_-_p-and-ldn_-_p-memory-access-func.patch
+
+# cdd346371e09709be8e46398bb097dc690a746f2 (2.11.0-rc1)
+0001-nvme-Fix-get-set-number-of-queues-feature-again.patch
+# e01d6a415bec6fb93a7413929fb1438a22d28419 (2.12.0-rc1)
+0002-hw-block-nvme-Convert-to-realize.patch
+# ceff3e1f01ee8c0d77de7e3750e7297c3af7e2ec (2.12.0-rc1)
+0003-hw-block-Use-errp-directly-rather-than-local_err.patch
+# 1ee24514aed34760fb2863d98bea3a1b705d9c9f (2.12.0-rc1)
+0004-nvme-Add-tracing.patch
+# 5e9aa92eb1a5abbb6e0e3dafdf64ac728e11b6f2 (2.12.0-rc1)
+0005-hw-block-Fix-pin-based-interrupt-behaviour-of-NVMe.patch
+# 7c8952697e9c44931090251e142c1d3108c22be4 (3.0.0-rc1)
+0008-hw-block-nvme-add-optional-parameter-num_queues-for-.patch
 # 20faf0f5f8aba33405a6206cd26f0d2b49ac174a (3.1.0-rc1)
-0003-nvme-don-t-unref-ctrl_mem-when-device-unrealized.patch
+0010-nvme-don-t-unref-ctrl_mem-when-device-unrealized.patch
 # a883d6a0bcbff889c932015179a25a1b5ea8e096 (3.1.0-rc1)
-0004-nvme-free-cmbuf-in-nvme_exit.patch
+0011-nvme-free-cmbuf-in-nvme_exit.patch
 # 5e3c0220d7e4f0361c4d36c697a8842f2b583402 (3.1.0-rc2)
-0005-nvme-fix-oob-access-issue-CVE-2018-16847.patch
+0012-nvme-fix-oob-access-issue-CVE-2018-16847.patch
 # 6bf7463615752934d7221e5be9820d9da45ab2de (3.1.0-rc3)
-0001-nvme-call-blk_drain-in-NVMe-reset-code-to-avoid-lock.patch
+0013-nvme-call-blk_drain-in-NVMe-reset-code-to-avoid-lock.patch
+# 87ad860c622cc8f8916b5232bd8728c08f938fce (3.1.0-rc3)
+0014-nvme-fix-out-of-bounds-access-to-the-CMB.patch
+# 2067d39e5e53b053bece6fa15711640123c119ed (3.1.0-rc3)
+0015-Revert-nvme-fix-oob-access-issue-CVE-2018-16847.patch
+# 71a86ddece548860f040d565204cf1bf59d74663 (3.1.0-rc3)
+0016-nvme-fix-CMB-endianness-confusion.patch
+# ad3a7e4555bc50036a5257a6c1ed652ab0d1b650 (3.1.0-rc3)
+0017-nvme-fix-bug-with-PCI-IRQ-pins-on-teardown.patch
+# 6da021815e752b3ca3a547eed53f3e92a8a35452 (3.1.0-rc3)
+0018-nvme-Fix-spurious-interrupts.patch
+# b58deb344ddff3b9d8b265bf73a65274767ee5f4 (4.0.0-rc1)
+0019-qemu-queue.h-leave-head-structs-anonymous-unless-nec.patch
+# 08db59e18834ef64b14cc6b401ad4824a3ce82cf (4.0.0-rc1)
+0020-nvme-use-TYPE_NVME-instead-of-constant-string.patch
+# 2410e133ec41468e2961ade3e0190487c5d8c142 (4.0.0-rc1)
+0021-nvme-ensure-the-num_queues-is-not-zero.patch
+# a3d25ddd6f08d9edb17cc1164d7b10049ca3561b (4.0.0-rc1)
+0022-nvme-use-pci_dev-directly-in-nvme_realize.patch
+# 9d6459d21a6e630264ead21558d940366d2f2450 (4.0.0-rc1)
+0023-nvme-fix-write-zeroes-offset-and-count.patch
+# 25349e8250e67e7d126fbf0ad213811b62e7e529
+0024-nvme-fix-copy-direction-in-DMA-reads-going-to-CMB.patch
+# 3036a626e9efad8ee5dc178b149184cf87bd06b0
+0025-nvme-add-Get-Set-Feature-Timestamp-support.patch
+# 1cc354ac9868a35279ff01857144212f6aefb697
+0026-nvme-do-not-advertise-support-for-unsupported-arbitr.patch
 
 #
 # ABI Changes

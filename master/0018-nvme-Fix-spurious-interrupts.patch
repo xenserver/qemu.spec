@@ -1,0 +1,38 @@
+From 6da021815e752b3ca3a547eed53f3e92a8a35452 Mon Sep 17 00:00:00 2001
+From: Keith Busch <keith.busch@intel.com>
+Date: Mon, 26 Nov 2018 10:17:45 -0700
+Subject: [PATCH 18/18] nvme: Fix spurious interrupts
+
+The code had asserted an interrupt every time it was requested to check
+for new completion queue entries.This can result in spurious interrupts
+seen by the guest OS.
+
+Fix this by asserting an interrupt only if there are un-acknowledged
+completion queue entries available.
+
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Keith Busch <keith.busch@intel.com>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Kevin Wolf <kwolf@redhat.com>
+---
+ hw/block/nvme.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/hw/block/nvme.c b/hw/block/nvme.c
+index 9fbe5673cb..7c8c63e8f5 100644
+--- a/hw/block/nvme.c
++++ b/hw/block/nvme.c
+@@ -272,7 +272,9 @@ static void nvme_post_cqes(void *opaque)
+             sizeof(req->cqe));
+         QTAILQ_INSERT_TAIL(&sq->req_list, req, entry);
+     }
+-    nvme_irq_assert(n, cq);
++    if (cq->tail != cq->head) {
++        nvme_irq_assert(n, cq);
++    }
+ }
+ 
+ static void nvme_enqueue_req_completion(NvmeCQueue *cq, NvmeRequest *req)
+-- 
+2.21.0
+

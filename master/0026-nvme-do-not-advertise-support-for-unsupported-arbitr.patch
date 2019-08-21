@@ -1,0 +1,34 @@
+From 1cc354ac9868a35279ff01857144212f6aefb697 Mon Sep 17 00:00:00 2001
+From: Klaus Birkelund Jensen <klaus@birkelund.eu>
+Date: Thu, 6 Jun 2019 11:25:30 +0200
+Subject: [PATCH 26/26] nvme: do not advertise support for unsupported
+ arbitration mechanism
+
+The device mistakenly reports that the Weighted Round Robin with Urgent
+Priority Class arbitration mechanism is supported.
+
+It is not.
+
+Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
+Message-id: 20190606092530.14206-1-klaus@birkelund.eu
+Acked-by: Maxim Levitsky <mlevitsk@redhat.com>
+Signed-off-by: Max Reitz <mreitz@redhat.com>
+---
+ hw/block/nvme.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/hw/block/nvme.c b/hw/block/nvme.c
+index 107a719b95..36d6a8bb3a 100644
+--- a/hw/block/nvme.c
++++ b/hw/block/nvme.c
+@@ -1384,7 +1384,6 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+     n->bar.cap = 0;
+     NVME_CAP_SET_MQES(n->bar.cap, 0x7ff);
+     NVME_CAP_SET_CQR(n->bar.cap, 1);
+-    NVME_CAP_SET_AMS(n->bar.cap, 1);
+     NVME_CAP_SET_TO(n->bar.cap, 0xf);
+     NVME_CAP_SET_CSS(n->bar.cap, 1);
+     NVME_CAP_SET_MPSMAX(n->bar.cap, 4);
+-- 
+2.21.0
+

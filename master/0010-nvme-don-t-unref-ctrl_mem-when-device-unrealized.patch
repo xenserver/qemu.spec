@@ -1,7 +1,7 @@
 From 20faf0f5f8aba33405a6206cd26f0d2b49ac174a Mon Sep 17 00:00:00 2001
 From: Li Qiang <liq3ea@gmail.com>
 Date: Sun, 28 Oct 2018 23:29:40 -0700
-Subject: [PATCH 3/3] nvme: don't unref ctrl_mem when device unrealized
+Subject: [PATCH 10/10] nvme: don't unref ctrl_mem when device unrealized
 
 Currently, when hotplug/unhotplug nvme device, it will cause an
 assert in object.c. Following is the backtrack:
@@ -27,11 +27,15 @@ Remove it to make the PCIdevice refcount correct.
 Signed-off-by: Li Qiang <liq3ea@gmail.com>
 Reviewed-by: Igor Mammedov <imammedo@redhat.com>
 Signed-off-by: Kevin Wolf <kwolf@redhat.com>
+---
+ hw/block/nvme.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 6071dc12d8..36bf4d4bea 100644
+index fc7dacb816..359a06d0ad 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -1057,9 +1057,6 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -1331,9 +1331,6 @@ static void nvme_exit(PCIDevice *pci_dev)
      g_free(n->namespaces);
      g_free(n->cq);
      g_free(n->sq);
@@ -41,3 +45,6 @@ index 6071dc12d8..36bf4d4bea 100644
  
      msix_uninit_exclusive_bar(pci_dev);
  }
+-- 
+2.21.0
+
