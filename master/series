@@ -95,6 +95,8 @@
 0001-xen-hvm-try-to-use-xenforeignmemory_map_resource-to-.patch
 # afa4f6653dca095f63f3fe7f2001e9334f5676c1 (3.0.0-rc1)
 0001-bswap-Add-new-stn_-_p-and-ldn_-_p-memory-access-func.patch
+# 4b5766488fd3549dc47a75331cf4db62f477536c (3.1.0-rc1)
+0001-error-Fix-use-of-error_prepend-with-error_fatal-erro.patch
 
 # cdd346371e09709be8e46398bb097dc690a746f2 (2.11.0-rc1)
 0001-nvme-Fix-get-set-number-of-queues-feature-again.patch
@@ -188,6 +190,25 @@ pt-avoid-invalid-bar-registers.patch
 
 check-unmigratable-devices-when-saving.patch
 query-migratable.patch
+
+# NVME namespace support
+# https://www.mail-archive.com/qemu-devel@nongnu.org/msg629246.html
+0001-nvme-simplify-namespace-code.patch
+0002-nvme-move-device-parameters-to-separate-struct.patch
+0003-nvme-fix-lpa-field.patch
+0004-nvme-add-missing-fields-in-identify-controller.patch
+0005-nvme-populate-the-mandatory-subnqn-and-ver-fields.patch
+0006-nvme-support-completion-queue-in-cmb.patch
+0007-nvme-support-Abort-command.patch
+0008-nvme-refactor-device-realization.patch
+0009-nvme-support-Asynchronous-Event-Request-command.patch
+0010-nvme-support-Get-Log-Page-command.patch
+0011-nvme-add-missing-mandatory-Features.patch
+0012-nvme-bump-supported-NVMe-revision-to-1.3d.patch
+0013-nvme-simplify-dma-cmb-mappings.patch
+0014-nvme-support-multiple-block-requests-per-request.patch
+0015-nvme-support-scatter-gather-lists.patch
+0016-nvme-support-multiple-namespaces.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)

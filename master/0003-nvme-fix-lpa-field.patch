@@ -1,0 +1,30 @@
+From 177b86a9db9b339022cb9d83165ef46dc6afa75f Mon Sep 17 00:00:00 2001
+From: Klaus Birkelund Jensen <klaus@birkelund.eu>
+Date: Fri, 5 Jul 2019 09:23:20 +0200
+Subject: [PATCH 03/16] nvme: fix lpa field
+
+The Log Page Attributes in the Identify Controller structure indicates
+that the controller supports the SMART / Health Information log page on
+a per namespace basis. It does not, given that neither this log page or
+the Get Log Page command is implemented.
+
+Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
+---
+ hw/block/nvme.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/hw/block/nvme.c b/hw/block/nvme.c
+index dfe4ddc9fe..e7791908ab 100644
+--- a/hw/block/nvme.c
++++ b/hw/block/nvme.c
+@@ -1365,7 +1365,6 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+     id->ieee[2] = 0xb3;
+     id->oacs = cpu_to_le16(0);
+     id->frmw = 7 << 1;
+-    id->lpa = 1 << 0;
+     id->sqes = (0x6 << 4) | 0x6;
+     id->cqes = (0x4 << 4) | 0x4;
+     id->nn = cpu_to_le32(n->num_namespaces);
+-- 
+2.21.0
+
