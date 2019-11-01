@@ -210,6 +210,7 @@ query-migratable.patch
 0015-nvme-support-scatter-gather-lists.patch
 0016-nvme-support-multiple-namespaces.patch
 nvme-ns-fix-null.patch
+nvme-ns-allow-inactive.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
