@@ -201,6 +201,7 @@ dont-init-cpus-on-xen.patch
 0001-xen-Emit-RTC_CHANGE-upon-TIMEOFFSET-ioreq.patch
 remove-ioapic.patch
 ignore-rtc-century-changes.patch
+0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
