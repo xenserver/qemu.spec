@@ -99,6 +99,38 @@
 0001-vga-catch-depth-0.patch
 # 4b5766488fd3549dc47a75331cf4db62f477536c (3.1.0-rc1)
 0001-error-Fix-use-of-error_prepend-with-error_fatal-erro.patch
+# b2587932582333197c88bf663785b19f441989d7 (2.11.0-rc1)
+0001-util-remove-the-obsolete-non-blocking-connect.patch
+# 89382c3de5bc2250b1dad1c42c1f73d5ec6febda (2.11.0-rc1)
+0002-sockets-factor-out-a-new-try_bind-function.patch
+# 39f80521df1e7f1252960d1ada2bd1a41d4d2cd3 (2.11.0-rc1)
+0003-sockets-factor-out-create_fast_reuse_socket.patch
+# 9cf961bba74d433db76a110917ac70aecc2ebcc4 (2.11.0-rc1)
+0004-sockets-Handle-race-condition-between-binds-to-the-s.patch
+# 10a7b7e6fd9f250f0506568345d7b4d2ab52889d (2.11.0-rc1)
+0005-sockets-avoid-leak-of-listen-file-descriptor.patch
+# 2d7ad7c05e762d5b10a57eba9af1bb6b41700854 (2.11.0-rc3)
+0006-sockets-avoid-crash-when-cleaning-up-sockets-for-an-.patch
+# ff676046fb7018a1e62961cc306e466b0a167540 (2.12.0-rc1)
+0007-misc-remove-duplicated-includes.patch
+# 62473511ecbabdf737ba9053845e3551099b04bc (2.12.0-rc1)
+0008-sockets-remove-obsolete-code-that-updated-listen-add.patch
+# 3e32370a96d2ad82839d97e7e622bca793de8af5 (2.12.0-rc1)
+0009-sockets-fix-parsing-of-ipv4-ipv6-opts-in-parse_socke.patch
+# 58dc31f1a7dc6cd0f21bd51a34011ba366d36e53 (2.12.0-rc1)
+0010-sockets-move-fd_is_socket-into-common-sockets-code.patch
+# 30bdb3c56ddd911ab2b1629faa4ce6e883b80e2a (2.12.0-rc1)
+0011-sockets-check-that-the-named-file-descriptor-is-a-so.patch
+# 211e5063be7ffc34ed1daaa4a1aa5f5cfb039995 (2.11.0-rc1)
+0012-qapi-schema-Document-how-generated-documentation-is-.patch
+# c7a4e0c40d29ba889b7ebcf4ec97c58be421123b (2.11.0-rc1)
+0013-qapi-schema-Rocker-doc-section-contains-unrelated-st.patch
+# a2ff5a48c4623be422f6271dd95ce047af0df3ec (2.11.0-rc1)
+0014-qapi-schema-Collect-sockets-stuff-in-qapi-sockets.js.patch
+# 1723d6b1cfe6572881f578bce3aa25185b81b148 (2.12.0-rc1)
+0015-sockets-allow-SocketAddress-fd-to-reference-numeric-.patch
+# 473a2a331ee382703f7ca0067ba2545350cfa06c (2.12.0-rc1)
+0016-cutils-add-qemu_strtoi-qemu_strtoui-parsers-for-int-.patch
 
 # cdd346371e09709be8e46398bb097dc690a746f2 (2.11.0-rc1)
 0001-nvme-Fix-get-set-number-of-queues-feature-again.patch
@@ -249,9 +281,7 @@ gvt-g.patch
 # Technical debt to unblock further development.  Needs removing
 #
 allocate-vram-reserved.patch
-# remove after 2.11
-0001-CA-239469-Avoid-bind-listen-race-on-a-socket-with-SO.patch
-set-so_reuseaddr.patch
+
 # Remove once PV frontends unplug NVME devices
 unplug-nvme-devices.patch
 

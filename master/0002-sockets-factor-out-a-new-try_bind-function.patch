@@ -1,0 +1,112 @@
+From 89382c3de5bc2250b1dad1c42c1f73d5ec6febda Mon Sep 17 00:00:00 2001
+From: Knut Omang <knut.omang@oracle.com>
+Date: Mon, 7 Aug 2017 12:58:40 +0200
+Subject: [PATCH 2/2] sockets: factor out a new try_bind() function
+
+A refactoring step to prepare for the problem
+exposed by the test-listen test in the previous commit.
+
+Simplify and reorganize the IPv6 specific extra
+measures and move it out of the for loop to increase
+code readability. No semantic changes.
+
+Signed-off-by: Knut Omang <knut.omang@oracle.com>
+Reviewed-by: Daniel P. Berrange <berrange@redhat.com>
+Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
+---
+ util/qemu-sockets.c | 69 +++++++++++++++++++++++++--------------------
+ 1 file changed, 39 insertions(+), 30 deletions(-)
+
+diff --git a/util/qemu-sockets.c b/util/qemu-sockets.c
+index d149383bb9..211ebadcec 100644
+--- a/util/qemu-sockets.c
++++ b/util/qemu-sockets.c
+@@ -149,6 +149,44 @@ int inet_ai_family_from_address(InetSocketAddress *addr,
+     return PF_UNSPEC;
+ }
+ 
++static int try_bind(int socket, InetSocketAddress *saddr, struct addrinfo *e)
++{
++#ifndef IPV6_V6ONLY
++    return bind(socket, e->ai_addr, e->ai_addrlen);
++#else
++    /*
++     * Deals with first & last cases in matrix in comment
++     * for inet_ai_family_from_address().
++     */
++    int v6only =
++        ((!saddr->has_ipv4 && !saddr->has_ipv6) ||
++         (saddr->has_ipv4 && saddr->ipv4 &&
++          saddr->has_ipv6 && saddr->ipv6)) ? 0 : 1;
++    int stat;
++
++ rebind:
++    if (e->ai_family == PF_INET6) {
++        qemu_setsockopt(socket, IPPROTO_IPV6, IPV6_V6ONLY, &v6only,
++                        sizeof(v6only));
++    }
++
++    stat = bind(socket, e->ai_addr, e->ai_addrlen);
++    if (!stat) {
++        return 0;
++    }
++
++    /* If we got EADDRINUSE from an IPv6 bind & v6only is unset,
++     * it could be that the IPv4 port is already claimed, so retry
++     * with v6only set
++     */
++    if (e->ai_family == PF_INET6 && errno == EADDRINUSE && !v6only) {
++        v6only = 1;
++        goto rebind;
++    }
++    return stat;
++#endif
++}
++
+ static int inet_listen_saddr(InetSocketAddress *saddr,
+                              int port_offset,
+                              bool update_addr,
+@@ -228,39 +266,10 @@ static int inet_listen_saddr(InetSocketAddress *saddr,
+         port_min = inet_getport(e);
+         port_max = saddr->has_to ? saddr->to + port_offset : port_min;
+         for (p = port_min; p <= port_max; p++) {
+-#ifdef IPV6_V6ONLY
+-            /*
+-             * Deals with first & last cases in matrix in comment
+-             * for inet_ai_family_from_address().
+-             */
+-            int v6only =
+-                ((!saddr->has_ipv4 && !saddr->has_ipv6) ||
+-                 (saddr->has_ipv4 && saddr->ipv4 &&
+-                  saddr->has_ipv6 && saddr->ipv6)) ? 0 : 1;
+-#endif
+             inet_setport(e, p);
+-#ifdef IPV6_V6ONLY
+-        rebind:
+-            if (e->ai_family == PF_INET6) {
+-                qemu_setsockopt(slisten, IPPROTO_IPV6, IPV6_V6ONLY, &v6only,
+-                                sizeof(v6only));
+-            }
+-#endif
+-            if (bind(slisten, e->ai_addr, e->ai_addrlen) == 0) {
++            if (try_bind(slisten, saddr, e) >= 0) {
+                 goto listen;
+             }
+-
+-#ifdef IPV6_V6ONLY
+-            /* If we got EADDRINUSE from an IPv6 bind & V6ONLY is unset,
+-             * it could be that the IPv4 port is already claimed, so retry
+-             * with V6ONLY set
+-             */
+-            if (e->ai_family == PF_INET6 && errno == EADDRINUSE && !v6only) {
+-                v6only = 1;
+-                goto rebind;
+-            }
+-#endif
+-
+             if (p == port_max) {
+                 if (!e->ai_next) {
+                     error_setg_errno(errp, errno, "Failed to bind socket");
+-- 
+2.17.1
+

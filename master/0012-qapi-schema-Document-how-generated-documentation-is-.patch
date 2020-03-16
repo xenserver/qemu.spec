@@ -1,0 +1,60 @@
+From 211e5063be7ffc34ed1daaa4a1aa5f5cfb039995 Mon Sep 17 00:00:00 2001
+From: Markus Armbruster <armbru@redhat.com>
+Date: Thu, 24 Aug 2017 21:13:53 +0200
+Subject: [PATCH 12/12] qapi-schema: Document how generated documentation is
+ ordered
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Documentation generated with qapi2texi.py is in source order, with
+included sub-schemas inserted at the first include directive
+(subsequent include directives have no effect).  To get a sane and
+stable order, it's best to include each sub-schema just once, or
+include it first in qapi-schema.json.  Document that.
+
+While there, drop a few redundant comments.
+
+Signed-off-by: Markus Armbruster <armbru@redhat.com>
+Reviewed-by: Marc-André Lureau <marcandre.lureau@redhat.com>
+Message-Id: <1503602048-12268-2-git-send-email-armbru@redhat.com>
+---
+ qapi-schema.json | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/qapi-schema.json b/qapi-schema.json
+index 802ea53d00..3db3d1972f 100644
+--- a/qapi-schema.json
++++ b/qapi-schema.json
+@@ -72,22 +72,17 @@
+         'q_obj_CpuInfo-base'    # CPU, visible through query-cpu
+     ] } }
+ 
+-# QAPI common definitions
+-{ 'include': 'qapi/common.json' }
++# Documentation generated with qapi2texi.py is in source order, with
++# included sub-schemas inserted at the first include directive
++# (subsequent include directives have no effect).  To get a sane and
++# stable order, it's best to include each sub-schema just once, or
++# include it first in qapi-schema.json.
+ 
+-# QAPI crypto definitions
++{ 'include': 'qapi/common.json' }
+ { 'include': 'qapi/crypto.json' }
+-
+-# QAPI block definitions
+ { 'include': 'qapi/block.json' }
+-
+-# QAPI event definitions
+ { 'include': 'qapi/event.json' }
+-
+-# Tracing commands
+ { 'include': 'qapi/trace.json' }
+-
+-# QAPI introspection
+ { 'include': 'qapi/introspect.json' }
+ 
+ ##
+-- 
+2.17.1
+
