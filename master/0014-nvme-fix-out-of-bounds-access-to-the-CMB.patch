@@ -25,17 +25,11 @@ Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
 Tested-by: Philippe Mathieu-Daudé <philmd@redhat.com>
 Signed-off-by: Kevin Wolf <kwolf@redhat.com>
----
- hw/block/nvme.c        |  2 +-
- tests/Makefile.include |  2 +-
- tests/nvme-test.c      | 68 +++++++++++++++++++++++++++++++++++-------
- 3 files changed, 60 insertions(+), 12 deletions(-)
-
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 28d284346d..8c35cab2b4 100644
+index 0538c3b27b..508bc53ea6 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -1201,7 +1201,7 @@ static const MemoryRegionOps nvme_cmb_ops = {
+@@ -1199,7 +1199,7 @@ static const MemoryRegionOps nvme_cmb_ops = {
      .write = nvme_cmb_write,
      .endianness = DEVICE_LITTLE_ENDIAN,
      .impl = {
@@ -45,12 +39,12 @@ index 28d284346d..8c35cab2b4 100644
      },
  };
 diff --git a/tests/Makefile.include b/tests/Makefile.include
-index 613242bc6e..fb0b449c02 100644
+index 37c1bed683..c9bc598ec1 100644
 --- a/tests/Makefile.include
 +++ b/tests/Makefile.include
-@@ -730,7 +730,7 @@ tests/test-hmp$(EXESUF): tests/test-hmp.o
- tests/machine-none-test$(EXESUF): tests/machine-none-test.o
- tests/drive_del-test$(EXESUF): tests/drive_del-test.o $(libqos-virtio-obj-y)
+@@ -760,7 +760,7 @@ tests/qom-test$(EXESUF): tests/qom-test.o
+ tests/test-hmp$(EXESUF): tests/test-hmp.o
+ tests/drive_del-test$(EXESUF): tests/drive_del-test.o $(libqos-pc-obj-y)
  tests/qdev-monitor-test$(EXESUF): tests/qdev-monitor-test.o $(libqos-pc-obj-y)
 -tests/nvme-test$(EXESUF): tests/nvme-test.o
 +tests/nvme-test$(EXESUF): tests/nvme-test.o $(libqos-pc-obj-y)
@@ -145,6 +139,3 @@ index 7674a446e4..2700ba838a 100644
 -    return ret;
 +    return g_test_run();
  }
--- 
-2.21.0
-
