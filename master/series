@@ -95,6 +95,8 @@
 0001-xen-hvm-try-to-use-xenforeignmemory_map_resource-to-.patch
 # afa4f6653dca095f63f3fe7f2001e9334f5676c1 (3.0.0-rc1)
 0001-bswap-Add-new-stn_-_p-and-ldn_-_p-memory-access-func.patch
+# a89fe6c329799e47aaa1663650f076b28808e186 (3.0.0-rc1)
+0001-vga-catch-depth-0.patch
 # 4b5766488fd3549dc47a75331cf4db62f477536c (3.1.0-rc1)
 0001-error-Fix-use-of-error_prepend-with-error_fatal-erro.patch
 
