@@ -125,16 +125,30 @@ parser.add_option("-r", "--repo", dest="repo", default=".",
                   help="path to source git repository", metavar="REPO")
 parser.add_option("-l", "--list", dest="list",
                   help="file containing a list of commit IDs", metavar="FILE")
+parser.add_option("-c", "--chrono", dest="chrono", action='store_true',
+                  help="Force chronological ordering of commits")
 (options, args) = parser.parse_args()
 
+if options.chrono and (not options.list):
+    parser.error("options -c must be used in conjunction with -l.")
+
 commits = []
+commit_info = []
 
 if options.list:
     list_file = open(options.list, "r")
     for l in list_file.readlines():
         commit = l.strip()
+
         if commit != "":
-            commits.append(commit)
+            if options.chrono:
+                commit_info.append(call(["git", "show", "-s", commit, "--date=iso", "--pretty", "--format=\"%ad %H\""]))
+            else:
+                commits.append(commit)
+
+    if options.chrono:
+        for x in sorted(commit_info):
+            commits.append(x.split()[-1].replace("\"", ""))
 
 commits.extend(args)
 
