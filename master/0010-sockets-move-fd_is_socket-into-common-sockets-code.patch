@@ -12,22 +12,12 @@ the common sockets code. Make the code more compact while moving it.
 Reviewed-by: Eric Blake <eblake@redhat.com>
 Reviewed-by: Marc-André Lureau <marcandre.lureau@redhat.com>
 Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
----
- include/qemu/sockets.h    |  1 +
- io/channel-util.c         | 13 -------
- tests/.gitignore          |  1 +
- tests/Makefile.include    |  3 ++
- tests/test-util-sockets.c | 77 +++++++++++++++++++++++++++++++++++++++
- util/qemu-sockets.c       |  8 ++++
- 6 files changed, 90 insertions(+), 13 deletions(-)
- create mode 100644 tests/test-util-sockets.c
-
 diff --git a/include/qemu/sockets.h b/include/qemu/sockets.h
-index e88d4c37ab..8140fea685 100644
+index 9ea1011..75eb42a 100644
 --- a/include/qemu/sockets.h
 +++ b/include/qemu/sockets.h
 @@ -12,6 +12,7 @@ int inet_aton(const char *cp, struct in_addr *ia);
- #include "qapi/qapi-types-sockets.h"
+ #include "qapi-types.h"
  
  /* misc helpers */
 +bool fd_is_socket(int fd);
@@ -35,7 +25,7 @@ index e88d4c37ab..8140fea685 100644
  int qemu_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
  int socket_set_cork(int fd, int v);
 diff --git a/io/channel-util.c b/io/channel-util.c
-index 0fb4bd0837..423d79845a 100644
+index 0fb4bd0..423d798 100644
 --- a/io/channel-util.c
 +++ b/io/channel-util.c
 @@ -24,19 +24,6 @@
@@ -59,10 +49,10 @@ index 0fb4bd0837..423d79845a 100644
                                 Error **errp)
  {
 diff --git a/tests/.gitignore b/tests/.gitignore
-index 18e58b2183..fb62d2299b 100644
+index fed0189..f0b8758 100644
 --- a/tests/.gitignore
 +++ b/tests/.gitignore
-@@ -86,6 +86,7 @@ test-thread-pool
+@@ -84,6 +84,7 @@ test-thread-pool
  test-throttle
  test-timed-average
  test-uuid
@@ -71,10 +61,10 @@ index 18e58b2183..fb62d2299b 100644
  test-vmstate
  test-write-threshold
 diff --git a/tests/Makefile.include b/tests/Makefile.include
-index 3d5b6174a8..42fd426cd0 100644
+index 37c1bed..4505bb0 100644
 --- a/tests/Makefile.include
 +++ b/tests/Makefile.include
-@@ -146,6 +146,7 @@ ifneq (,$(findstring qemu-ga,$(TOOLS)))
+@@ -132,6 +132,7 @@ ifneq (,$(findstring qemu-ga,$(TOOLS)))
  check-unit-$(CONFIG_LINUX) += tests/test-qga$(EXESUF)
  endif
  check-unit-y += tests/test-timed-average$(EXESUF)
@@ -82,18 +72,18 @@ index 3d5b6174a8..42fd426cd0 100644
  check-unit-y += tests/test-io-task$(EXESUF)
  check-unit-y += tests/test-io-channel-socket$(EXESUF)
  check-unit-y += tests/test-io-channel-file$(EXESUF)
-@@ -713,6 +714,8 @@ tests/test-crypto-tlscredsx509$(EXESUF): tests/test-crypto-tlscredsx509.o \
+@@ -679,6 +680,8 @@ tests/test-crypto-tlscredsx509$(EXESUF): tests/test-crypto-tlscredsx509.o \
  tests/test-crypto-tlssession.o-cflags := $(TASN1_CFLAGS)
  tests/test-crypto-tlssession$(EXESUF): tests/test-crypto-tlssession.o \
  	tests/crypto-tls-x509-helpers.o tests/pkix_asn1_tab.o $(test-crypto-obj-y)
 +tests/test-util-sockets$(EXESUF): tests/test-util-sockets.o \
-+	tests/socket-helpers.o $(test-util-obj-y)
++       tests/socket-helpers.o $(test-util-obj-y)
  tests/test-io-task$(EXESUF): tests/test-io-task.o $(test-io-obj-y)
  tests/test-io-channel-socket$(EXESUF): tests/test-io-channel-socket.o \
-         tests/io-channel-helpers.o tests/socket-helpers.o $(test-io-obj-y)
+         tests/io-channel-helpers.o $(test-io-obj-y)
 diff --git a/tests/test-util-sockets.c b/tests/test-util-sockets.c
 new file mode 100644
-index 0000000000..65190e0530
+index 0000000..65190e0
 --- /dev/null
 +++ b/tests/test-util-sockets.c
 @@ -0,0 +1,77 @@
@@ -175,7 +165,7 @@ index 0000000000..65190e0530
 +    return g_test_run();
 +}
 diff --git a/util/qemu-sockets.c b/util/qemu-sockets.c
-index 7f13e8a338..fa79471647 100644
+index fbbef69..7ccb9d2 100644
 --- a/util/qemu-sockets.c
 +++ b/util/qemu-sockets.c
 @@ -91,6 +91,14 @@ NetworkAddressFamily inet_netfamily(int family)
@@ -193,6 +183,3 @@ index 7f13e8a338..fa79471647 100644
  /*
   * Matrix we're trying to apply
   *
--- 
-2.17.1
-
