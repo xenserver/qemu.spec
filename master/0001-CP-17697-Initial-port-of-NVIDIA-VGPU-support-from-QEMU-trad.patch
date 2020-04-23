@@ -16,7 +16,7 @@ index 551c050..86c0e28 100644
 +obj-y += vgpu_fb.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..e6250bd
+index 0000000..ef1a799
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
 @@ -0,0 +1,316 @@
@@ -59,7 +59,7 @@ index 0000000..e6250bd
 +    int surface_fd;
 +} VGPUState;
 +
-+#define DEMU_FIFO_PATH     "/var/xen/vgpu/%d/fifo"
++#define DEMU_FIFO_PATH     "/run/xen/vgpu-fifo-%d"
 +#define DEMU_FIFO_TIMEOUT   (60 * 5)
 +#define DEMU_SURFACE_PATH    "/xen.vgpu.%d"
 +
