@@ -6,18 +6,18 @@ Subject: [PATCH] CA-289906: Use legacy HID descriptors for USB Tablet in
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/usb/dev-hid.c b/hw/usb/dev-hid.c
-index c40019d..10dccb5 100644
+index 88492f26e6..65cfb10886 100644
 --- a/hw/usb/dev-hid.c
 +++ b/hw/usb/dev-hid.c
-@@ -30,6 +30,7 @@
+@@ -31,6 +31,7 @@
  #include "qapi/error.h"
+ #include "qemu/module.h"
  #include "qemu/timer.h"
- #include "hw/input/hid.h"
 +#include "hw/i386/pc.h"
+ #include "hw/input/hid.h"
+ #include "hw/qdev-properties.h"
  
- /* HID interface requests */
- #define GET_REPORT   0xa101
-@@ -560,6 +561,121 @@ static const uint8_t qemu_keyboard_hid_report_descriptor[] = {
+@@ -569,6 +570,121 @@ static const uint8_t qemu_keyboard_hid_report_descriptor[] = {
      0xc0,		/* End Collection */
  };
  
@@ -139,12 +139,12 @@ index c40019d..10dccb5 100644
  static void usb_hid_changed(HIDState *hs)
  {
      USBHIDState *us = container_of(hs, USBHIDState, hid);
-@@ -596,9 +712,15 @@ static void usb_hid_handle_control(USBDevice *dev, USBPacket *p,
- 		       sizeof(qemu_mouse_hid_report_descriptor));
+@@ -605,9 +721,15 @@ static void usb_hid_handle_control(USBDevice *dev, USBPacket *p,
+                        sizeof(qemu_mouse_hid_report_descriptor));
                  p->actual_length = sizeof(qemu_mouse_hid_report_descriptor);
              } else if (hs->kind == HID_TABLET) {
 -                memcpy(data, qemu_tablet_hid_report_descriptor,
--		       sizeof(qemu_tablet_hid_report_descriptor));
+-                       sizeof(qemu_tablet_hid_report_descriptor));
 -                p->actual_length = sizeof(qemu_tablet_hid_report_descriptor);
 +                if (dev->usb_desc == &desc_tablet_compat) {
 +                    memcpy(data, qemu_tablet_hid_report_descriptor_compat,
@@ -158,7 +158,7 @@ index c40019d..10dccb5 100644
              } else if (hs->kind == HID_KEYBOARD) {
                  memcpy(data, qemu_keyboard_hid_report_descriptor,
                         sizeof(qemu_keyboard_hid_report_descriptor));
-@@ -731,8 +853,14 @@ static void usb_hid_initfn(USBDevice *dev, int kind,
+@@ -738,8 +860,14 @@ static void usb_hid_initfn(USBDevice *dev, int kind,
  
  static void usb_tablet_realize(USBDevice *dev, Error **errp)
  {

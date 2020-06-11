@@ -7,10 +7,10 @@ This is done in the same way that qemu-trad does CPU hot unplug.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 diff --git a/hw/acpi/cpu_hotplug.c b/hw/acpi/cpu_hotplug.c
-index 5243918125..dcdcca621b 100644
+index 3ac2045a95..25d18ff5e7 100644
 --- a/hw/acpi/cpu_hotplug.c
 +++ b/hw/acpi/cpu_hotplug.c
-@@ -72,6 +72,18 @@ static void acpi_set_cpu_present_bit(AcpiCpuHotplug *g, CPUState *cpu,
+@@ -71,6 +71,18 @@ static void acpi_set_cpu_present_bit(AcpiCpuHotplug *g, CPUState *cpu,
      g->sts[cpu_id / 8] |= (1 << (cpu_id % 8));
  }
  
@@ -29,7 +29,7 @@ index 5243918125..dcdcca621b 100644
  void legacy_acpi_cpu_plug_cb(HotplugHandler *hotplug_dev,
                               AcpiCpuHotplug *g, DeviceState *dev, Error **errp)
  {
-@@ -82,6 +94,13 @@ void legacy_acpi_cpu_plug_cb(HotplugHandler *hotplug_dev,
+@@ -81,6 +93,13 @@ void legacy_acpi_cpu_plug_cb(HotplugHandler *hotplug_dev,
      acpi_send_event(DEVICE(hotplug_dev), ACPI_CPU_HOTPLUG_STATUS);
  }
  
@@ -44,13 +44,13 @@ index 5243918125..dcdcca621b 100644
                                    AcpiCpuHotplug *gpe_cpu, uint16_t base)
  {
 diff --git a/hw/acpi/piix4.c b/hw/acpi/piix4.c
-index f4fd5907b8..e51a856398 100644
+index 93aec2dd2c..ecbc9f1e7b 100644
 --- a/hw/acpi/piix4.c
 +++ b/hw/acpi/piix4.c
-@@ -427,9 +427,12 @@ static void piix4_device_unplug_cb(HotplugHandler *hotplug_dev,
-     if (s->acpi_memory_hotplug.is_enabled &&
-         object_dynamic_cast(OBJECT(dev), TYPE_PC_DIMM)) {
-         acpi_memory_unplug_cb(&s->acpi_memory_hotplug, dev, errp);
+@@ -410,9 +410,12 @@ static void piix4_device_unplug_cb(HotplugHandler *hotplug_dev,
+     } else if (object_dynamic_cast(OBJECT(dev), TYPE_PCI_DEVICE)) {
+         acpi_pcihp_device_unplug_cb(hotplug_dev, &s->acpi_pci_hotplug, dev,
+                                     errp);
 -    } else if (object_dynamic_cast(OBJECT(dev), TYPE_CPU) &&
 -               !s->cpu_hotplug_legacy) {
 -        acpi_cpu_unplug_cb(&s->cpuhp_state, dev, errp);
@@ -64,25 +64,26 @@ index f4fd5907b8..e51a856398 100644
          error_setg(errp, "acpi: device unplug for not supported device"
                     " type: %s", object_get_typename(OBJECT(dev)));
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 9995ad4a57..122f1562dc 100644
+index 1fa4f5e588..e5f037ff6f 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -429,11 +429,15 @@ static void pc_xen_hvm_init(MachineState *machine)
+@@ -414,6 +414,7 @@ static void pc_xen_hvm_init(MachineState *machine)
  
  static void pc_i440fx_machine_options(MachineClass *m)
  {
 +    HotplugHandlerClass *hc = HOTPLUG_HANDLER_CLASS(m);
-+
-     m->family = "pc_piix";
-     m->desc = "Standard PC (i440FX + PIIX, 1996)";
-     m->hot_add_cpu = pc_hot_add_cpu;
+     PCMachineClass *pcmc = PC_MACHINE_CLASS(m);
+     pcmc->default_nic_model = "e1000";
+ 
+@@ -422,6 +423,8 @@ static void pc_i440fx_machine_options(MachineClass *m)
      m->default_machine_opts = "firmware=bios-256k.bin";
      m->default_display = "std";
+     machine_class_allow_dynamic_sysbus_dev(m, TYPE_RAMFB_DEVICE);
 +
 +    hc->unplug_request = NULL;
  }
  
- static void pc_i440fx_2_10_machine_options(MachineClass *m)
+ static void pc_i440fx_4_2_machine_options(MachineClass *m)
 diff --git a/include/hw/acpi/cpu_hotplug.h b/include/hw/acpi/cpu_hotplug.h
 index 3b932abbbb..d781fc9ea7 100644
 --- a/include/hw/acpi/cpu_hotplug.h

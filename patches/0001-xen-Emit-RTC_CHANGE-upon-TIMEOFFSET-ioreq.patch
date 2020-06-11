@@ -10,22 +10,22 @@ information.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index d9ccd5d..ffd20dc 100644
+index 82ece6b9e7..aaf4b602b2 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -16,6 +16,7 @@
- #include "hw/i386/apic-msidef.h"
- #include "hw/xen/xen_common.h"
- #include "hw/xen/xen_backend.h"
-+#include "qapi-event.h"
- #include "qmp-commands.h"
- 
+@@ -23,6 +23,7 @@
+ #include "hw/xen/xen-bus.h"
+ #include "qapi/error.h"
+ #include "qapi/qapi-commands-misc.h"
++#include "qapi/qapi-events-misc-target.h"
  #include "qemu/error-report.h"
-@@ -967,6 +968,7 @@ static void handle_ioreq(XenIOState *state, ioreq_t *req)
+ #include "qemu/main-loop.h"
+ #include "qemu/range.h"
+@@ -1066,6 +1067,7 @@ static void handle_ioreq(XenIOState *state, ioreq_t *req)
              handle_vmport_ioreq(state, req);
              break;
          case IOREQ_TYPE_TIMEOFFSET:
-+            qapi_event_send_rtc_change((int64_t)req->data, &error_abort);
++            qapi_event_send_rtc_change((int64_t)req->data);
              break;
          case IOREQ_TYPE_INVALIDATE:
              xen_invalidate_map_cache();

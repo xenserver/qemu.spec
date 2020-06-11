@@ -1,0 +1,126 @@
+Revert "hw/i386: Remove deprecated machines pc-0.10 and pc-0.11"
+
+From: Anthony PERARD <anthony.perard@citrix.com>
+Date: Fri 26 Jun 2020 14:30:46 BST +0100
+
+This reverts commit cc425b5ddfe8f8474814f369409e637c36898542.
+And apply changes that happend to the other compat handling since that
+commit.
+
+diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
+index c7c093f387..e6903f345f 100644
+--- a/hw/i386/pc_piix.c
++++ b/hw/i386/pc_piix.c
+@@ -382,7 +382,7 @@ static void pc_compat_1_2(MachineState *machine)
+     x86_cpu_change_kvm_default("kvm-pv-eoi", NULL);
+ }
+ 
+-/* PC compat function for pc-0.12 and pc-0.13 */
++/* PC compat function for pc-0.10 to pc-0.13 */
+ static void pc_compat_0_13(MachineState *machine)
+ {
+     pc_compat_1_2(machine);
+@@ -884,6 +884,75 @@ static void pc_i440fx_0_12_machine_options(MachineClass *m)
+ DEFINE_I440FX_MACHINE(v0_12, "pc-0.12", pc_compat_0_13,
+                       pc_i440fx_0_12_machine_options);
+ 
++
++static void pc_i440fx_0_11_machine_options(MachineClass *m)
++{
++    static GlobalProperty compat[] = {
++        PC_CPU_MODEL_IDS("0.11")
++        {
++            .driver   = "virtio-blk-pci",
++            .property = "vectors",
++            .value    = stringify(0),
++        },{
++            .driver   = TYPE_PCI_DEVICE,
++            .property = "rombar",
++            .value    = stringify(0),
++        },{
++            .driver   = "ide-drive",
++            .property = "ver",
++            .value    = "0.11",
++        },{
++            .driver   = "scsi-disk",
++            .property = "ver",
++            .value    = "0.11",
++        },
++    };
++
++    pc_i440fx_0_12_machine_options(m);
++    m->hw_version = "0.11";
++    m->deprecation_reason = "use a newer machine type instead";
++    compat_props_add(m->compat_props, compat, G_N_ELEMENTS(compat));
++}
++
++DEFINE_I440FX_MACHINE(v0_11, "pc-0.11", pc_compat_0_13,
++                      pc_i440fx_0_11_machine_options);
++
++
++static void pc_i440fx_0_10_machine_options(MachineClass *m)
++{
++    static GlobalProperty compat[] = {
++        PC_CPU_MODEL_IDS("0.10")
++        {
++            .driver   = "virtio-blk-pci",
++            .property = "class",
++            .value    = stringify(PCI_CLASS_STORAGE_OTHER),
++        },{
++            .driver   = "virtio-serial-pci",
++            .property = "class",
++            .value    = stringify(PCI_CLASS_DISPLAY_OTHER),
++        },{
++            .driver   = "virtio-net-pci",
++            .property = "vectors",
++            .value    = stringify(0),
++        },{
++            .driver   = "ide-drive",
++            .property = "ver",
++            .value    = "0.10",
++        },{
++            .driver   = "scsi-disk",
++            .property = "ver",
++            .value    = "0.10",
++        },
++    };
++
++    pc_i440fx_0_11_machine_options(m);
++    m->hw_version = "0.10";
++    compat_props_add(m->compat_props, compat, G_N_ELEMENTS(compat));
++}
++
++DEFINE_I440FX_MACHINE(v0_10, "pc-0.10", pc_compat_0_13,
++                      pc_i440fx_0_10_machine_options);
++
+ typedef struct {
+     uint16_t gpu_device_id;
+     uint16_t pch_device_id;
+diff --git a/qemu-deprecated.texi b/qemu-deprecated.texi
+index fff07bb2a3..db5b1b0408 100644
+--- a/qemu-deprecated.texi
++++ b/qemu-deprecated.texi
+@@ -231,7 +231,7 @@ their usecases.
+ 
+ @section System emulator machines
+ 
+-@subsection pc-0.12, pc-0.13, pc-0.14 and pc-0.15 (since 4.0)
++@subsection pc-0.10 and pc-0.11 (since 3.0)
+ 
+ These machine types are very old and likely can not be used for live migration
+ from old QEMU versions anymore. A newer machine type should be used instead.
+diff --git a/tests/cpu-plug-test.c b/tests/cpu-plug-test.c
+index 668f00144e..f4a677d238 100644
+--- a/tests/cpu-plug-test.c
++++ b/tests/cpu-plug-test.c
+@@ -157,7 +157,9 @@ static void add_pc_test_case(const char *mname)
+         (strcmp(mname, "pc-0.15") == 0) ||
+         (strcmp(mname, "pc-0.14") == 0) ||
+         (strcmp(mname, "pc-0.13") == 0) ||
+-        (strcmp(mname, "pc-0.12") == 0)) {
++        (strcmp(mname, "pc-0.12") == 0) ||
++        (strcmp(mname, "pc-0.11") == 0) ||
++        (strcmp(mname, "pc-0.10") == 0)) {
+         path = g_strdup_printf("cpu-plug/%s/init/%ux%ux%u&maxcpus=%u",
+                                mname, data->sockets, data->cores,
+                                data->threads, data->maxcpus);

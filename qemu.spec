@@ -1,10 +1,14 @@
-%global package_srccommit v2.10.2
-%{!?xsrel: %global xsrel 4.6.0}
+%global package_srccommit v4.2.1
+%{!?xsrel: %global xsrel 5.0.0}
+
+# submodule ui/keycodemapdb
+%define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
+%define keycodemapdb_path ui/keycodemapdb
 
 Summary: qemu-dm device model
 Name: qemu
 Epoch: 2
-Version: 2.10.2
+Version: 4.2.1
 Release: %{?xsrel}%{?dist}
 License: GPL
 Requires: jemalloc
@@ -15,6 +19,7 @@ Requires: xengt-userspace
 Conflicts: xenopsd-xc < 0.123.0
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=%{package_srccommit}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
 Source1: qemu_trad_image.py
+Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycodemapdb/archive?at=%{keycodemapdb_cset}&format=tar.gz&prefix=%{keycodemapdb_path}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
@@ -28,8 +33,11 @@ This package contains Qemu.
 %autosetup -p1
 %{?_cov_prepare}
 
+# submodule ui/keymapcodedb
+tar xzf %{SOURCE2}
+
 %build
-./configure --cc=gcc --cxx=/dev/null --enable-xen --target-list=i386-softmmu --source-path=. \
+./configure --cc=gcc --cxx=/dev/null --enable-xen --target-list=i386-softmmu \
     --prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir} \
     --localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
     --enable-werror --enable-libusb --enable-trace-backend=log \
@@ -40,6 +48,8 @@ This package contains Qemu.
     --disable-lzo --disable-tpm --disable-virtfs --disable-tcg --disable-tcg-interpreter \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
     --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration \
+    --disable-bochs --disable-cloop --disable-dmg --disable-vvfat \
+    --disable-parallels --disable-sheepdog \
     --enable-seccomp
 %{?_cov_wrap} %{__make} %{?_smp_mflags} all
 
@@ -50,6 +60,8 @@ rm -rf %{buildroot}
 %{__make} %{?_smp_mflags} install DESTDIR=%{buildroot}
 rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_libdir}/libcacard.*a \
        %{buildroot}/usr/share/locale
+rm -rf %{buildroot}/usr/share/icons/
+rm -rf %{buildroot}/usr/share/applications/
 %{__install} -D -m 644 %{SOURCE1} %{buildroot}%{_libdir}/xen/bin/qemu_trad_image.py
 cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_install}
@@ -62,6 +74,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Thu Jan 28 2021 Anthony PERARD <anthony.perard@citrix.com> - 4.2.1-5.0.0
+- CP-33898: Upgrade QEMU to 4.2.1 upstream release
+
 * Thu Sep 10 2020 Ross Lagerwall <ross.lagerwall@citrix.com> - 2.10.2-4.6.0
 - CA-343524: XSA-335: Buffer overrun in QEMU USB subsystem
 - CA-343531: CVE-2018-17598: Buffer overflow in rtl8139_do_receive

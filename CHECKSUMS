@@ -1,3 +1,4 @@
 ## Remote Source Checksums
 ## <size-in-bytes> <sha256sum> <filename>
-14454386 3a168f2d174f0ef63bb8a048815c4c66f8fc5e8a199664f7942dc95219b72249 qemu-2.10.2.tar.gz
+47897 26675883ef9773aae9132b6126b79bcb92b138567a2ab0c7ab7afa14ee08fb19 keycodemapdb-6b3d716e2b6472eb7189d3220552280ef3d832ce.tar.gz
+28315815 b2027a2285acf14ddceca33e0a64c40e1b07845427fab9e27a6bac2cd4022d8e qemu-4.2.1.tar.gz

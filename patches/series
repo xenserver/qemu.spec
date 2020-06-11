@@ -1,187 +1,8 @@
 #
 # Backports from upstream
 #
-# 1bd6152ae23549032ef4aca0d3d350512f012f05
-0001-seccomp-changing-from-whitelist-to-blacklist.patch
-# 2b716fa6d63a183a42b789595c3944f53c0ded7c
-0002-seccomp-add-obsolete-argument-to-command-line.patch
-# 73a1e647256b09734ce64ef7a6001a0db03f7106
-0003-seccomp-add-elevateprivileges-argument-to-command-li.patch
-# 995a226f880b807e05240e8752d6ce65679775be
-0004-seccomp-add-spawn-argument-to-command-line.patch
-# 24f8cdc5722476e12d8e39d71f66311b4fa971c1
-0005-seccomp-add-resourcecontrol-argument-to-command-line.patch
-# c3883e1f935bf11ef0d2b8157b0022ace3d0e77d
-0006-buildsys-Move-seccomp-cflags-libs-to-per-object.patch
-# 5a3804db616634779be8e5ebcc6409c2bd9b58b5 (2.11.0-rc1)
-0001-vnc-use-QEMU_ALIGN_DOWN.patch
-# 659c90eed8f2667febc1fd1f6473799ab6a45fb6 (2.11.0-rc1)
-0002-vnc-use-DIV_ROUND_UP.patch
-# ad6374c43e572e6e53020a97e72e9ea525b08334 (2.11.0-rc1)
-0004-ui-add-tracing-of-VNC-operations-related-to-QIOChann.patch
-# 7364dbdabb7824d5bde1e341bb6d928282f01c83 (2.11.0-rc1)
-0005-ui-add-tracing-of-VNC-authentication-process.patch
-# a75d6f07613af7ec5b016b31b117436e32ce7a5f (2.11.0-rc1)
-0006-ui-Always-remove-an-old-VNC-channel-watch-before-add.patch
-# 138bc2df843105edb22978284fc2e16307f16211 (2.11.0-rc1)
-0004-vga-migration-Update-memory-map-in-post_load.patch
-# b0898b42ef099bc125db1fbf62b7f02b505ef3a2 (2.11.0-rc1)
-0007-vga-add-ram_addr_t-cast.patch
-# eb38e1bc3740725ca29a535351de94107ec58d51 (2.11.0-rc1)
-0008-cirrus-fix-oob-access-in-mode4and5-write-functions.patch
-# 115788d7a70e9ae255511ca00fc69cce06967472 (2.11.0-rc1)
-0009-vga-fix-region-checks-in-wraparound-case.patch
-# a8036336609d2e184fc3543a4c439c0ba7d7f3a2 (2.11.0-rc1)
-0001-xen-pt-allow-QEMU-to-request-MSI-unmasking-at-bind-t.patch
-# 090fdc83b0960f68d204624a73c6814780da52d9 (expected 2.12.0-rc1)
-0007-vnc-fix-debug-spelling.patch
-# 6af998db05aec9af95a06f84ad94f1b96785e667 (expected 2.12.0-rc1)
-0008-ui-remove-sync-parameter-from-vnc_update_client.patch
-# c53df961617736f94731d94b62c2954c261d2bae (expected 2.12.0-rc1)
-0009-ui-remove-unreachable-code-in-vnc_update_client.patch
-# b939eb89b6f320544a9328fa908d881d0024c1ee (expected 2.12.0-rc1)
-0010-ui-remove-redundant-indentation-in-vnc_client_update.patch
-# 3541b08475d51bddf8aded36576a0ff5a547a978 (expected 2.12.0-rc1)
-0011-ui-avoid-pointless-VNC-updates-if-framebuffer-isn-t-.patch
-# 8f61f1c5a6bc06438a1172efa80bc7606594fa07 (expected 2.12.0-rc1)
-0012-ui-track-how-much-decoded-data-we-consumed-when-doin.patch
-# fef1bbadfb2c3027208eb3d14b43e1bdb51166ca (expected 2.12.0-rc1)
-0013-ui-introduce-enum-to-track-VNC-client-framebuffer-up.patch
-# 728a7ac95484a7ba5e624ccbac4c1326571576b0 (expected 2.12.0-rc1)
-0014-ui-correctly-reset-framebuffer-update-state-after-pr.patch
-# 0bad834228b9ee63e4239108d02dcb94568254d0 (expected 2.12.0-rc1)
-0015-ui-refactor-code-for-determining-if-an-update-should.patch
-# e2b72cb6e0443d90d7ab037858cb6834b6cca852 (expected 2.12.0-rc1)
-0016-ui-fix-VNC-client-throttling-when-audio-capture-is-a.patch
-# ada8d2e4369ea49677d8672ac81bce73eefd5b54 (expected 2.12.0-rc1)
-0017-ui-fix-VNC-client-throttling-when-forced-update-is-r.patch
-# f887cf165db20f405cb8805c716bd363aaadf815 (expected 2.12.0-rc1)
-0018-ui-place-a-hard-cap-on-VNC-server-output-buffer-size.patch
-# 6aa22a29187e1908f5db738d27c64a9efc8d0bfa (expected 2.12.0-rc1)
-0019-ui-add-trace-events-related-to-VNC-client-throttling.patch
-# 30b80fd5269257f55203b7072c505b4ebaab5115 (expected 2.12.0-rc1)
-0020-ui-mix-misleading-comments-return-types-of-VNC-I-O-h.patch
-# 4c956bd81e2e16afd19d38d1fdeba6d9faa8a1ae (expected 2.12.0-rc1)
-0021-ui-avoid-sign-extension-using-client-width-height.patch
-# 191f59dc17396bb5a8da50f8c59b6e0a430711a4 (expected 2.12.0-rc1)
-0010-vga-check-the-validation-of-memory-addr-when-draw-te.patch
-# 7cdc61becd095b64a786b2625f321624e7111f3d (2.12.0-rc1)
-0001-vga-fix-region-calculation.patch
-# 032b79f7173051e7f8742a43d106c7fc526856f9 (2.12.0-rc1)
-0001-migration-Don-t-leak-IO-channels.patch
-# 902f6e14fc68743ce24efb7d87dc3f8464a78bf3 (2.12.0-rc1)
-0001-io-Fix-QIOChannelFile-when-creating-and-opening-read.patch
-# a2565df12c59362c061084a0c853dace410cac26 (2.12.0-rc1)
-0001-io-Don-t-call-close-multiple-times-in-QIOChannelFile.patch
-# b8f244b13ca3c754c34c0ab1c2b0e7241b54318a (2.12.0-rc1)
-0001-io-Add-dev-fdset-support-to-QIOChannelFile.patch
-# 96994fd1e4e0da2a3b5d585a58621722199c67c9 (2.12.0-rc1)
-0001-migration-xen-Check-return-value-of-qemu_fclose.patch
-# 9d3b155186c2788570f4802700d030c84e0f0746 (2.12.0-rc1)
-0001-hw-block-Fix-the-return-type.patch
-# 1dd6af7395670f3dcd05ddb64ce6c374a81ae701 (3.0.0-rc1)
-0001-xen-pvdevice-Introduce-a-simplistic-xen-pvdevice-sav.patch
-# 04a8f72e877b9a912ffd7afa84209909577d1d96 (3.0.0-rc1)
-0001-xen-hvm-correct-reporting-of-modified-memory-under-p.patch
-# dc9e46a29aad8ba5d2fb0871268baa9c7edc0f95 (3.0.0-rc1)
-0001-xen_pt-Present-the-size-of-64-bit-BARs-correctly.patch
-# 84201604c77808d6b2fa5139ded83d1e739a3f8c (3.0.0-rc1)
-0001-xen-pt-use-address_space_memory-object-for-memory-re.patch
-# 2cbf8903530b936964dd3af7e2e5bf85c3955d5c (3.0.0-rc1)
-0001-xen-Use-newly-added-dmops-for-mapping-VGA-memory.patch
-# 71cec1ed2282a5c172ee09000ef11cf9460eff79 (3.0.0-rc1)
-0001-xen-hvm-create-separate-function-for-ioreq-server-in.patch
-# d3c49ebbe26b48615e14b8baa88a59cd33761ea6 (3.0.0-rc1)
-0001-xen-hvm-try-to-use-xenforeignmemory_map_resource-to-.patch
-# afa4f6653dca095f63f3fe7f2001e9334f5676c1 (3.0.0-rc1)
-0001-bswap-Add-new-stn_-_p-and-ldn_-_p-memory-access-func.patch
-# a89fe6c329799e47aaa1663650f076b28808e186 (3.0.0-rc1)
-0001-vga-catch-depth-0.patch
-# 4b5766488fd3549dc47a75331cf4db62f477536c (3.1.0-rc1)
-0001-error-Fix-use-of-error_prepend-with-error_fatal-erro.patch
-# b2587932582333197c88bf663785b19f441989d7 (2.11.0-rc1)
-0001-util-remove-the-obsolete-non-blocking-connect.patch
-# 89382c3de5bc2250b1dad1c42c1f73d5ec6febda (2.11.0-rc1)
-0002-sockets-factor-out-a-new-try_bind-function.patch
-# 39f80521df1e7f1252960d1ada2bd1a41d4d2cd3 (2.11.0-rc1)
-0003-sockets-factor-out-create_fast_reuse_socket.patch
-# 9cf961bba74d433db76a110917ac70aecc2ebcc4 (2.11.0-rc1)
-0004-sockets-Handle-race-condition-between-binds-to-the-s.patch
-# 10a7b7e6fd9f250f0506568345d7b4d2ab52889d (2.11.0-rc1)
-0005-sockets-avoid-leak-of-listen-file-descriptor.patch
-# 2d7ad7c05e762d5b10a57eba9af1bb6b41700854 (2.11.0-rc3)
-0006-sockets-avoid-crash-when-cleaning-up-sockets-for-an-.patch
-# ff676046fb7018a1e62961cc306e466b0a167540 (2.12.0-rc1)
-0007-misc-remove-duplicated-includes.patch
-# 62473511ecbabdf737ba9053845e3551099b04bc (2.12.0-rc1)
-0008-sockets-remove-obsolete-code-that-updated-listen-add.patch
-# 3e32370a96d2ad82839d97e7e622bca793de8af5 (2.12.0-rc1)
-0009-sockets-fix-parsing-of-ipv4-ipv6-opts-in-parse_socke.patch
-# 58dc31f1a7dc6cd0f21bd51a34011ba366d36e53 (2.12.0-rc1)
-0010-sockets-move-fd_is_socket-into-common-sockets-code.patch
-# 30bdb3c56ddd911ab2b1629faa4ce6e883b80e2a (2.12.0-rc1)
-0011-sockets-check-that-the-named-file-descriptor-is-a-so.patch
-# 211e5063be7ffc34ed1daaa4a1aa5f5cfb039995 (2.11.0-rc1)
-0012-qapi-schema-Document-how-generated-documentation-is-.patch
-# c7a4e0c40d29ba889b7ebcf4ec97c58be421123b (2.11.0-rc1)
-0013-qapi-schema-Rocker-doc-section-contains-unrelated-st.patch
-# a2ff5a48c4623be422f6271dd95ce047af0df3ec (2.11.0-rc1)
-0014-qapi-schema-Collect-sockets-stuff-in-qapi-sockets.js.patch
-# 1723d6b1cfe6572881f578bce3aa25185b81b148 (2.12.0-rc1)
-0015-sockets-allow-SocketAddress-fd-to-reference-numeric-.patch
-# 473a2a331ee382703f7ca0067ba2545350cfa06c (2.12.0-rc1)
-0016-cutils-add-qemu_strtoi-qemu_strtoui-parsers-for-int-.patch
 # b946434f2659a182afc17e155be6791ebfb302eb
 0001-usb-fix-setup_len-init-CVE-2020-14364.patch
-# 1a326646fef38782e5542280040ec3ea23e4a730 (3.1.0-rc1)
-0001-rtl8139-fix-possible-out-of-bound-access.patch
-
-# cdd346371e09709be8e46398bb097dc690a746f2 (2.11.0-rc1)
-0001-nvme-Fix-get-set-number-of-queues-feature-again.patch
-# e01d6a415bec6fb93a7413929fb1438a22d28419 (2.12.0-rc1)
-0002-hw-block-nvme-Convert-to-realize.patch
-# ceff3e1f01ee8c0d77de7e3750e7297c3af7e2ec (2.12.0-rc1)
-0003-hw-block-Use-errp-directly-rather-than-local_err.patch
-# 1ee24514aed34760fb2863d98bea3a1b705d9c9f (2.12.0-rc1)
-0004-nvme-Add-tracing.patch
-# 5e9aa92eb1a5abbb6e0e3dafdf64ac728e11b6f2 (2.12.0-rc1)
-0005-hw-block-Fix-pin-based-interrupt-behaviour-of-NVMe.patch
-# 7c8952697e9c44931090251e142c1d3108c22be4 (3.0.0-rc1)
-0008-hw-block-nvme-add-optional-parameter-num_queues-for-.patch
-# 20faf0f5f8aba33405a6206cd26f0d2b49ac174a (3.1.0-rc1)
-0010-nvme-don-t-unref-ctrl_mem-when-device-unrealized.patch
-# a883d6a0bcbff889c932015179a25a1b5ea8e096 (3.1.0-rc1)
-0011-nvme-free-cmbuf-in-nvme_exit.patch
-# 5e3c0220d7e4f0361c4d36c697a8842f2b583402 (3.1.0-rc2)
-0012-nvme-fix-oob-access-issue-CVE-2018-16847.patch
-# 6bf7463615752934d7221e5be9820d9da45ab2de (3.1.0-rc3)
-0013-nvme-call-blk_drain-in-NVMe-reset-code-to-avoid-lock.patch
-# 87ad860c622cc8f8916b5232bd8728c08f938fce (3.1.0-rc3)
-0014-nvme-fix-out-of-bounds-access-to-the-CMB.patch
-# 2067d39e5e53b053bece6fa15711640123c119ed (3.1.0-rc3)
-0015-Revert-nvme-fix-oob-access-issue-CVE-2018-16847.patch
-# 71a86ddece548860f040d565204cf1bf59d74663 (3.1.0-rc3)
-0016-nvme-fix-CMB-endianness-confusion.patch
-# ad3a7e4555bc50036a5257a6c1ed652ab0d1b650 (3.1.0-rc3)
-0017-nvme-fix-bug-with-PCI-IRQ-pins-on-teardown.patch
-# 6da021815e752b3ca3a547eed53f3e92a8a35452 (3.1.0-rc3)
-0018-nvme-Fix-spurious-interrupts.patch
-# b58deb344ddff3b9d8b265bf73a65274767ee5f4 (4.0.0-rc1)
-0019-qemu-queue.h-leave-head-structs-anonymous-unless-nec.patch
-# 08db59e18834ef64b14cc6b401ad4824a3ce82cf (4.0.0-rc1)
-0020-nvme-use-TYPE_NVME-instead-of-constant-string.patch
-# 2410e133ec41468e2961ade3e0190487c5d8c142 (4.0.0-rc1)
-0021-nvme-ensure-the-num_queues-is-not-zero.patch
-# a3d25ddd6f08d9edb17cc1164d7b10049ca3561b (4.0.0-rc1)
-0022-nvme-use-pci_dev-directly-in-nvme_realize.patch
-# 9d6459d21a6e630264ead21558d940366d2f2450 (4.0.0-rc1)
-0023-nvme-fix-write-zeroes-offset-and-count.patch
-# 25349e8250e67e7d126fbf0ad213811b62e7e529
-0024-nvme-fix-copy-direction-in-DMA-reads-going-to-CMB.patch
-# 3036a626e9efad8ee5dc178b149184cf87bd06b0
-0025-nvme-add-Get-Set-Feature-Timestamp-support.patch
-# 1cc354ac9868a35279ff01857144212f6aefb697
-0026-nvme-do-not-advertise-support-for-unsupported-arbitr.patch
 
 #
 # ABI Changes
@@ -211,17 +32,6 @@ ignore-rtc-century-changes.patch
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
 0003-xen-apic-Implement-unrealize.patch
 0004-hotplug-Implement-legacy-CPU-hot-unplug.patch
-
-# QEMU deprivileging
-0001-xen-link-against-xentoolcore.patch
-0002-xen-restrict-use-xentoolcore_restrict_all.patch
-0003-xen-defer-call-to-xen_restrict-until-just-before-os_setup_post.patch
-0004-xen-destroy_hvm_domain-Move-reason-into-a-variable.patch
-0005-xen-move-xc_interface-compatibility-fallback-further-up-the-file.patch
-0006-xen-destroy_hvm_domain-Try-xendevicemodel_shutdown.patch
-0007-os-posix-Provide-new--runas-uid-.-gid-facility.patch
-
-xenstore-ignore-state-write-error.patch
 
 # PCI passthrough
 igd-upt.patch
@@ -268,6 +78,7 @@ match-xen-pvdevice-location.patch
 #
 # General compatibility with qemu trad (no need for an option)
 #
+revert_hw-i386__remove_deprecated_machines_pc-0.10_and_pc-0.11.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch

@@ -5,18 +5,19 @@ Subject: [PATCH] CP-17697 Initial port of NVIDIA VGPU support from QEMU-trad
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 551c050..86c0e28 100644
+index f2182e3bef..b3772f3962 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
-@@ -41,3 +41,5 @@ virtio-gpu-3d.o-cflags := $(VIRGL_CFLAGS)
- virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
- obj-$(CONFIG_DPCD) += dpcd.o
- obj-$(CONFIG_XLNX_ZYNQMP) += xlnx_dp.o
-+
+@@ -58,4 +58,6 @@ virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
+ common-obj-$(CONFIG_DPCD) += dpcd.o
+ common-obj-$(CONFIG_XLNX_ZYNQMP_ARM) += xlnx_dp.o
+ 
 +obj-y += vgpu_fb.o
++
+ common-obj-$(CONFIG_ATI_VGA) += ati.o ati_2d.o ati_dbg.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..ef1a799
+index 0000000000..d96ea71dde
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
 @@ -0,0 +1,316 @@
@@ -24,8 +25,8 @@ index 0000000..ef1a799
 +#include "cpu.h"
 +#include "hw/hw.h"
 +#include "hw/sysbus.h"
++#include "hw/xen/xen_common.h"
 +#include "ui/console.h"
-+#include "hw/xen/xen_backend.h"
 +
 +#include <sys/types.h>
 +#include <sys/socket.h>

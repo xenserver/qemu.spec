@@ -10,10 +10,10 @@ Force RAM block address for guest memory allocation to always point to
 a reserved area in guest address space.
 
 diff --git a/exec.c b/exec.c
-index 9a7600e..77ffd7a 100644
+index ffdb518535..af8a3bf120 100644
 --- a/exec.c
 +++ b/exec.c
-@@ -1901,8 +1901,8 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
+@@ -2211,8 +2211,8 @@ static void ram_block_add(RAMBlock *new_block, Error **errp, bool shared)
  
      if (!new_block->host) {
          if (xen_enabled()) {
@@ -25,10 +25,10 @@ index 9a7600e..77ffd7a 100644
                  error_propagate(errp, err);
                  qemu_mutex_unlock_ramlist();
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 8c48d83..edc1981 100644
+index d93fdb49bf..bd46734c67 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -241,7 +241,7 @@ static void xen_ram_init(PCMachineState *pcms,
+@@ -261,7 +261,7 @@ static void xen_ram_init(PCMachineState *pcms,
      }
  }
  
@@ -37,10 +37,10 @@ index 8c48d83..edc1981 100644
                     Error **errp)
  {
      unsigned long nr_pfn;
-@@ -253,13 +253,15 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -273,13 +273,15 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
          fprintf(stderr, "%s: do not alloc "RAM_ADDR_FMT
                  " bytes of ram at "RAM_ADDR_FMT" when runstate is INMIGRATE\n",
-                 __func__, size, ram_addr); 
+                 __func__, size, ram_addr);
 -        return;
 +        return ram_addr;
      }
@@ -55,7 +55,7 @@ index 8c48d83..edc1981 100644
      trace_xen_ram_alloc(ram_addr, size);
  
      nr_pfn = size >> TARGET_PAGE_BITS;
-@@ -275,6 +277,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -295,6 +297,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
      }
  
      g_free(pfn_list);
@@ -64,10 +64,10 @@ index 8c48d83..edc1981 100644
  
  static XenPhysmap *get_physmapping(hwaddr start_addr, ram_addr_t size)
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index 4991659..4e85a4d 100644
+index 894a0415b4..2a973ffa7f 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
-@@ -42,8 +42,8 @@ void xenstore_store_pv_console_info(int i, struct Chardev *chr);
+@@ -39,8 +39,8 @@ void xenstore_store_pv_console_info(int i, struct Chardev *chr);
  
  void xen_hvm_init(PCMachineState *pcms, MemoryRegion **ram_memory);
  
@@ -78,7 +78,7 @@ index 4991659..4e85a4d 100644
  void xen_hvm_modified_memory(ram_addr_t start, ram_addr_t length);
  
  void xen_register_framebuffer(struct MemoryRegion *mr);
-@@ -51,4 +51,6 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
+@@ -48,4 +48,6 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
  void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
                             unsigned size);
  
@@ -86,10 +86,10 @@ index 4991659..4e85a4d 100644
 +
  #endif /* QEMU_HW_XEN_H */
 diff --git a/stubs/xen-hvm.c b/stubs/xen-hvm.c
-index 9701feb..2dc6bd0 100644
+index b7d53b5e2f..b1b06cb24b 100644
 --- a/stubs/xen-hvm.c
 +++ b/stubs/xen-hvm.c
-@@ -37,9 +37,10 @@ int xen_is_pirq_msi(uint32_t msi_data)
+@@ -35,9 +35,10 @@ int xen_is_pirq_msi(uint32_t msi_data)
      return 0;
  }
  

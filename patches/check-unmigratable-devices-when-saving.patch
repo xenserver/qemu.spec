@@ -7,15 +7,14 @@ fail migrations even after an unmigratable device had been unplugged. Move the
 check from the load side to the save side to fix this.
 
 diff --git a/migration/savevm.c b/migration/savevm.c
-index fa3116845a..3b865752d0 100644
+index 79ed44d475..47c7bc0808 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
-@@ -2002,15 +2002,9 @@ out:
+@@ -2445,14 +2445,8 @@ int qemu_loadvm_state_main(QEMUFile *f, MigrationIncomingState *mis)
  int qemu_loadvm_state(QEMUFile *f)
  {
      MigrationIncomingState *mis = migration_incoming_get_current();
 -    Error *local_err = NULL;
-     unsigned int v;
      int ret;
  
 -    if (qemu_savevm_state_blocked(&local_err)) {
@@ -23,10 +22,10 @@ index fa3116845a..3b865752d0 100644
 -        return -EINVAL;
 -    }
 -
-     v = qemu_get_be32(f);
-     if (v != QEMU_VM_FILE_MAGIC) {
-         error_report("Not a migration stream");
-@@ -2224,6 +2218,10 @@ void qmp_xen_save_devices_state(const char *filename, Error **errp)
+     ret = qemu_loadvm_state_header(f);
+     if (ret) {
+         return ret;
+@@ -2676,6 +2670,10 @@ void qmp_xen_save_devices_state(const char *filename, bool has_live, bool live,
      vm_stop(RUN_STATE_SAVE_VM);
      global_state_store_running();
  

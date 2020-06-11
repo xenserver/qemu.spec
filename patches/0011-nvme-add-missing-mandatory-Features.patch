@@ -7,14 +7,8 @@ Add support for returning a resonable response to Get/Set Features of
 mandatory features.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
----
- hw/block/nvme.c       | 51 ++++++++++++++++++++++++++++++++++++++++---
- hw/block/nvme.h       |  3 ++-
- hw/block/trace-events |  2 ++
- 3 files changed, 52 insertions(+), 4 deletions(-)
-
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 236e8eb7d3..de75d4d099 100644
+index 7f784a0265..2ccd0aabb9 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -858,13 +858,24 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd)
@@ -138,11 +132,24 @@ index 236e8eb7d3..de75d4d099 100644
  
      if (n->params.cmb_size_mb) {
          g_free(n->cmbuf);
-diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index 79449a45d6..0c15aba757 100644
---- a/hw/block/nvme.h
-+++ b/hw/block/nvme.h
-@@ -446,7 +446,8 @@ enum NvmeStatusCodes {
+diff --git a/hw/block/trace-events b/hw/block/trace-events
+index cd5343b55f..247a778294 100644
+--- a/hw/block/trace-events
++++ b/hw/block/trace-events
+@@ -25,6 +25,8 @@ nvme_del_cq(uint16_t cqid) "deleted completion queue, sqid=%"PRIu16""
+ nvme_identify_ctrl(void) "identify controller"
+ nvme_identify_ns(uint16_t ns) "identify namespace, nsid=%"PRIu16""
+ nvme_identify_nslist(uint16_t ns) "identify namespace list, nsid=%"PRIu16""
++nvme_getfeat(uint32_t fid) "fid 0x%"PRIx32""
++nvme_setfeat(uint32_t fid, uint32_t val) "fid 0x%"PRIx32" val 0x%"PRIx32""
+ nvme_getfeat_vwcache(const char* result) "get feature volatile write cache, result=%s"
+ nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
+ nvme_setfeat_numq(int reqcq, int reqsq, int gotcq, int gotsq) "requested cq_count=%d sq_count=%d, responding with cq_count=%d sq_count=%d"
+diff --git a/include/block/nvme.h b/include/block/nvme.h
+index 5a10b8b674..d24b1f28e0 100644
+--- a/include/block/nvme.h
++++ b/include/block/nvme.h
+@@ -445,7 +445,8 @@ enum NvmeStatusCodes {
      NVME_FW_REQ_RESET           = 0x010b,
      NVME_INVALID_QUEUE_DEL      = 0x010c,
      NVME_FID_NOT_SAVEABLE       = 0x010d,
@@ -152,19 +159,3 @@ index 79449a45d6..0c15aba757 100644
      NVME_FW_REQ_SUSYSTEM_RESET  = 0x0110,
      NVME_CONFLICTING_ATTRS      = 0x0180,
      NVME_INVALID_PROT_INFO      = 0x0181,
-diff --git a/hw/block/trace-events b/hw/block/trace-events
-index 1221366b9b..4c791dce09 100644
---- a/hw/block/trace-events
-+++ b/hw/block/trace-events
-@@ -25,6 +25,8 @@ nvme_del_cq(uint16_t cqid) "deleted completion queue, sqid=%"PRIu16""
- nvme_identify_ctrl(void) "identify controller"
- nvme_identify_ns(uint16_t ns) "identify namespace, nsid=%"PRIu16""
- nvme_identify_nslist(uint16_t ns) "identify namespace list, nsid=%"PRIu16""
-+nvme_getfeat(uint32_t fid) "fid 0x%"PRIx32""
-+nvme_setfeat(uint32_t fid, uint32_t val) "fid 0x%"PRIx32" val 0x%"PRIx32""
- nvme_getfeat_vwcache(char const* result) "get feature volatile write cache, result=%s"
- nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
- nvme_setfeat_numq(int reqcq, int reqsq, int gotcq, int gotsq) "requested cq_count=%d sq_count=%d, responding with cq_count=%d sq_count=%d"
--- 
-2.21.0
-

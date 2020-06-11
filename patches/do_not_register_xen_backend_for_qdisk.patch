@@ -1,13 +1,18 @@
-diff --git a/hw/xen/xen_backend.c b/hw/xen/xen_backend.c
-index 93541b4..a020a90 100644
---- a/hw/xen/xen_backend.c
-+++ b/hw/xen/xen_backend.c
-@@ -575,7 +575,7 @@ void xen_be_register_common(void)
+diff --git a/hw/block/xen-block.c b/hw/block/xen-block.c
+index ef635be4c2..4d33e36e3b 100644
+--- a/hw/block/xen-block.c
++++ b/hw/block/xen-block.c
+@@ -648,6 +648,8 @@ static void xen_block_register_types(void)
  
-     xen_be_register("console", &xen_console_ops);
-     xen_be_register("vkbd", &xen_kbdmouse_ops);
--    xen_be_register("qdisk", &xen_blkdev_ops);
-+    /* xen_be_register("qdisk", &xen_blkdev_ops); */
- #ifdef CONFIG_VIRTFS
-     xen_be_register("9pfs", &xen_9pfs_ops);
- #endif
+ type_init(xen_block_register_types)
+ 
++/* disable the ability for QEMU to create qdisk backend from xenstore. */
++#if 0
+ static void xen_block_blockdev_del(const char *node_name, Error **errp)
+ {
+     trace_xen_block_blockdev_del(node_name);
+@@ -1015,3 +1017,4 @@ static void xen_block_register_backend(void)
+ }
+ 
+ xen_backend_init(xen_block_register_backend);
++#endif

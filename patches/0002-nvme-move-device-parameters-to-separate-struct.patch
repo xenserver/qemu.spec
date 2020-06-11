@@ -9,24 +9,21 @@ explicit what is configurable and what is set internally.
 Also, clean up some includes.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
----
- hw/block/nvme.c | 53 +++++++++++++++++++++++--------------------------
- hw/block/nvme.h | 15 +++++++++++---
- 2 files changed, 37 insertions(+), 31 deletions(-)
-
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 78d6b0fd58..dfe4ddc9fe 100644
+index 98b4979306..d975c0cc1f 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -26,16 +26,13 @@
+@@ -26,18 +26,16 @@
   */
  
  #include "qemu/osdep.h"
 +#include "qemu/log.h"
+ #include "qemu/units.h"
  #include "hw/block/block.h"
--#include "hw/hw.h"
  #include "hw/pci/msix.h"
 -#include "hw/pci/pci.h"
+ #include "hw/qdev-properties.h"
+ #include "migration/vmstate.h"
  #include "sysemu/sysemu.h"
 -#include "qapi/error.h"
 -#include "qapi/visitor.h"
@@ -34,10 +31,10 @@ index 78d6b0fd58..dfe4ddc9fe 100644
 +#include "qapi/error.h"
  
 -#include "qemu/log.h"
+ #include "qemu/module.h"
+ #include "qemu/cutils.h"
  #include "trace.h"
- #include "nvme.h"
- 
-@@ -60,12 +57,12 @@ static void nvme_addr_read(NvmeCtrl *n, hwaddr addr, void *buf, int size)
+@@ -64,12 +62,12 @@ static void nvme_addr_read(NvmeCtrl *n, hwaddr addr, void *buf, int size)
  
  static int nvme_check_sqid(NvmeCtrl *n, uint16_t sqid)
  {
@@ -52,7 +49,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
  }
  
  static void nvme_inc_cq_tail(NvmeCQueue *cq)
-@@ -627,7 +624,7 @@ static uint16_t nvme_create_cq(NvmeCtrl *n, NvmeCmd *cmd)
+@@ -631,7 +629,7 @@ static uint16_t nvme_create_cq(NvmeCtrl *n, NvmeCmd *cmd)
          trace_nvme_err_invalid_create_cq_addr(prp1);
          return NVME_INVALID_FIELD | NVME_DNR;
      }
@@ -61,7 +58,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          trace_nvme_err_invalid_create_cq_vector(vector);
          return NVME_INVALID_IRQ_VECTOR | NVME_DNR;
      }
-@@ -779,7 +776,8 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -783,7 +781,8 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          trace_nvme_getfeat_vwcache(result ? "enabled" : "disabled");
          break;
      case NVME_NUMBER_OF_QUEUES:
@@ -71,7 +68,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          trace_nvme_getfeat_numq(result);
          break;
      case NVME_TIMESTAMP:
-@@ -824,9 +822,10 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -828,9 +827,10 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      case NVME_NUMBER_OF_QUEUES:
          trace_nvme_setfeat_numq((dw11 & 0xFFFF) + 1,
                                  ((dw11 >> 16) & 0xFFFF) + 1,
@@ -85,7 +82,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          break;
  
      case NVME_TIMESTAMP:
-@@ -900,12 +899,12 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+@@ -904,12 +904,12 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
  
      blk_drain(n->conf.blk);
  
@@ -100,7 +97,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          if (n->cq[i] != NULL) {
              nvme_free_cq(n->cq[i], n);
          }
-@@ -1308,7 +1307,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1312,7 +1312,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
      int64_t bs_size;
      uint8_t *pci_conf;
  
@@ -109,18 +106,16 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          error_setg(errp, "num_queues can't be zero");
          return;
      }
-@@ -1324,8 +1323,8 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1328,7 +1328,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
          return;
      }
  
--    blkconf_serial(&n->conf, &n->serial);
 -    if (!n->serial) {
-+    blkconf_serial(&n->conf, &n->params.serial);
 +    if (!n->params.serial) {
          error_setg(errp, "serial property not set");
          return;
      }
-@@ -1342,24 +1341,24 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1345,24 +1345,24 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
      pcie_endpoint_cap_init(pci_dev, 0x80);
  
      n->num_namespaces = 1;
@@ -150,7 +145,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
      id->rab = 6;
      id->ieee[0] = 0x00;
      id->ieee[1] = 0x02;
-@@ -1388,7 +1387,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1391,7 +1391,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
      n->bar.vs = 0x00010200;
      n->bar.intmc = n->bar.intms = 0;
  
@@ -159,7 +154,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
  
          NVME_CMBLOC_SET_BIR(n->bar.cmbloc, 2);
          NVME_CMBLOC_SET_OFST(n->bar.cmbloc, 0);
-@@ -1399,7 +1398,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -1402,7 +1402,7 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
          NVME_CMBSZ_SET_RDS(n->bar.cmbsz, 1);
          NVME_CMBSZ_SET_WDS(n->bar.cmbsz, 1);
          NVME_CMBSZ_SET_SZU(n->bar.cmbsz, 2); /* MBs */
@@ -168,7 +163,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
  
          n->cmbloc = n->bar.cmbloc;
          n->cmbsz = n->bar.cmbsz;
-@@ -1427,7 +1426,7 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -1430,7 +1430,7 @@ static void nvme_exit(PCIDevice *pci_dev)
      g_free(n->cq);
      g_free(n->sq);
  
@@ -177,7 +172,7 @@ index 78d6b0fd58..dfe4ddc9fe 100644
          g_free(n->cmbuf);
      }
      msix_uninit_exclusive_bar(pci_dev);
-@@ -1435,9 +1434,7 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -1438,9 +1438,7 @@ static void nvme_exit(PCIDevice *pci_dev)
  
  static Property nvme_props[] = {
      DEFINE_BLOCK_PROPERTIES(NvmeCtrl, conf),
@@ -189,12 +184,12 @@ index 78d6b0fd58..dfe4ddc9fe 100644
  };
  
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index aa61d0c6ce..3c09fc6edb 100644
+index 40cedb1ec9..9e45a2a416 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
-@@ -701,6 +701,17 @@ static inline void _nvme_check_size(void)
-     QEMU_BUILD_BUG_ON(sizeof(NvmeIdNs) != 4096);
- }
+@@ -2,6 +2,17 @@
+ #define HW_NVME_H
+ #include "block/nvme.h"
  
 +#define DEFINE_NVME_PROPERTIES(_state, _props) \
 +    DEFINE_PROP_STRING("serial", _state, _props.serial), \
@@ -210,7 +205,7 @@ index aa61d0c6ce..3c09fc6edb 100644
  typedef struct NvmeAsyncEvent {
      QSIMPLEQ_ENTRY(NvmeAsyncEvent) entry;
      NvmeAerResult result;
-@@ -762,6 +773,7 @@ typedef struct NvmeCtrl {
+@@ -63,6 +74,7 @@ typedef struct NvmeCtrl {
      MemoryRegion ctrl_mem;
      NvmeBar      bar;
      BlockConf    conf;
@@ -218,7 +213,7 @@ index aa61d0c6ce..3c09fc6edb 100644
  
      uint32_t    page_size;
      uint16_t    page_bits;
-@@ -770,10 +782,8 @@ typedef struct NvmeCtrl {
+@@ -71,10 +83,8 @@ typedef struct NvmeCtrl {
      uint16_t    sqe_size;
      uint32_t    reg_size;
      uint32_t    num_namespaces;
@@ -229,7 +224,7 @@ index aa61d0c6ce..3c09fc6edb 100644
      uint32_t    cmbsz;
      uint32_t    cmbloc;
      uint8_t     *cmbuf;
-@@ -781,7 +791,6 @@ typedef struct NvmeCtrl {
+@@ -82,7 +92,6 @@ typedef struct NvmeCtrl {
      uint64_t    host_timestamp;                 /* Timestamp sent by the host */
      uint64_t    timestamp_set_qemu_clock_ms;    /* QEMU clock time */
  
@@ -237,6 +232,3 @@ index aa61d0c6ce..3c09fc6edb 100644
      NvmeNamespace   namespace;
      NvmeSQueue      **sq;
      NvmeCQueue      **cq;
--- 
-2.21.0
-

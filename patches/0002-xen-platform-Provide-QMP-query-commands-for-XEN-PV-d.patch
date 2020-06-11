@@ -9,49 +9,44 @@ platform number and build number.
 
 Signed-off-by: Anoob Soman <anoob.soman@citrix.com>
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index b120591..13ce160 100644
+index 5f2c4891c1..bb0b560128 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -25,9 +25,12 @@
+@@ -25,6 +25,7 @@
  
  #include "qemu/osdep.h"
  #include "qapi/error.h"
-+#include "qapi/qmp/types.h"
-+#include "qmp-commands.h"
- #include "hw/hw.h"
- #include "hw/i386/pc.h"
++#include "qapi/qapi-commands-misc.h"
  #include "hw/ide.h"
-+#include "hw/pci/pci_bus.h"
  #include "hw/pci/pci.h"
- #include "hw/irq.h"
- #include "hw/xen/xen_common.h"
-@@ -156,6 +159,33 @@ static void pci_unplug_disks(PCIBus *bus, uint32_t flags)
+ #include "hw/qdev-properties.h"
+@@ -52,6 +53,8 @@
+ 
+ #define PFFLAG_ROM_LOCK 1 /* Sets whether ROM memory area is RW or RO */
+ 
++static const Object *xen_platform_state = NULL;
++
+ typedef struct PCIXenPlatformState {
+     /*< private >*/
+     PCIDevice parent_obj;
+@@ -181,6 +184,24 @@ static void pci_unplug_disks(PCIBus *bus, uint32_t flags)
      pci_for_each_device(bus, 0, unplug_disks, &flags);
  }
  
 +XenPvDriverInfo* qmp_query_xen_platform_pv_driver_info(Error **errp)
 +{
-+    PCIBus *bus;
-+    PCIDevice *dev;
-+    PCIXenPlatformState *s;
-+    int devfn;
++    const PCIXenPlatformState *s;
 +
-+    bus = pci_find_primary_bus();
-+    if (bus) {
-+        for(devfn = 0; devfn < ARRAY_SIZE(bus->devices); devfn++) {
-+            dev = bus->devices[devfn];
-+            if (dev && !strncmp(dev->name, TYPE_XEN_PLATFORM,
-+                                strlen(TYPE_XEN_PLATFORM))) {
-+                XenPvDriverInfo *info = g_malloc0(sizeof(*info));
++    if (xen_platform_state) {
++        XenPvDriverInfo *info = g_malloc0(sizeof(*info));
 +
-+                s = XEN_PLATFORM(dev);
-+                info->product_num = s->driver_product_version;
-+                info->build_num   = s->driver_build_number;
++        s = XEN_PLATFORM(xen_platform_state);
++        info->product_num = s->driver_product_version;
++        info->build_num   = s->driver_build_number;
 +
-+                return info;
-+           }
-+        }
++        return info;
 +    }
++
 +    error_setg(errp, "Could not find %s pci device", TYPE_XEN_PLATFORM);
 +    return NULL;
 +}
@@ -59,15 +54,23 @@ index b120591..13ce160 100644
  static void platform_fixed_ioport_writew(void *opaque, uint32_t addr, uint32_t val)
  {
      PCIXenPlatformState *s = opaque;
-diff --git a/qapi-schema.json b/qapi-schema.json
-index 250e4dc..4a2c449 100644
---- a/qapi-schema.json
-+++ b/qapi-schema.json
-@@ -6296,3 +6296,32 @@
- # Since 2.9
- ##
- { 'command': 'query-vm-generation-id', 'returns': 'GuidInfo' }
+@@ -498,6 +519,8 @@ static void xen_platform_realize(PCIDevice *dev, Error **errp)
+                      &d->mmio_bar);
+ 
+     platform_fixed_ioport_init(d);
 +
++    xen_platform_state = OBJECT(d);
+ }
+ 
+ static void platform_reset(DeviceState *dev)
+diff --git a/qapi/misc.json b/qapi/misc.json
+index 33b94e3589..7af0d0abb8 100644
+--- a/qapi/misc.json
++++ b/qapi/misc.json
+@@ -1201,6 +1201,34 @@
+ ##
+ { 'command': 'query-memory-size-summary', 'returns': 'MemoryInfo' }
+ 
 +##
 +# @XenPvDriverInfo:
 +#
@@ -96,3 +99,6 @@ index 250e4dc..4a2c449 100644
 +#
 +##
 +{ 'command': 'query-xen-platform-pv-driver-info', 'returns': 'XenPvDriverInfo' }
+ 
+ ##
+ # @AddfdInfo:
