@@ -6013,18 +6013,18 @@ index 0000000000..5e39c6c11d
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index abe6fb38f9..aa1f3556b1 100644
+index 9c324a66cf..f06bcbb9e1 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -33,6 +33,7 @@
- #include "hw/pci-host/i440fx.h"
+@@ -34,6 +34,7 @@
  #include "hw/southbridge/piix.h"
  #include "hw/display/ramfb.h"
+ #include "hw/display/vgpu.h"
 +#include "hw/display/vgt_vga.h"
  #include "hw/firmware/smbios.h"
  #include "hw/pci/pci.h"
  #include "hw/pci/pci_ids.h"
-@@ -224,6 +225,14 @@ static void pc_init1(MachineState *machine,
+@@ -225,6 +226,14 @@ static void pc_init1(MachineState *machine,
          x86_register_ferr_irq(x86ms->gsi[13]);
      }
  
