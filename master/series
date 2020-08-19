@@ -278,4 +278,5 @@ disable-dirty-vram-tracking.patch
 # Build configuration
 build-configuration.patch
 
-# Debug patches
+# Hotfix patches
+0001-usb-fix-setup_len-init-CVE-2020-14364.patch
