@@ -214,3 +214,4 @@ build-configuration.patch
 
 # Hotfix patches
 0001-usb-fix-setup_len-init-CVE-2020-14364.patch
+0001-rtl8139-fix-possible-out-of-bound-access.patch
