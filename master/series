@@ -131,6 +131,8 @@
 0015-sockets-allow-SocketAddress-fd-to-reference-numeric-.patch
 # 473a2a331ee382703f7ca0067ba2545350cfa06c (2.12.0-rc1)
 0016-cutils-add-qemu_strtoi-qemu_strtoui-parsers-for-int-.patch
+# b946434f2659a182afc17e155be6791ebfb302eb
+0001-usb-fix-setup_len-init-CVE-2020-14364.patch
 
 # cdd346371e09709be8e46398bb097dc690a746f2 (2.11.0-rc1)
 0001-nvme-Fix-get-set-number-of-queues-feature-again.patch
