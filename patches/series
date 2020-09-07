@@ -3,6 +3,8 @@
 #
 # b946434f2659a182afc17e155be6791ebfb302eb
 0001-usb-fix-setup_len-init-CVE-2020-14364.patch
+# c7b942d7f84ef54f266921bf7668d43f1f2c7c79 (5.1.0-rc1)
+0001-scripts-qmp-Fix-shebang-and-imports.patch
 
 #
 # ABI Changes
