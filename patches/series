@@ -7,6 +7,12 @@
 0001-scripts-qmp-Fix-shebang-and-imports.patch
 # 045b1d4dbb44da67f1f86efa75b02843c0e951ef (5.2.0-rc1)
 0001-xen-rework-pci_piix3_xen_ide_unplug.patch
+# dd8525472a17bc7f21aa6024aaa19ad53d28750a
+0001-hw-ehci-destroy-sglist-in-error-path.patch
+# 2fdb42d840400d58f2e706ecca82c142b97bcbd6
+0002-hw-ehci-check-return-value-of-usb_packet_map.patch
+# ccee80c68db14b3e965582a19393992b5c2b97f4
+0003-usb-hcd-ehci-Fix-error-handling-on-missing-device-fo.patch
 
 #
 # ABI Changes

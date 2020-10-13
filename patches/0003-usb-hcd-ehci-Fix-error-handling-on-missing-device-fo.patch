@@ -1,0 +1,82 @@
+From ccee80c68db14b3e965582a19393992b5c2b97f4 Mon Sep 17 00:00:00 2001
+From: Anthony PERARD <anthony.perard@citrix.com>
+Date: Wed, 14 Oct 2020 11:41:06 +0100
+Subject: [PATCH 3/3] usb/hcd-ehci: Fix error handling on missing device for
+ iTD
+
+The EHCI Host Controller emulation attempt to locate the device
+associated with a periodic isochronous transfer description (iTD) and
+when this fail the host controller is reset.
+
+But according the EHCI spec 1.0 section 5.15.2.4 Host System
+Error, the host controller is supposed to reset itself only when it
+failed to communicate with the Host (Operating System), like when
+there's an error on the PCI bus. If a transaction fails, there's
+nothing in the spec that say to reset the host controller.
+
+This patch rework the error path so that the host controller can keep
+working when the OS setup a bogus transaction, it also revert to the
+behavior of the EHCI emulation to before commits:
+e94682f1fe ("ehci: check device is not NULL before calling usb_ep_get()")
+7011baece2 ("usb: remove unnecessary NULL device check from usb_ep_get()")
+
+The issue has been found while trying to passthrough a USB device to a
+Windows Server 2012 Xen guest via "usb-ehci", which prevent the USB
+device from working in Windows. ("usb-ehci" alone works, windows only
+setup this weird periodic iTD to device 127 endpoint 15 when the USB
+device is passthrough.)
+
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+Message-id: 20201014104106.2962640-1-anthony.perard@citrix.com
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+---
+ hw/usb/hcd-ehci.c | 35 ++++++++++++++++++-----------------
+ 1 file changed, 18 insertions(+), 17 deletions(-)
+
+diff --git a/hw/usb/hcd-ehci.c b/hw/usb/hcd-ehci.c
+index 2b995443fb..ae7f20c502 100644
+--- a/hw/usb/hcd-ehci.c
++++ b/hw/usb/hcd-ehci.c
+@@ -1447,24 +1447,25 @@ static int ehci_process_itd(EHCIState *ehci,
+             dev = ehci_find_device(ehci, devaddr);
+             if (dev == NULL) {
+                 ehci_trace_guest_bug(ehci, "no device found");
+-                qemu_sglist_destroy(&ehci->isgl);
+-                return -1;
+-            }
+-            pid = dir ? USB_TOKEN_IN : USB_TOKEN_OUT;
+-            ep = usb_ep_get(dev, pid, endp);
+-            if (ep && ep->type == USB_ENDPOINT_XFER_ISOC) {
+-                usb_packet_setup(&ehci->ipacket, pid, ep, 0, addr, false,
+-                                 (itd->transact[i] & ITD_XACT_IOC) != 0);
+-                if (usb_packet_map(&ehci->ipacket, &ehci->isgl)) {
+-                    qemu_sglist_destroy(&ehci->isgl);
+-                    return -1;
+-                }
+-                usb_handle_packet(dev, &ehci->ipacket);
+-                usb_packet_unmap(&ehci->ipacket, &ehci->isgl);
+-            } else {
+-                DPRINTF("ISOCH: attempt to addess non-iso endpoint\n");
+-                ehci->ipacket.status = USB_RET_NAK;
++                ehci->ipacket.status = USB_RET_NODEV;
+                 ehci->ipacket.actual_length = 0;
++            } else {
++                pid = dir ? USB_TOKEN_IN : USB_TOKEN_OUT;
++                ep = usb_ep_get(dev, pid, endp);
++                if (ep && ep->type == USB_ENDPOINT_XFER_ISOC) {
++                    usb_packet_setup(&ehci->ipacket, pid, ep, 0, addr, false,
++                                     (itd->transact[i] & ITD_XACT_IOC) != 0);
++                    if (usb_packet_map(&ehci->ipacket, &ehci->isgl)) {
++                        qemu_sglist_destroy(&ehci->isgl);
++                        return -1;
++                    }
++                    usb_handle_packet(dev, &ehci->ipacket);
++                    usb_packet_unmap(&ehci->ipacket, &ehci->isgl);
++                } else {
++                    DPRINTF("ISOCH: attempt to addess non-iso endpoint\n");
++                    ehci->ipacket.status = USB_RET_NAK;
++                    ehci->ipacket.actual_length = 0;
++                }
+             }
+             qemu_sglist_destroy(&ehci->isgl);
+ 
