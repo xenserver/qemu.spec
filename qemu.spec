@@ -49,8 +49,9 @@ tar xzf %{SOURCE2}
     --disable-lzo --disable-tpm --disable-virtfs --disable-tcg --disable-tcg-interpreter \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
     --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration \
-    --disable-bochs --disable-cloop --disable-dmg --disable-vvfat \
+    --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
     --disable-parallels --disable-sheepdog \
+    --without-default-devices \
     --enable-seccomp
 %{?_cov_wrap} %{__make} %{?_smp_mflags} all
 

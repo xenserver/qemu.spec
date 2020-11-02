@@ -3,8 +3,10 @@ Change the build configuration to decrease size and attack area
 This is made up of:
 * Removing support for various block device formats.
 * Removing support for VFIO.
-* Disabling many devices which are not needed/used.
 * Enable NVME for guest UEFI
+* List of devices needed so ./configure option
+  --without-default-devices can be used.
+
 
 diff --git a/backends/Makefile.objs b/backends/Makefile.objs
 index f0691116e8..f51224cc84 100644
@@ -54,123 +56,43 @@ index cdb01f9de9..cb1d85c367 100644
 +crypto-obj-y = hash.o
 +crypto-obj-$(if $(CONFIG_NETTLE),n,$(if $(CONFIG_GCRYPT),n,y)) += hash-glib.o
 diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index 4cc64dafa2..d0dd9cc9e4 100644
+index 4cc64dafa2..f2024c9aa3 100644
 --- a/default-configs/i386-softmmu.mak
 +++ b/default-configs/i386-softmmu.mak
-@@ -3,22 +3,22 @@
- # Uncomment the following lines to disable these optional devices:
+@@ -25,7 +25,30 @@
+ 
+ # Boards:
  #
- #CONFIG_AMD_IOMMU=n
--#CONFIG_APPLESMC=n
-+CONFIG_APPLESMC=n
- #CONFIG_FDC=n
--#CONFIG_HPET=n
-+CONFIG_HPET=n
- #CONFIG_HYPERV=n
- #CONFIG_ISA_DEBUG=n
--#CONFIG_ISA_IPMI_BT=n
--#CONFIG_ISA_IPMI_KCS=n
--#CONFIG_PCI_IPMI_KCS=n
--#CONFIG_PCI_IPMI_BT=n
--#CONFIG_IPMI_SSIF=n
-+CONFIG_ISA_IPMI_BT=n
-+CONFIG_ISA_IPMI_KCS=n
-+CONFIG_PCI_IPMI_KCS=n
-+CONFIG_PCI_IPMI_BT=n
-+CONFIG_IPMI_SSIF=n
- #CONFIG_PCI_DEVICES=n
- #CONFIG_PVPANIC=n
- #CONFIG_QXL=n
- #CONFIG_SEV=n
--#CONFIG_SGA=n
--#CONFIG_TEST_DEVICES=n
-+CONFIG_SGA=n
-+CONFIG_TEST_DEVICES=n
- #CONFIG_TPM_CRB=n
- #CONFIG_TPM_TIS=n
- #CONFIG_VTD=n
-@@ -27,5 +27,79 @@
- #
- CONFIG_ISAPC=y
+-CONFIG_ISAPC=y
++CONFIG_ISAPC=n
  CONFIG_I440FX=y
 -CONFIG_Q35=y
 -CONFIG_MICROVM=y
 +CONFIG_Q35=n
 +CONFIG_MICROVM=n
 +
-+# XenServer unwanted devices
-+CONFIG_I82801B11=n
-+CONFIG_IOH3420=n
-+CONFIG_IPMI=n
-+CONFIG_IPMI_EXTERN=n
-+CONFIG_IPMI_LOCAL=n
-+CONFIG_ISA_TESTDEV=n
-+CONFIG_NE2000_ISA=n
-+CONFIG_PCI_EXPRESS_Q35=n
-+CONFIG_PCSPK=n
-+CONFIG_PXB=n
-+CONFIG_VIRTIO_VGA=n
-+CONFIG_VMMOUSE=n
-+CONFIG_VMPORT=n
-+CONFIG_VMWARE_VGA=n
-+CONFIG_WDT_IB700=n
-+CONFIG_XIO3130=n
-+CONFIG_VIRTIO=n
-+
-+# XenServer unwanted pci devises
-+CONFIG_IPACK=n
-+# audio
-+CONFIG_AC97=n
-+CONFIG_HDA=n
-+CONFIG_ES1370=n
-+# char
-+CONFIG_SERIAL_PCI=n
-+# misc
-+CONFIG_PCI_TESTDEV=n
-+CONFIG_EDU=n
-+CONFIG_IVSHMEM_DEVICE=n
-+# net
-+CONFIG_NE2000_PCI=n
-+CONFIG_EEPRO100_PCI=n
-+CONFIG_PCNET_PCI=n
-+CONFIG_PCNET_COMMON=n
-+CONFIG_E1000E_PCI_EXPRESS=n
-+CONFIG_ROCKER=n
-+# scsi
-+CONFIG_LSI_SCSI_PCI=n
-+CONFIG_VMW_PVSCSI_SCSI_PCI=n
-+CONFIG_MEGASAS_SCSI_PCI=n
-+CONFIG_MPTSAS_SCSI_PCI=n
-+CONFIG_ESP=n
-+CONFIG_ESP_PCI=n
-+# sd
-+CONFIG_SD=n
-+CONFIG_SDHCI=n
-+CONFIG_SDHCI_PCI=n
-+# usb
-+CONFIG_USB_XHCI=n
-+CONFIG_USB_XHCI_NEC=n
-+# virtio
-+CONFIG_VIRTIO_PCI=n
-+# watchdog
-+CONFIG_WDT_IB6300ESB=n
-+
-+
-+# XenServer unwanted usb devices
-+CONFIG_USB_STORAGE_BOT=n
-+CONFIG_USB_STORAGE_UAS=n
-+CONFIG_USB_STORAGE_MTP=n
-+CONFIG_USB_SMARTCARD=n
-+CONFIG_USB_AUDIO=n
-+CONFIG_USB_SERIAL=n
-+CONFIG_USB_NETWORK=n
-+CONFIG_USB_BLUETOOTH=n
-+
-+# XenServer unwanted sound devices
-+CONFIG_SB16=n
-+CONFIG_ADLIB=n
-+CONFIG_GUS=n
-+CONFIG_CS4231A=n
++# Wanted devices:
++CONFIG_AHCI=y
++CONFIG_AHCI_ICH9=y
++CONFIG_BOCHS_DISPLAY=y
++CONFIG_E1000_PCI=y
++CONFIG_EDID=y
++CONFIG_FDC=y
++CONFIG_GENERIC_LOADER=y
++CONFIG_ISA_DEBUG=y
++CONFIG_NVDIMM=y
++CONFIG_NVME_PCI=y
++CONFIG_PARALLEL=y
++CONFIG_RTL8139_PCI=y
++CONFIG_USB=y
++CONFIG_USB_EHCI=y
++CONFIG_USB_EHCI_PCI=y
++CONFIG_USB_OHCI=y
++CONFIG_USB_OHCI_PCI=y
++CONFIG_USB_TABLET_WACOM=y
++CONFIG_USB_UHCI=y
++CONFIG_VGA_CIRRUS=y
++CONFIG_VGA_PCI=y
 diff --git a/hw/Makefile.objs b/hw/Makefile.objs
 index 66eef20561..efc8663d75 100644
 --- a/hw/Makefile.objs
@@ -185,7 +107,7 @@ index 66eef20561..efc8663d75 100644
  devices-dirs-y += watchdog/
  devices-dirs-y += xen/
 diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
-index 5a494342ea..0178add6eb 100644
+index 5a494342ea..9a107153af 100644
 --- a/hw/i386/Kconfig
 +++ b/hw/i386/Kconfig
 @@ -27,7 +27,7 @@ config PC
@@ -197,15 +119,6 @@ index 5a494342ea..0178add6eb 100644
      select I8257
      select MC146818RTC
      # For ACPI builder:
-@@ -86,7 +86,7 @@ config Q35
-     imply VMMOUSE
-     select PC_PCI
-     select PC_ACPI
--    select PCI_EXPRESS_Q35
-+    # select PCI_EXPRESS_Q35
-     select LPC_ICH9
-     select AHCI_ICH9
-     select DIMM
 diff --git a/stubs/Makefile.objs b/stubs/Makefile.objs
 index 4a50e95ec3..335c06cb05 100644
 --- a/stubs/Makefile.objs
