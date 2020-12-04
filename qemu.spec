@@ -5,6 +5,9 @@
 %define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
 %define keycodemapdb_path ui/keycodemapdb
 
+# Control whether we build with the address sanitizer.
+%define with_asan 0
+
 Summary: qemu-dm device model
 Name: qemu
 Epoch: 2
@@ -24,7 +27,11 @@ BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
 BuildRequires: libseccomp-devel
+%if %{with_asan} == 0
 BuildRequires: jemalloc-devel
+%else
+BuildRequires: libasan
+%endif
 %{?_cov_buildrequires}
 
 %description
@@ -38,6 +45,18 @@ This package contains Qemu.
 tar xzf %{SOURCE2}
 
 %build
+%if %{with_asan}
+extra_configure_argument+=('--enable-sanitizers')
+extra_configure_argument+=('--enable-debug')
+# Help to get better stack trace
+extra_configure_argument+=('--extra-cflags=-fno-omit-frame-pointer')
+# avoid: "WARNING: ASan doesn't fully support makecontext/swapcontext functions and may produce false positives in some cases!"
+# extra_configure_argument+=('--with-coroutine=sigaltstack')
+
+%else
+extra_configure_argument+=('--enable-jemalloc')
+%endif
+
 ./configure --cc=gcc --cxx=/dev/null --enable-xen --target-list=i386-softmmu \
     --prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir} \
     --localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
@@ -52,7 +71,13 @@ tar xzf %{SOURCE2}
     --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
     --disable-parallels --disable-sheepdog \
     --without-default-devices \
-    --enable-seccomp --enable-jemalloc
+    --enable-seccomp "${extra_configure_argument[@]}"
+
+%if %{with_asan}
+# Check that address sanitizers is enabled, because QEMU's ./configure will not fail
+grep -qe '-fsanitize=address' config-host.mak
+%endif
+
 %{?_cov_wrap} %{__make} %{?_smp_mflags} all
 
 %install
