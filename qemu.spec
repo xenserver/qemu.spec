@@ -11,7 +11,6 @@ Epoch: 2
 Version: 4.2.1
 Release: %{?xsrel}%{?dist}
 License: GPL
-Requires: jemalloc
 Requires: xs-clipboardd
 Requires: xengt-userspace
 ## We broke an interface used by xenopsd-xc without version signalling
@@ -25,6 +24,7 @@ BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
 BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
 BuildRequires: libseccomp-devel
+BuildRequires: jemalloc-devel
 %{?_cov_buildrequires}
 
 %description
@@ -52,7 +52,7 @@ tar xzf %{SOURCE2}
     --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
     --disable-parallels --disable-sheepdog \
     --without-default-devices \
-    --enable-seccomp
+    --enable-seccomp --enable-jemalloc
 %{?_cov_wrap} %{__make} %{?_smp_mflags} all
 
 %install
