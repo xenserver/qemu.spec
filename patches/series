@@ -29,6 +29,8 @@
 0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
 # 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
 0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
+# ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
+0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch
