@@ -65,7 +65,7 @@ extra_configure_argument+=('--enable-jemalloc')
     --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
     --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt \
     --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock --disable-vhost-user \
-    --disable-lzo --disable-tpm --disable-virtfs --disable-tcg --disable-tcg-interpreter \
+    --disable-lzo --disable-virtfs --disable-tcg --disable-tcg-interpreter \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
     --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration \
     --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
