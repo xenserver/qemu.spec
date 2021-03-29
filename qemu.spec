@@ -25,7 +25,7 @@ Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycode
 BuildRequires: python2-devel
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
-BuildRequires: xen-dom0-devel xen-libs-devel libusbx-devel
+BuildRequires: xen-dom0-libs-devel xen-libs-devel libusbx-devel
 BuildRequires: libseccomp-devel
 %if %{with_asan} == 0
 BuildRequires: jemalloc-devel
