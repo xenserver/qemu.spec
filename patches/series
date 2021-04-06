@@ -21,6 +21,8 @@
 0001-ide-atapi-assert-that-the-buffer-pointer-is-in-range.patch
 # b8d7f1bc59276fec85e4d09f1567613a3e14d31e
 0001-ide-atapi-check-logical-block-address-and-read-size-.patch
+# 3de46e6fc489c52c9431a8a832ad8170a7569bd8 (6.0.0-rc1)
+0001-e1000-fail-early-for-evil-descriptor.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch
