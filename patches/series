@@ -23,6 +23,12 @@
 0001-ide-atapi-check-logical-block-address-and-read-size-.patch
 # 3de46e6fc489c52c9431a8a832ad8170a7569bd8 (6.0.0-rc1)
 0001-e1000-fail-early-for-evil-descriptor.patch
+# 705df5466c98f3efdd2b68d3b31dad86858acad7 (6.0.0-rc1)
+0001-net-introduce-qemu_receive_packet.patch
+# 1caff0340f49c93d535c6558a5138d20d475315c (6.0.0-rc1)
+0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
+# 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
+0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch
