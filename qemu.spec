@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.0.1}
+%{!?xsrel: %global xsrel 5.0.2}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
@@ -106,6 +106,11 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Apr 13 2021 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.2
+- CP-36580: Replace legacy xen-dom0-devel alias
+- CA-352135: Fix CVE-2021-20257 - e1000 infinite loop
+- CA-352998: Fix CVE-2021-3416 - infinite loop in net loopback mode
+
 * Fri Feb 19 2021 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.1
 - CA-351961: Fix OOB accesses in ATAPI emulation
 
