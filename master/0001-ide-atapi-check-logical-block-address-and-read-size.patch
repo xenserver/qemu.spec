@@ -1,0 +1,95 @@
+From b8d7f1bc59276fec85e4d09f1567613a3e14d31e Mon Sep 17 00:00:00 2001
+From: Prasad J Pandit <pjp@fedoraproject.org>
+Date: Mon, 18 Jan 2021 17:21:30 +0530
+Subject: [PATCH 1/1] ide: atapi: check logical block address and read size
+ (CVE-2020-29443)
+
+While processing ATAPI cmd_read/cmd_read_cd commands,
+Logical Block Address (LBA) maybe invalid OR closer to the last block,
+leading to an OOB access issues. Add range check to avoid it.
+
+Fixes: CVE-2020-29443
+Reported-by: Wenxiang Qian <leonwxqian@gmail.com>
+Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Prasad J Pandit <pjp@fedoraproject.org>
+Message-Id: <20210118115130.457044-1-ppandit@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ hw/ide/atapi.c | 27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/hw/ide/atapi.c b/hw/ide/atapi.c
+index 95051b9bcb..2ba27f987d 100644
+--- a/hw/ide/atapi.c
++++ b/hw/ide/atapi.c
+@@ -359,6 +359,8 @@ static void ide_atapi_cmd_reply(IDEState *s, int size, int max_size)
+ static void ide_atapi_cmd_read_pio(IDEState *s, int lba, int nb_sectors,
+                                    int sector_size)
+ {
++    assert(0 <= lba && lba < (s->nb_sectors >> 2));
++
+     s->lba = lba;
+     s->packet_transfer_size = nb_sectors * sector_size;
+     s->elementary_transfer_size = 0;
+@@ -1018,7 +1020,10 @@ static void cmd_prevent_allow_medium_removal(IDEState *s, uint8_t* buf)
+ 
+ static void cmd_read(IDEState *s, uint8_t* buf)
+ {
+-    int nb_sectors, lba;
++    unsigned int nb_sectors, lba;
++
++    /* Total logical sectors of ATAPI_SECTOR_SIZE(=2048) bytes */
++    uint64_t total_sectors = s->nb_sectors >> 2;
+ 
+     if (buf[0] == GPCMD_READ_10) {
+         nb_sectors = ube16_to_cpu(buf + 7);
+@@ -1026,22 +1031,28 @@ static void cmd_read(IDEState *s, uint8_t* buf)
+         nb_sectors = ube32_to_cpu(buf + 6);
+     }
+ 
+-    lba = ube32_to_cpu(buf + 2);
+     if (nb_sectors == 0) {
+         ide_atapi_cmd_ok(s);
+         return;
+     }
+ 
++    lba = ldl_be_p(buf + 2);
++    if (lba >= total_sectors || lba + nb_sectors - 1 >= total_sectors) {
++        ide_atapi_cmd_error(s, ILLEGAL_REQUEST, ASC_LOGICAL_BLOCK_OOR);
++        return;
++    }
++
+     ide_atapi_cmd_read(s, lba, nb_sectors, 2048);
+ }
+ 
+ static void cmd_read_cd(IDEState *s, uint8_t* buf)
+ {
+-    int nb_sectors, lba, transfer_request;
++    unsigned int nb_sectors, lba, transfer_request;
+ 
++    /* Total logical sectors of ATAPI_SECTOR_SIZE(=2048) bytes */
++    uint64_t total_sectors = s->nb_sectors >> 2;
++ 
+     nb_sectors = (buf[6] << 16) | (buf[7] << 8) | buf[8];
+-    lba = ube32_to_cpu(buf + 2);
+-
+     if (nb_sectors == 0) {
+         ide_atapi_cmd_ok(s);
+         return;
+@@ -1054,6 +1065,12 @@ static void cmd_read_cd(IDEState *s, uint8_t* buf)
+         return;
+     }
+ 
++    lba = ldl_be_p(buf + 2);
++    if (lba >= total_sectors || lba + nb_sectors - 1 >= total_sectors) {
++        ide_atapi_cmd_error(s, ILLEGAL_REQUEST, ASC_LOGICAL_BLOCK_OOR);
++        return;
++    }
++
+     /* Check validity of BCL before transferring data */
+     if (!validate_bcl(s)) {
+         return;
+-- 
+2.21.3
+

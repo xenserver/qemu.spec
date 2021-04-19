@@ -315,3 +315,15 @@ build-configuration.patch
 # Hotfix patches
 0001-usb-fix-setup_len-init-CVE-2020-14364.patch
 0001-rtl8139-fix-possible-out-of-bound-access.patch
+# 813212288970c39b1800f63e83ac6e96588095c6 (5.2.0-rc4)
+0001-ide-atapi-assert-that-the-buffer-pointer-in-range.patch
+# b8d7f1bc59276fec85e4d09f1567613a3e14d31e
+0001-ide-atapi-check-logical-block-address-and-read-size.patch
+# 705df5466c98f3efdd2b68d3b31dad86858acad7 (6.0.0-rc1)
+0001-net-introduce-qemu_receive_packet.patch
+# 1caff0340f49c93d535c6558a5138d20d475315c (6.0.0-rc1)
+0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
+# 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
+0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopback.patch
+# 3de46e6fc489c52c9431a8a832ad8170a7569bd8 (6.0.0-rc1)
+0001-e1000-fail-early-for-evil-descriptor.patch
