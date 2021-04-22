@@ -31,6 +31,8 @@
 0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
 # ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
 0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
+# N/A (6.0.0)
+0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch
