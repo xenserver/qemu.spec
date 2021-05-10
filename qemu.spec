@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.0.2}
+%{!?xsrel: %global xsrel 5.0.3}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
@@ -106,6 +106,11 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Mon May 10 2021 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.3
+- CA-352456: Backport aio-posix: fix use after leaving scope in aio_poll()
+- Fix patch Update-fd-handlers-to-support-sysfs_notify
+- CA-352456: Fix QEMU memory corruption during migration
+
 * Tue Apr 13 2021 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.2
 - CP-36580: Replace legacy xen-dom0-devel alias
 - CA-352135: Fix CVE-2021-20257 - e1000 infinite loop
