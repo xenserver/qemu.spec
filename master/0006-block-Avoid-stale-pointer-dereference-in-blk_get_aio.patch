@@ -1,0 +1,73 @@
+From e6cada9231af022ffc2e351c70dfaea8530496e1 Mon Sep 17 00:00:00 2001
+From: Greg Kurz <groug@kaod.org>
+Date: Thu, 9 Jul 2020 15:50:45 +0200
+Subject: [PATCH 6/6] block: Avoid stale pointer dereference in
+ blk_get_aio_context()
+
+It is possible for blk_remove_bs() to race with blk_drain_all(), causing
+the latter to dereference a stale blk->root pointer:
+
+  blk_remove_bs(blk)
+   bdrv_root_unref_child(blk->root)
+    child_bs = blk->root->bs
+    bdrv_detach_child(blk->root)
+     ...
+     g_free(blk->root) <============== blk->root becomes stale
+    bdrv_unref(child_bs) <============ yield at some point
+
+A blk_drain_all() can be triggered by some guest action in the
+meantime, eg. on POWER, SLOF might disable bus mastering on
+a virtio-scsi-pci device:
+
+  virtio_write_config()
+   virtio_pci_stop_ioeventfd()
+    virtio_bus_stop_ioeventfd()
+     virtio_scsi_dataplane_stop()
+      blk_drain_all()
+       blk_get_aio_context()
+       bs = blk->root ? blk->root->bs : NULL
+            ^^^^^^^^^
+              stale
+
+Then, depending on one's luck, QEMU either crashes with SEGV or
+hits the assertion in blk_get_aio_context().
+
+blk->root is set by blk_insert_bs() which calls bdrv_root_attach_child()
+first. The blk_remove_bs() function should rollback the changes made
+by blk_insert_bs() in the opposite order (or it should be documented
+somewhere why this isn't the case). Clear blk->root before calling
+bdrv_root_unref_child() in blk_remove_bs().
+
+Signed-off-by: Greg Kurz <groug@kaod.org>
+Message-Id: <159430264541.389456.11925072456012783045.stgit@bahia.lan>
+Signed-off-by: Kevin Wolf <kwolf@redhat.com>
+---
+ block/block-backend.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/block/block-backend.c b/block/block-backend.c
+index 6936b25c836c..0bf0188133e3 100644
+--- a/block/block-backend.c
++++ b/block/block-backend.c
+@@ -808,6 +808,7 @@ void blk_remove_bs(BlockBackend *blk)
+ {
+     ThrottleGroupMember *tgm = &blk->public.throttle_group_member;
+     BlockDriverState *bs;
++    BdrvChild *root;
+ 
+     notifier_list_notify(&blk->remove_bs_notifiers, blk);
+     if (tgm->throttle_state) {
+@@ -825,8 +826,9 @@ void blk_remove_bs(BlockBackend *blk)
+      * to avoid that and a potential QEMU crash.
+      */
+     blk_drain(blk);
+-    bdrv_root_unref_child(blk->root);
++    root = blk->root;
+     blk->root = NULL;
++    bdrv_root_unref_child(root);
+ }
+ 
+ /*
+-- 
+Anthony PERARD
+

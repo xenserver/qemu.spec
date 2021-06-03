@@ -24,28 +24,27 @@ Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
 Cc: qemu-stable@nongnu.org
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- include/net/net.h   |  6 ++++++
- include/net/queue.h |  9 +++++++++
+ include/net/net.h   |  5 +++++
+ include/net/queue.h |  8 ++++++++
  net/net.c           | 38 +++++++++++++++++++++++++++++++-------
- net/queue.c         | 23 +++++++++++++++++++++++
- 4 files changed, 69 insertions(+), 7 deletions(-)
+ net/queue.c         | 22 ++++++++++++++++++++++
+ 4 files changed, 66 insertions(+), 7 deletions(-)
 
 diff --git a/include/net/net.h b/include/net/net.h
-index 1c55a93588..ce7b48b37f 100644
+index 919facaad2..4f56cae0fa 100644
 --- a/include/net/net.h
 +++ b/include/net/net.h
-@@ -143,6 +143,7 @@ NetClientState *qemu_get_queue(NICState *nic);
- NICState *qemu_get_nic(NetClientState *nc);
- void *qemu_get_nic_opaque(NetClientState *nc);
+@@ -144,12 +144,17 @@ void *qemu_get_nic_opaque(NetClientState *nc);
  void qemu_del_net_client(NetClientState *nc);
-+int qemu_can_receive_packet(NetClientState *nc);
  typedef void (*qemu_nic_foreach)(NICState *nic, void *opaque);
  void qemu_foreach_nic(qemu_nic_foreach func, void *opaque);
++int qemu_can_receive_packet(NetClientState *nc);
  int qemu_can_send_packet(NetClientState *nc);
-@@ -151,6 +152,10 @@ ssize_t qemu_sendv_packet(NetClientState *nc, const struct iovec *iov,
+ ssize_t qemu_sendv_packet(NetClientState *nc, const struct iovec *iov,
+                           int iovcnt);
  ssize_t qemu_sendv_packet_async(NetClientState *nc, const struct iovec *iov,
                                  int iovcnt, NetPacketSent *sent_cb);
- void qemu_send_packet(NetClientState *nc, const uint8_t *buf, int size);
+ ssize_t qemu_send_packet(NetClientState *nc, const uint8_t *buf, int size);
 +ssize_t qemu_receive_packet(NetClientState *nc, const uint8_t *buf, int size);
 +ssize_t qemu_receive_packet_iov(NetClientState *nc,
 +                                const struct iovec *iov,
@@ -53,19 +52,11 @@ index 1c55a93588..ce7b48b37f 100644
  ssize_t qemu_send_packet_raw(NetClientState *nc, const uint8_t *buf, int size);
  ssize_t qemu_send_packet_async(NetClientState *nc, const uint8_t *buf,
                                 int size, NetPacketSent *sent_cb);
-@@ -172,6 +177,7 @@ void qemu_check_nic_model(NICInfo *nd, const char *model);
- int qemu_find_nic_model(NICInfo *nd, const char * const *models,
-                         const char *default_model);
- 
-+
- ssize_t qemu_deliver_packet_iov(NetClientState *sender,
-                             unsigned flags,
-                             const struct iovec *iov,
 diff --git a/include/net/queue.h b/include/net/queue.h
-index 5469fdbeaa..8dcbb806a1 100644
+index c0269bb1dc..9f2f289d77 100644
 --- a/include/net/queue.h
 +++ b/include/net/queue.h
-@@ -56,6 +56,14 @@ void qemu_net_queue_append_iov(NetQueue *queue,
+@@ -55,6 +55,14 @@ void qemu_net_queue_append_iov(NetQueue *queue,
  
  void qemu_del_net_queue(NetQueue *queue);
  
@@ -80,17 +71,11 @@ index 5469fdbeaa..8dcbb806a1 100644
  ssize_t qemu_net_queue_send(NetQueue *queue,
                              NetClientState *sender,
                              unsigned flags,
-@@ -73,4 +81,5 @@ ssize_t qemu_net_queue_send_iov(NetQueue *queue,
- void qemu_net_queue_purge(NetQueue *queue, NetClientState *from);
- bool qemu_net_queue_flush(NetQueue *queue);
- 
-+
- #endif /* QEMU_NET_QUEUE_H */
 diff --git a/net/net.c b/net/net.c
-index 0e28099554..cd86825297 100644
+index 77b35eafc5..edf9b95418 100644
 --- a/net/net.c
 +++ b/net/net.c
-@@ -522,6 +522,17 @@ int qemu_set_vnet_be(NetClientState *nc, bool is_be)
+@@ -529,6 +529,17 @@ int qemu_set_vnet_be(NetClientState *nc, bool is_be)
  #endif
  }
  
@@ -108,7 +93,7 @@ index 0e28099554..cd86825297 100644
  int qemu_can_send_packet(NetClientState *sender)
  {
      int vm_running = runstate_is_running();
-@@ -534,13 +545,7 @@ int qemu_can_send_packet(NetClientState *sender)
+@@ -541,13 +552,7 @@ int qemu_can_send_packet(NetClientState *sender)
          return 1;
      }
  
@@ -123,8 +108,8 @@ index 0e28099554..cd86825297 100644
  }
  
  static ssize_t filter_receive_iov(NetClientState *nc,
-@@ -674,6 +679,25 @@ void qemu_send_packet(NetClientState *nc, const uint8_t *buf, int size)
-     qemu_send_packet_async(nc, buf, size, NULL);
+@@ -680,6 +685,25 @@ ssize_t qemu_send_packet(NetClientState *nc, const uint8_t *buf, int size)
+     return qemu_send_packet_async(nc, buf, size, NULL);
  }
  
 +ssize_t qemu_receive_packet(NetClientState *nc, const uint8_t *buf, int size)
@@ -150,10 +135,10 @@ index 0e28099554..cd86825297 100644
  {
      return qemu_send_packet_async_with_flags(nc, QEMU_NET_PACKET_FLAG_RAW,
 diff --git a/net/queue.c b/net/queue.c
-index 9c32abdb8f..cc4fd76b31 100644
+index 19e32c80fd..c872d51df8 100644
 --- a/net/queue.c
 +++ b/net/queue.c
-@@ -167,6 +167,17 @@ static ssize_t qemu_net_queue_deliver(NetQueue *queue,
+@@ -182,6 +182,28 @@ static ssize_t qemu_net_queue_deliver_iov(NetQueue *queue,
      return ret;
  }
  
@@ -168,13 +153,6 @@ index 9c32abdb8f..cc4fd76b31 100644
 +    return qemu_net_queue_deliver(queue, NULL, 0, data, size);
 +}
 +
- static ssize_t qemu_net_queue_deliver_iov(NetQueue *queue,
-                                           NetClientState *sender,
-                                           unsigned flags,
-@@ -182,6 +193,18 @@ static ssize_t qemu_net_queue_deliver_iov(NetQueue *queue,
-     return ret;
- }
- 
 +ssize_t qemu_net_queue_receive_iov(NetQueue *queue,
 +                                   const struct iovec *iov,
 +                                   int iovcnt)
@@ -186,10 +164,9 @@ index 9c32abdb8f..cc4fd76b31 100644
 +    return qemu_net_queue_deliver_iov(queue, NULL, 0, iov, iovcnt);
 +}
 +
-+
  ssize_t qemu_net_queue_send(NetQueue *queue,
                              NetClientState *sender,
                              unsigned flags,
 -- 
-2.21.3
+2.27.0
 

@@ -3,57 +3,52 @@ Change the build configuration to decrease size and attack area
 This is made up of:
 * Removing support for various block device formats.
 * Removing support for VFIO.
-* Disabling many devices which are not needed/used.
 * Enable NVME for guest UEFI
+* List of devices needed so ./configure option
+  --without-default-devices can be used.
+
 
 diff --git a/backends/Makefile.objs b/backends/Makefile.objs
-index 0400799..c54a903 100644
+index f0691116e8..f51224cc84 100644
 --- a/backends/Makefile.objs
 +++ b/backends/Makefile.objs
-@@ -6,5 +6,5 @@ common-obj-$(CONFIG_TPM) += tpm.o
+@@ -6,8 +6,8 @@ common-obj-$(CONFIG_TPM) += tpm.o
  common-obj-y += hostmem.o hostmem-ram.o
- common-obj-$(CONFIG_LINUX) += hostmem-file.o
+ common-obj-$(CONFIG_POSIX) += hostmem-file.o
  
 -common-obj-y += cryptodev.o
 -common-obj-y += cryptodev-builtin.o
 +common-obj-$(call lnot,$(CONFIG_XEN)) += cryptodev.o
 +common-obj-$(call lnot,$(CONFIG_XEN)) += cryptodev-builtin.o
+ 
+ ifeq ($(CONFIG_VIRTIO_CRYPTO),y)
+ common-obj-y += cryptodev-vhost.o
 diff --git a/block/Makefile.objs b/block/Makefile.objs
-index 2aaede4..13b0c75 100644
+index e394fe0b6c..27981e6e2f 100644
 --- a/block/Makefile.objs
 +++ b/block/Makefile.objs
-@@ -1,10 +1,12 @@
--block-obj-y += raw-format.o qcow.o vdi.o vmdk.o cloop.o bochs.o vpc.o vvfat.o dmg.o
-+block-obj-y += raw-format.o qcow.o vdi.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += vmdk.o cloop.o bochs.o vpc.o vvfat.o dmg.o
- block-obj-y += qcow2.o qcow2-refcount.o qcow2-cluster.o qcow2-snapshot.o qcow2-cache.o qcow2-bitmap.o
- block-obj-y += qed.o qed-l2-cache.o qed-table.o qed-cluster.o
- block-obj-y += qed-check.o
+@@ -1,4 +1,5 @@
+-block-obj-y += raw-format.o vmdk.o vpc.o
++block-obj-y += raw-format.o
++block-obj-$(call lnot,$(CONFIG_XEN)) += vmdk.o vpc.o
+ block-obj-$(CONFIG_QCOW1) += qcow.o
+ block-obj-$(CONFIG_VDI) += vdi.o
+ block-obj-$(CONFIG_CLOOP) += cloop.o
+@@ -9,7 +10,7 @@ block-obj-$(CONFIG_DMG) += dmg.o
+ block-obj-y += qcow2.o qcow2-refcount.o qcow2-cluster.o qcow2-snapshot.o qcow2-cache.o qcow2-bitmap.o qcow2-threads.o
+ block-obj-$(CONFIG_QED) += qed.o qed-l2-cache.o qed-table.o qed-cluster.o
+ block-obj-$(CONFIG_QED) += qed-check.o
 -block-obj-y += vhdx.o vhdx-endian.o vhdx-log.o
 +block-obj-$(call lnot,$(CONFIG_XEN)) += vhdx.o vhdx-endian.o vhdx-log.o
  block-obj-y += quorum.o
--block-obj-y += parallels.o blkdebug.o blkverify.o blkreplay.o
-+block-obj-y += blkdebug.o blkverify.o blkreplay.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += parallels.o
- block-obj-y += block-backend.o snapshot.o qapi.o
- block-obj-$(CONFIG_WIN32) += file-win32.o win32-aio.o
- block-obj-$(CONFIG_POSIX) += file-posix.o
-@@ -12,7 +14,8 @@ block-obj-$(CONFIG_LINUX_AIO) += linux-aio.o
- block-obj-y += null.o mirror.o commit.o io.o
- block-obj-y += throttle-groups.o
- 
--block-obj-y += nbd.o nbd-client.o sheepdog.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += sheepdog.o
-+block-obj-y += nbd.o nbd-client.o
- block-obj-$(CONFIG_LIBISCSI) += iscsi.o
- block-obj-$(if $(CONFIG_LIBISCSI),y,n) += iscsi-opts.o
- block-obj-$(CONFIG_LIBNFS) += nfs.o
+ block-obj-y += blkdebug.o blkverify.o blkreplay.o
+ block-obj-$(CONFIG_PARALLELS) += parallels.o
 diff --git a/crypto/Makefile.objs b/crypto/Makefile.objs
-index 2b99e08..b505b64 100644
+index cdb01f9de9..cb1d85c367 100644
 --- a/crypto/Makefile.objs
 +++ b/crypto/Makefile.objs
-@@ -38,3 +38,7 @@ crypto-obj-y += block-luks.o
- crypto-aes-obj-y = aes.o
+@@ -40,3 +40,7 @@ crypto-obj-y += block-luks.o
+ crypto-user-obj-y = aes.o $(crypto-rng-obj-y) init.o
  
  stub-obj-y += pbkdf-stub.o
 +
@@ -61,224 +56,74 @@ index 2b99e08..b505b64 100644
 +crypto-obj-y = hash.o
 +crypto-obj-$(if $(CONFIG_NETTLE),n,$(if $(CONFIG_GCRYPT),n,y)) += hash-glib.o
 diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index d2ab2f6..dd14725 100644
+index 4cc64dafa2..f2024c9aa3 100644
 --- a/default-configs/i386-softmmu.mak
 +++ b/default-configs/i386-softmmu.mak
-@@ -6,19 +6,19 @@ include usb.mak
- CONFIG_QXL=$(CONFIG_SPICE)
- CONFIG_VGA_ISA=y
- CONFIG_VGA_CIRRUS=y
--CONFIG_VMWARE_VGA=y
--CONFIG_VIRTIO_VGA=y
--CONFIG_VMMOUSE=y
--CONFIG_IPMI=y
--CONFIG_IPMI_LOCAL=y
--CONFIG_IPMI_EXTERN=y
--CONFIG_ISA_IPMI_KCS=y
--CONFIG_ISA_IPMI_BT=y
-+CONFIG_VMWARE_VGA=n
-+CONFIG_VIRTIO_VGA=n
-+CONFIG_VMMOUSE=n
-+CONFIG_IPMI=n
-+CONFIG_IPMI_LOCAL=n
-+CONFIG_IPMI_EXTERN=n
-+CONFIG_ISA_IPMI_KCS=n
-+CONFIG_ISA_IPMI_BT=n
- CONFIG_SERIAL=y
- CONFIG_SERIAL_ISA=y
- CONFIG_PARALLEL=y
- CONFIG_I8254=y
--CONFIG_PCSPK=y
-+CONFIG_PCSPK=n
- CONFIG_PCKBD=y
- CONFIG_FDC=y
- CONFIG_ACPI=y
-@@ -30,21 +30,21 @@ CONFIG_APM=y
- CONFIG_I8257=y
- CONFIG_IDE_ISA=y
- CONFIG_IDE_PIIX=y
--CONFIG_NE2000_ISA=y
--CONFIG_HPET=y
--CONFIG_APPLESMC=y
-+CONFIG_NE2000_ISA=n
-+CONFIG_HPET=n
-+CONFIG_APPLESMC=n
- CONFIG_I8259=y
- CONFIG_PFLASH_CFI01=y
- CONFIG_TPM_TIS=$(CONFIG_TPM)
- CONFIG_MC146818RTC=y
- CONFIG_PCI_PIIX=y
--CONFIG_WDT_IB700=y
-+CONFIG_WDT_IB700=n
- CONFIG_ISA_DEBUG=y
--CONFIG_ISA_TESTDEV=y
--CONFIG_VMPORT=y
--CONFIG_SGA=y
-+CONFIG_ISA_TESTDEV=n
-+CONFIG_VMPORT=n
-+CONFIG_SGA=n
- CONFIG_LPC_ICH9=y
--CONFIG_PCI_Q35=y
-+CONFIG_PCI_Q35=n
- CONFIG_APIC=y
- CONFIG_IOAPIC=y
- CONFIG_PVPANIC=y
-@@ -52,10 +52,10 @@ CONFIG_MEM_HOTPLUG=y
- CONFIG_NVDIMM=y
- CONFIG_ACPI_NVDIMM=y
- CONFIG_PCIE_PORT=y
--CONFIG_XIO3130=y
--CONFIG_IOH3420=y
--CONFIG_I82801B11=y
-+CONFIG_XIO3130=n
-+CONFIG_IOH3420=n
-+CONFIG_I82801B11=n
- CONFIG_SMBIOS=y
- CONFIG_HYPERV_TESTDEV=$(CONFIG_KVM)
--CONFIG_PXB=y
-+CONFIG_PXB=n
- CONFIG_ACPI_VMGENID=y
-diff --git a/default-configs/pci.mak b/default-configs/pci.mak
-index a758630..e3e5626 100644
---- a/default-configs/pci.mak
-+++ b/default-configs/pci.mak
-@@ -1,46 +1,46 @@
- CONFIG_PCI=y
- # For now, CONFIG_IDE_CORE requires ISA, so we enable it here
- CONFIG_ISA_BUS=y
--CONFIG_VIRTIO_PCI=y
--CONFIG_VIRTIO=y
-+CONFIG_VIRTIO_PCI=n
-+CONFIG_VIRTIO=n
- CONFIG_USB_UHCI=y
- CONFIG_USB_OHCI=y
- CONFIG_USB_EHCI=y
--CONFIG_USB_XHCI=y
--CONFIG_USB_XHCI_NEC=y
--CONFIG_NE2000_PCI=y
--CONFIG_EEPRO100_PCI=y
--CONFIG_PCNET_PCI=y
--CONFIG_PCNET_COMMON=y
--CONFIG_AC97=y
--CONFIG_HDA=y
--CONFIG_ES1370=y
--CONFIG_LSI_SCSI_PCI=y
--CONFIG_VMW_PVSCSI_SCSI_PCI=y
--CONFIG_MEGASAS_SCSI_PCI=y
--CONFIG_MPTSAS_SCSI_PCI=y
-+CONFIG_USB_XHCI=n
-+CONFIG_USB_XHCI_NEC=n
-+CONFIG_NE2000_PCI=n
-+CONFIG_EEPRO100_PCI=n
-+CONFIG_PCNET_PCI=n
-+CONFIG_PCNET_COMMON=n
-+CONFIG_AC97=n
-+CONFIG_HDA=n
-+CONFIG_ES1370=n
-+CONFIG_LSI_SCSI_PCI=n
-+CONFIG_VMW_PVSCSI_SCSI_PCI=n
-+CONFIG_MEGASAS_SCSI_PCI=n
-+CONFIG_MPTSAS_SCSI_PCI=n
- CONFIG_RTL8139_PCI=y
- CONFIG_E1000_PCI=y
--CONFIG_E1000E_PCI=y
--CONFIG_VMXNET3_PCI=y
-+CONFIG_E1000E_PCI=n
-+CONFIG_VMXNET3_PCI=n
- CONFIG_IDE_CORE=y
- CONFIG_IDE_QDEV=y
- CONFIG_IDE_PCI=y
- CONFIG_AHCI=y
--CONFIG_ESP=y
--CONFIG_ESP_PCI=y
-+CONFIG_ESP=n
-+CONFIG_ESP_PCI=n
- CONFIG_SERIAL=y
- CONFIG_SERIAL_ISA=y
--CONFIG_SERIAL_PCI=y
--CONFIG_IPACK=y
--CONFIG_WDT_IB6300ESB=y
--CONFIG_PCI_TESTDEV=y
-+CONFIG_SERIAL_PCI=n
-+CONFIG_IPACK=n
-+CONFIG_WDT_IB6300ESB=n
-+CONFIG_PCI_TESTDEV=n
- CONFIG_NVME_PCI=y
--CONFIG_SD=y
--CONFIG_SDHCI=y
--CONFIG_EDU=y
-+CONFIG_SD=n
-+CONFIG_SDHCI=n
-+CONFIG_EDU=n
- CONFIG_VGA=y
- CONFIG_VGA_PCI=y
--CONFIG_IVSHMEM_DEVICE=$(CONFIG_IVSHMEM)
--CONFIG_ROCKER=y
-+CONFIG_IVSHMEM_DEVICE=n
-+CONFIG_ROCKER=n
- CONFIG_VHOST_USER_SCSI=$(and $(CONFIG_VHOST_USER),$(CONFIG_LINUX))
-diff --git a/default-configs/sound.mak b/default-configs/sound.mak
-index 4f22c34..55f64b8 100644
---- a/default-configs/sound.mak
-+++ b/default-configs/sound.mak
-@@ -1,4 +1,4 @@
--CONFIG_SB16=y
--CONFIG_ADLIB=y
--CONFIG_GUS=y
--CONFIG_CS4231A=y
-+CONFIG_SB16=n
-+CONFIG_ADLIB=n
-+CONFIG_GUS=n
-+CONFIG_CS4231A=n
-diff --git a/default-configs/usb.mak b/default-configs/usb.mak
-index f4b8568..7e52934 100644
---- a/default-configs/usb.mak
-+++ b/default-configs/usb.mak
-@@ -1,10 +1,10 @@
- CONFIG_USB=y
- CONFIG_USB_TABLET_WACOM=y
--CONFIG_USB_STORAGE_BOT=y
--CONFIG_USB_STORAGE_UAS=y
--CONFIG_USB_STORAGE_MTP=y
--CONFIG_USB_SMARTCARD=y
--CONFIG_USB_AUDIO=y
--CONFIG_USB_SERIAL=y
--CONFIG_USB_NETWORK=y
--CONFIG_USB_BLUETOOTH=y
-+CONFIG_USB_STORAGE_BOT=n
-+CONFIG_USB_STORAGE_UAS=n
-+CONFIG_USB_STORAGE_MTP=n
-+CONFIG_USB_SMARTCARD=n
-+CONFIG_USB_AUDIO=n
-+CONFIG_USB_SERIAL=n
-+CONFIG_USB_NETWORK=n
-+CONFIG_USB_BLUETOOTH=n
-diff --git a/hw/vfio/Makefile.objs b/hw/vfio/Makefile.objs
-index c3ab909..9e9fe59 100644
---- a/hw/vfio/Makefile.objs
-+++ b/hw/vfio/Makefile.objs
-@@ -1,4 +1,4 @@
--ifeq ($(CONFIG_LINUX), y)
-+ifeq ($(CONFIG_LINUX)$(CONFIG_XEN), yn)
- obj-$(CONFIG_SOFTMMU) += common.o
- obj-$(CONFIG_PCI) += pci.o pci-quirks.o
- obj-$(CONFIG_VFIO_CCW) += ccw.o
-diff --git a/hw/virtio/Makefile.objs b/hw/virtio/Makefile.objs
-index 765d363..015fe60 100644
---- a/hw/virtio/Makefile.objs
-+++ b/hw/virtio/Makefile.objs
-@@ -11,5 +11,5 @@ obj-y += virtio-crypto.o
- obj-$(CONFIG_VIRTIO_PCI) += virtio-crypto-pci.o
- endif
+@@ -25,7 +25,30 @@
  
--common-obj-$(call lnot,$(CONFIG_LINUX)) += vhost-stub.o
-+common-obj-$(call lnot,$(CONFIG_VIRTIO)) += vhost-stub.o
- common-obj-$(CONFIG_ALL) += vhost-stub.o
+ # Boards:
+ #
+-CONFIG_ISAPC=y
++CONFIG_ISAPC=n
+ CONFIG_I440FX=y
+-CONFIG_Q35=y
+-CONFIG_MICROVM=y
++CONFIG_Q35=n
++CONFIG_MICROVM=n
++
++# Wanted devices:
++CONFIG_AHCI=y
++CONFIG_AHCI_ICH9=y
++CONFIG_BOCHS_DISPLAY=y
++CONFIG_E1000_PCI=y
++CONFIG_EDID=y
++CONFIG_FDC=y
++CONFIG_GENERIC_LOADER=y
++CONFIG_ISA_DEBUG=y
++CONFIG_NVDIMM=y
++CONFIG_NVME_PCI=y
++CONFIG_PARALLEL=y
++CONFIG_RTL8139_PCI=y
++CONFIG_USB=y
++CONFIG_USB_EHCI=y
++CONFIG_USB_EHCI_PCI=y
++CONFIG_USB_OHCI=y
++CONFIG_USB_OHCI_PCI=y
++CONFIG_USB_TABLET_WACOM=y
++CONFIG_USB_UHCI=y
++CONFIG_VGA_CIRRUS=y
++CONFIG_VGA_PCI=y
+diff --git a/hw/Makefile.objs b/hw/Makefile.objs
+index 66eef20561..efc8663d75 100644
+--- a/hw/Makefile.objs
++++ b/hw/Makefile.objs
+@@ -33,7 +33,7 @@ devices-dirs-y += ssi/
+ devices-dirs-y += timer/
+ devices-dirs-$(CONFIG_TPM) += tpm/
+ devices-dirs-y += usb/
+-devices-dirs-$(CONFIG_VFIO) += vfio/
++devices-dirs-$(call land,$(CONFIG_VFIO),$(call lnot,$(CONFIG_XEN))) += vfio/
+ devices-dirs-y += virtio/
+ devices-dirs-y += watchdog/
+ devices-dirs-y += xen/
+diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
+index 5a494342ea..9a107153af 100644
+--- a/hw/i386/Kconfig
++++ b/hw/i386/Kconfig
+@@ -27,7 +27,7 @@ config PC
+     select I8259
+     select I8254
+     select PCKBD
+-    select PCSPK
++    # select PCSPK
+     select I8257
+     select MC146818RTC
+     # For ACPI builder:
 diff --git a/stubs/Makefile.objs b/stubs/Makefile.objs
-index 4a33495..22affa6 100644
+index 4a50e95ec3..335c06cb05 100644
 --- a/stubs/Makefile.objs
 +++ b/stubs/Makefile.objs
-@@ -8,6 +8,7 @@ stub-obj-y += blockdev-close-all-bdrv-states.o
+@@ -4,6 +4,7 @@ stub-obj-y += blockdev-close-all-bdrv-states.o
  stub-obj-y += clock-warp.o
  stub-obj-y += cpu-get-clock.o
  stub-obj-y += cpu-get-icount.o
@@ -288,15 +133,17 @@ index 4a33495..22affa6 100644
  stub-obj-y += fdset.o
 diff --git a/stubs/crypto.c b/stubs/crypto.c
 new file mode 100644
-index 0000000..ced575f
+index 0000000000..7ad970aa85
 --- /dev/null
 +++ b/stubs/crypto.c
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,202 @@
 +#include "qemu/osdep.h"
 +#include "qapi/error.h"
 +#include "crypto/block.h"
 +#include "crypto/cipher.h"
 +#include "crypto/init.h"
++#include "crypto/random.h"
++#include "crypto/secret.h"
 +#include "crypto/tlssession.h"
 +
 +QCryptoBlock *qcrypto_block_open(QCryptoBlockOpenOptions *options,
@@ -304,6 +151,7 @@ index 0000000..ced575f
 +                                 QCryptoBlockReadFunc readfunc,
 +                                 void *opaque,
 +                                 unsigned int flags,
++                                 size_t n_threads,
 +                                 Error **errp)
 +{
 +    error_setg_errno(errp, ENOSYS, "No crypto");
@@ -364,6 +212,11 @@ index 0000000..ced575f
 +    return NULL;
 +}
 +
++uint64_t qcrypto_block_get_sector_size(QCryptoBlock *block)
++{
++    return 0;
++}
++
 +QCryptoTLSSession *qcrypto_tls_session_new(QCryptoTLSCreds *creds,
 +                                           const char *hostname,
 +                                           const char *aclname,
@@ -406,6 +259,13 @@ index 0000000..ced575f
 +                                       QCryptoTLSSessionReadFunc readFunc,
 +                                       void *opaque)
 +{
++}
++
++int qcrypto_tls_session_get_key_size(QCryptoTLSSession *session,
++                                     Error **errp)
++{
++    error_setg_errno(errp, ENOSYS, "No crypto");
++    return -1;
 +}
 +
 +char *qcrypto_tls_session_get_peer_name(QCryptoTLSSession *sess)
@@ -456,4 +316,26 @@ index 0000000..ced575f
 +int qcrypto_init(Error **errp)
 +{
 +    return 0;
++}
++
++int qcrypto_random_bytes(void *buf,
++                         size_t buflen,
++                         Error **errp)
++{
++    error_setg_errno(errp, ENOSYS, "No crypto");
++    return -1;
++}
++
++char *qcrypto_secret_lookup_as_utf8(const char *secretid,
++                                    Error **errp)
++{
++    error_setg_errno(errp, ENOSYS, "No crypto");
++    return NULL;
++}
++
++char *qcrypto_secret_lookup_as_base64(const char *secretid,
++                                      Error **errp)
++{
++    error_setg_errno(errp, ENOSYS, "No crypto");
++    return NULL;
 +}

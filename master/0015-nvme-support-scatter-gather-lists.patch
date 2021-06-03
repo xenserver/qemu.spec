@@ -9,17 +9,65 @@ types.
 See NVM Express 1.3d, Section 4.4 ("Scatter Gather List (SGL)").
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
----
- hw/block/nvme.c       | 391 +++++++++++++++++++++++++++++++++++-------
- hw/block/nvme.h       |  70 +++++++-
- hw/block/trace-events |   3 +
- 3 files changed, 402 insertions(+), 62 deletions(-)
-
+diff --git a/block/nvme.c b/block/nvme.c
+index 2c85713519..f4c9b03825 100644
+--- a/block/nvme.c
++++ b/block/nvme.c
+@@ -439,7 +439,7 @@ static void nvme_identify(BlockDriverState *bs, int namespace, Error **errp)
+         error_setg(errp, "Cannot map buffer for DMA");
+         goto out;
+     }
+-    cmd.prp1 = cpu_to_le64(iova);
++    cmd.dptr.prp.prp1 = cpu_to_le64(iova);
+ 
+     if (nvme_cmd_sync(bs, s->queues[0], &cmd)) {
+         error_setg(errp, "Failed to identify controller");
+@@ -528,7 +528,7 @@ static bool nvme_add_io_queue(BlockDriverState *bs, Error **errp)
+     }
+     cmd = (NvmeCmd) {
+         .opcode = NVME_ADM_CMD_CREATE_CQ,
+-        .prp1 = cpu_to_le64(q->cq.iova),
++        .dptr.prp.prp1 = cpu_to_le64(q->cq.iova),
+         .cdw10 = cpu_to_le32(((queue_size - 1) << 16) | (n & 0xFFFF)),
+         .cdw11 = cpu_to_le32(0x3),
+     };
+@@ -539,7 +539,7 @@ static bool nvme_add_io_queue(BlockDriverState *bs, Error **errp)
+     }
+     cmd = (NvmeCmd) {
+         .opcode = NVME_ADM_CMD_CREATE_SQ,
+-        .prp1 = cpu_to_le64(q->sq.iova),
++        .dptr.prp.prp1 = cpu_to_le64(q->sq.iova),
+         .cdw10 = cpu_to_le32(((queue_size - 1) << 16) | (n & 0xFFFF)),
+         .cdw11 = cpu_to_le32(0x1 | (n << 16)),
+     };
+@@ -888,16 +888,16 @@ static coroutine_fn int nvme_cmd_map_qiov(BlockDriverState *bs, NvmeCmd *cmd,
+     case 0:
+         abort();
+     case 1:
+-        cmd->prp1 = pagelist[0];
+-        cmd->prp2 = 0;
++        cmd->dptr.prp.prp1 = pagelist[0];
++        cmd->dptr.prp.prp2 = 0;
+         break;
+     case 2:
+-        cmd->prp1 = pagelist[0];
+-        cmd->prp2 = pagelist[1];
++        cmd->dptr.prp.prp1 = pagelist[0];
++        cmd->dptr.prp.prp2 = pagelist[1];
+         break;
+     default:
+-        cmd->prp1 = pagelist[0];
+-        cmd->prp2 = cpu_to_le64(req->prp_list_iova + sizeof(uint64_t));
++        cmd->dptr.prp.prp1 = pagelist[0];
++        cmd->dptr.prp.prp2 = cpu_to_le64(req->prp_list_iova + sizeof(uint64_t));
+         break;
+     }
+     trace_nvme_cmd_map_qiov(s, cmd, req, qiov, entries);
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index e2b772126f..f8c07803d0 100644
+index 44078ae054..ee92e7302b 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
-@@ -271,6 +271,199 @@ unmap:
+@@ -274,6 +274,199 @@ static uint16_t nvme_map_prp(NvmeCtrl *n, QEMUSGList *qsg, uint64_t prp1,
      return status;
  }
  
@@ -219,7 +267,7 @@ index e2b772126f..f8c07803d0 100644
  static void dma_to_cmb(NvmeCtrl *n, QEMUSGList *qsg, QEMUIOVector *iov)
  {
      int i;
-@@ -318,6 +511,56 @@ static uint16_t nvme_dma_write_prp(NvmeCtrl *n, uint8_t *ptr, uint32_t len,
+@@ -321,6 +514,56 @@ static uint16_t nvme_dma_write_prp(NvmeCtrl *n, uint8_t *ptr, uint32_t len,
      return err;
  }
  
@@ -276,7 +324,7 @@ index e2b772126f..f8c07803d0 100644
  static uint16_t nvme_dma_read_prp(NvmeCtrl *n, uint8_t *ptr, uint32_t len,
      uint64_t prp1, uint64_t prp2, NvmeRequest *req)
  {
-@@ -355,6 +598,57 @@ out:
+@@ -358,6 +601,57 @@ static uint16_t nvme_dma_read_prp(NvmeCtrl *n, uint8_t *ptr, uint32_t len,
      return err;
  }
  
@@ -334,7 +382,7 @@ index e2b772126f..f8c07803d0 100644
  static void nvme_blk_req_destroy(NvmeBlockBackendRequest *blk_req)
  {
      if (blk_req->iov.nalloc) {
-@@ -408,20 +702,25 @@ static uint16_t nvme_blk_map(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -411,20 +705,25 @@ static uint16_t nvme_blk_map(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
      uint16_t err;
  
      uint32_t len = req->nlb * nvme_ns_lbads_bytes(ns);
@@ -369,7 +417,7 @@ index e2b772126f..f8c07803d0 100644
  }
  
  static void nvme_post_cqes(void *opaque)
-@@ -984,25 +1283,18 @@ static uint16_t nvme_create_cq(NvmeCtrl *n, NvmeCmd *cmd)
+@@ -987,25 +1286,18 @@ static uint16_t nvme_create_cq(NvmeCtrl *n, NvmeCmd *cmd)
      return NVME_SUCCESS;
  }
  
@@ -400,7 +448,7 @@ index e2b772126f..f8c07803d0 100644
  
      trace_nvme_identify_ns(nsid);
  
-@@ -1013,17 +1305,15 @@ static uint16_t nvme_identify_ns(NvmeCtrl *n, NvmeIdentify *c,
+@@ -1016,17 +1308,15 @@ static uint16_t nvme_identify_ns(NvmeCtrl *n, NvmeIdentify *c,
  
      ns = &n->namespace;
  
@@ -414,7 +462,7 @@ index e2b772126f..f8c07803d0 100644
 +static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeCmd *cmd,
      NvmeRequest *req)
  {
-     static const int data_len = 4096;
+     static const int data_len = 4 * KiB;
 -    uint32_t min_nsid = le32_to_cpu(c->nsid);
 -    uint64_t prp1 = le64_to_cpu(c->prp1);
 -    uint64_t prp2 = le64_to_cpu(c->prp2);
@@ -422,7 +470,7 @@ index e2b772126f..f8c07803d0 100644
      uint32_t *list;
      uint16_t ret;
      int i, j = 0;
-@@ -1040,12 +1330,12 @@ static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeIdentify *c,
+@@ -1043,12 +1333,12 @@ static uint16_t nvme_identify_ns_list(NvmeCtrl *n, NvmeIdentify *c,
              break;
          }
      }
@@ -437,7 +485,7 @@ index e2b772126f..f8c07803d0 100644
      NvmeRequest *req)
  {
      static const int data_len = 4 * 1024;
-@@ -1063,9 +1353,7 @@ static uint16_t nvme_identify_ns_descriptor_list(NvmeCtrl *n, NvmeCmd *c,
+@@ -1066,9 +1356,7 @@ static uint16_t nvme_identify_ns_descriptor_list(NvmeCtrl *n, NvmeCmd *c,
          uint32_t nid;
      };
  
@@ -448,7 +496,7 @@ index e2b772126f..f8c07803d0 100644
  
      struct ns_descr *list;
      uint16_t ret;
-@@ -1082,7 +1370,7 @@ static uint16_t nvme_identify_ns_descriptor_list(NvmeCtrl *n, NvmeCmd *c,
+@@ -1085,7 +1373,7 @@ static uint16_t nvme_identify_ns_descriptor_list(NvmeCtrl *n, NvmeCmd *c,
      list->nidl = 0x10;
      list->nid = cpu_to_be32(nsid);
  
@@ -457,7 +505,7 @@ index e2b772126f..f8c07803d0 100644
      g_free(list);
      return ret;
  }
-@@ -1093,11 +1381,11 @@ static uint16_t nvme_identify(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1096,11 +1384,11 @@ static uint16_t nvme_identify(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  
      switch (le32_to_cpu(c->cns)) {
      case 0x00:
@@ -472,7 +520,7 @@ index e2b772126f..f8c07803d0 100644
      case 0x03:
          return nvme_identify_ns_descriptor_list(n, cmd, req);
      default:
-@@ -1149,13 +1437,10 @@ static inline uint64_t nvme_get_timestamp(const NvmeCtrl *n)
+@@ -1152,13 +1440,10 @@ static inline uint64_t nvme_get_timestamp(const NvmeCtrl *n)
  static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
      NvmeRequest *req)
  {
@@ -488,7 +536,7 @@ index e2b772126f..f8c07803d0 100644
  }
  
  static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
-@@ -1220,11 +1505,9 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
+@@ -1223,11 +1508,9 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
  {
      uint16_t ret;
      uint64_t timestamp;
@@ -502,7 +550,7 @@ index e2b772126f..f8c07803d0 100644
      if (ret != NVME_SUCCESS) {
          return ret;
      }
-@@ -1301,8 +1584,6 @@ static uint16_t nvme_error_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
+@@ -1304,8 +1587,6 @@ static uint16_t nvme_error_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
      uint32_t buf_len, uint64_t off, NvmeRequest *req)
  {
      uint32_t trans_len;
@@ -511,7 +559,7 @@ index e2b772126f..f8c07803d0 100644
  
      if (off > sizeof(*n->elpes) * (NVME_ELPE + 1)) {
          return NVME_INVALID_FIELD | NVME_DNR;
-@@ -1314,16 +1595,12 @@ static uint16_t nvme_error_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
+@@ -1317,16 +1598,12 @@ static uint16_t nvme_error_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
          nvme_clear_events(n, NVME_AER_TYPE_ERROR);
      }
  
@@ -529,7 +577,7 @@ index e2b772126f..f8c07803d0 100644
      uint32_t trans_len;
      time_t current_ms;
      NvmeSmartLog smart;
-@@ -1357,16 +1634,13 @@ static uint16_t nvme_smart_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
+@@ -1360,16 +1637,13 @@ static uint16_t nvme_smart_info(NvmeCtrl *n, NvmeCmd *cmd, uint8_t rae,
          nvme_clear_events(n, NVME_AER_TYPE_SMART);
      }
  
@@ -547,7 +595,7 @@ index e2b772126f..f8c07803d0 100644
      NvmeFwSlotInfoLog fw_log;
  
      if (off > sizeof(fw_log)) {
-@@ -1377,8 +1651,7 @@ static uint16_t nvme_fw_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint32_t buf_len,
+@@ -1380,8 +1654,7 @@ static uint16_t nvme_fw_log_info(NvmeCtrl *n, NvmeCmd *cmd, uint32_t buf_len,
  
      trans_len = MIN(sizeof(fw_log) - off, buf_len);
  
@@ -557,7 +605,7 @@ index e2b772126f..f8c07803d0 100644
  }
  
  
-@@ -2138,6 +2411,8 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -2141,6 +2414,8 @@ static void nvme_init_ctrl(NvmeCtrl *n)
          id->vwc = 1;
      }
  
@@ -567,10 +615,48 @@ index e2b772126f..f8c07803d0 100644
      qemu_uuid_unparse(&qemu_uuid,
          (char *) id->subnqn + strlen((char *) id->subnqn));
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index e12e9150eb..6e544c384b 100644
+index 5917adb47f..7704c39010 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
-@@ -206,15 +206,53 @@ enum NvmeCmbszMask {
+@@ -141,6 +141,12 @@ static inline bool nvme_rw_is_write(NvmeRequest *req)
+     return req->cmd.opcode == NVME_CMD_WRITE;
+ }
+ 
++static inline bool nvme_is_error(uint16_t status, uint16_t err)
++{
++    /* strip DNR and MORE */
++    return (status & 0xfff) == err;
++}
++
+ static inline uint8_t nvme_ns_lbads(NvmeNamespace *ns)
+ {
+     NvmeIdNs *id = &ns->id_ns;
+diff --git a/hw/block/trace-events b/hw/block/trace-events
+index b324751ad9..b239e92294 100644
+--- a/hw/block/trace-events
++++ b/hw/block/trace-events
+@@ -34,6 +34,7 @@ nvme_irq_pin(void) "pulsing IRQ pin"
+ nvme_irq_masked(void) "IRQ is masked"
+ nvme_dma_read(uint64_t prp1, uint64_t prp2) "DMA read, prp1=0x%"PRIx64" prp2=0x%"PRIx64""
+ nvme_map_prp(uint8_t cmd_opcode, uint64_t trans_len, uint32_t len, uint64_t prp1, uint64_t prp2, int num_prps) "cmd_opcode=0x%"PRIx8", trans_len=%"PRIu64", len=%"PRIu32", prp1=0x%"PRIx64", prp2=0x%"PRIx64", num_prps=%d"
++nvme_map_sgl(uint16_t cid, uint8_t typ, uint16_t nlb, uint64_t len) "cid %"PRIu16" type 0x%"PRIx8" nlb %"PRIu16" len %"PRIu64""
+ nvme_io_cmd(uint16_t cid, uint32_t nsid, uint8_t opcode) "cid %"PRIu16" nsid %"PRIu32" opc %"PRIu8""
+ nvme_rw(const char *verb, uint32_t blk_count, uint64_t byte_count, uint64_t lba) "%s %"PRIu32" blocks (%"PRIu64" bytes) from LBA %"PRIu64""
+ nvme_rw_cb(uint16_t cid, uint32_t nsid) "cid %"PRIu16" nsid %"PRIu32""
+@@ -76,6 +77,8 @@ nvme_mmio_shutdown_cleared(void) "shutdown bit cleared"
+ 
+ # nvme traces for error conditions
+ nvme_err(uint16_t cid, const char *s, uint16_t status) "cid %"PRIu16" \"%s\" status 0x%"PRIx16""
++nvme_err_invalid_sgl_descriptor(uint16_t cid, uint8_t typ) "cid %"PRIu16" type 0x%"PRIx8""
++nvme_err_invalid_sgl_excess_length(uint16_t cid) "cid %"PRIu16""
+ nvme_err_invalid_dma(void) "PRP/SGL is too small for transfer size"
+ nvme_err_invalid_prplist_ent(uint64_t prplist) "PRP list entry is null or not page aligned: 0x%"PRIx64""
+ nvme_err_invalid_prp2_align(uint64_t prp2) "PRP2 is not page aligned: 0x%"PRIx64""
+diff --git a/include/block/nvme.h b/include/block/nvme.h
+index a6ef8d8ff2..f79c71ba3f 100644
+--- a/include/block/nvme.h
++++ b/include/block/nvme.h
+@@ -205,15 +205,53 @@ enum NvmeCmbszMask {
  #define NVME_CMBSZ_GETSIZE(cmbsz) \
      (NVME_CMBSZ_SZ(cmbsz) * (1 << (12 + 4 * NVME_CMBSZ_SZU(cmbsz))))
  
@@ -628,7 +714,7 @@ index e12e9150eb..6e544c384b 100644
      uint32_t    cdw10;
      uint32_t    cdw11;
      uint32_t    cdw12;
-@@ -223,6 +261,9 @@ typedef struct NvmeCmd {
+@@ -222,6 +260,9 @@ typedef struct NvmeCmd {
      uint32_t    cdw15;
  } NvmeCmd;
  
@@ -638,7 +724,7 @@ index e12e9150eb..6e544c384b 100644
  enum NvmeAdminCommands {
      NVME_ADM_CMD_DELETE_SQ      = 0x00,
      NVME_ADM_CMD_CREATE_SQ      = 0x01,
-@@ -428,6 +469,11 @@ enum NvmeStatusCodes {
+@@ -427,6 +468,11 @@ enum NvmeStatusCodes {
      NVME_CMD_ABORT_MISSING_FUSE = 0x000a,
      NVME_INVALID_NSID           = 0x000b,
      NVME_CMD_SEQ_ERROR          = 0x000c,
@@ -650,7 +736,7 @@ index e12e9150eb..6e544c384b 100644
      NVME_INVALID_USE_OF_CMB     = 0x0012,
      NVME_LBA_RANGE              = 0x0080,
      NVME_CAP_EXCEEDED           = 0x0081,
-@@ -624,6 +670,16 @@ enum NvmeIdCtrlOncs {
+@@ -623,6 +669,16 @@ enum NvmeIdCtrlOncs {
  #define NVME_CTRL_CQES_MIN(cqes) ((cqes) & 0xf)
  #define NVME_CTRL_CQES_MAX(cqes) (((cqes) >> 4) & 0xf)
  
@@ -667,40 +753,3 @@ index e12e9150eb..6e544c384b 100644
  typedef struct NvmeFeatureVal {
      uint32_t    arbitration;
      uint32_t    power_mgmt;
-@@ -888,6 +944,12 @@ static inline bool nvme_rw_is_write(NvmeRequest *req)
-     return req->cmd.opcode == NVME_CMD_WRITE;
- }
- 
-+static inline bool nvme_is_error(uint16_t status, uint16_t err)
-+{
-+    /* strip DNR and MORE */
-+    return (status & 0xfff) == err;
-+}
-+
- static inline uint8_t nvme_ns_lbads(NvmeNamespace *ns)
- {
-     NvmeIdNs *id = &ns->id_ns;
-diff --git a/hw/block/trace-events b/hw/block/trace-events
-index accfb7d13a..7a93aa9ad7 100644
---- a/hw/block/trace-events
-+++ b/hw/block/trace-events
-@@ -18,6 +18,7 @@ nvme_irq_pin(void) "pulsing IRQ pin"
- nvme_irq_masked(void) "IRQ is masked"
- nvme_dma_read(uint64_t prp1, uint64_t prp2) "DMA read, prp1=0x%"PRIx64" prp2=0x%"PRIx64""
- nvme_map_prp(uint8_t cmd_opcode, uint64_t trans_len, uint32_t len, uint64_t prp1, uint64_t prp2, int num_prps) "cmd_opcode=0x%"PRIx8", trans_len=%"PRIu64", len=%"PRIu32", prp1=0x%"PRIx64", prp2=0x%"PRIx64", num_prps=%d"
-+nvme_map_sgl(uint16_t cid, uint8_t typ, uint16_t nlb, uint64_t len) "cid %"PRIu16" type 0x%"PRIx8" nlb %"PRIu16" len %"PRIu64""
- nvme_io_cmd(uint16_t cid, uint32_t nsid, uint8_t opcode) "cid %"PRIu16" nsid %"PRIu32" opc %"PRIu8""
- nvme_rw(char const *verb, uint32_t blk_count, uint64_t byte_count, uint64_t lba) "%s %"PRIu32" blocks (%"PRIu64" bytes) from LBA %"PRIu64""
- nvme_rw_cb(uint16_t cid, uint32_t nsid) "cid %"PRIu16" nsid %"PRIu32""
-@@ -60,6 +61,8 @@ nvme_mmio_shutdown_cleared(void) "shutdown bit cleared"
- 
- # nvme traces for error conditions
- nvme_err(uint16_t cid, const char *s, uint16_t status) "cid %"PRIu16" \"%s\" status 0x%"PRIx16""
-+nvme_err_invalid_sgl_descriptor(uint16_t cid, uint8_t typ) "cid %"PRIu16" type 0x%"PRIx8""
-+nvme_err_invalid_sgl_excess_length(uint16_t cid) "cid %"PRIu16""
- nvme_err_invalid_dma(void) "PRP/SGL is too small for transfer size"
- nvme_err_invalid_prplist_ent(uint64_t prplist) "PRP list entry is null or not page aligned: 0x%"PRIx64""
- nvme_err_invalid_prp2_align(uint64_t prp2) "PRP2 is not page aligned: 0x%"PRIx64""
--- 
-2.21.0
-

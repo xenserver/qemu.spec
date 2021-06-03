@@ -1,30 +1,18 @@
-diff --git a/Makefile.target b/Makefile.target
-index 7f42c45..33e448d 100644
---- a/Makefile.target
-+++ b/Makefile.target
-@@ -102,6 +102,7 @@ obj-y += target/$(TARGET_BASE_ARCH)/
- obj-y += disas.o
- obj-$(call notempty,$(TARGET_XML_FILES)) += gdbstub-xml.o
- obj-$(call lnot,$(CONFIG_HAX)) += hax-stub.o
-+obj-$(call lnot,$(CONFIG_VGT)) += hw/display/vgt-stub.o
- 
- obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decContext.o
- obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
 diff --git a/configure b/configure
-index 130e224..4aea2f3 100755
+index 6099be1d84..f92f7d6e69 100755
 --- a/configure
 +++ b/configure
-@@ -303,6 +303,7 @@ libattr=""
+@@ -377,6 +377,7 @@ libattr=""
  xfs=""
  tcg="yes"
- 
+ membarrier=""
 +vgt="yes"
- vhost_net="no"
- vhost_scsi="no"
- vhost_vsock="no"
-@@ -940,6 +941,10 @@ for opt do
+ vhost_net=""
+ vhost_crypto=""
+ vhost_scsi=""
+@@ -1067,6 +1068,10 @@ for opt do
    ;;
-   --with-sdlabi=*) sdlabi="$optarg"
+   --enable-sdl-image) sdl_image="yes"
    ;;
 +  --disable-vgt) vgt="no"
 +  ;;
@@ -33,44 +21,39 @@ index 130e224..4aea2f3 100755
    --disable-qom-cast-debug) qom_cast_debug="no"
    ;;
    --enable-qom-cast-debug) qom_cast_debug="yes"
-@@ -1480,9 +1485,11 @@ disabled with --disable-FEATURE, default is enabled if available:
-   nettle          nettle cryptography support
-   gcrypt          libgcrypt cryptography support
+@@ -1745,6 +1750,8 @@ disabled with --disable-FEATURE, default is enabled if available:
+   auth-pam        PAM access control
    sdl             SDL UI
--  --with-sdlabi     select preferred SDL ABI 1.2 or 2.0
-+  --with-sdlabi   select preferred SDL ABI 1.2 or 2.0
+   sdl-image       SDL Image support for icons
 +  --disable-vgt   disable Intel GVT-g technology
 +  --enable-vgt    enable Intel GVT-g technology
    gtk             gtk UI
--  --with-gtkabi     select preferred GTK ABI 2.0 or 3.0
-+  --with-gtkabi   select preferred GTK ABI 2.0 or 3.0
    vte             vte support for the gtk UI
    curses          curses UI
-   vnc             VNC UI support
-@@ -2806,6 +2813,12 @@ EOF
+@@ -3163,6 +3170,12 @@ EOF
+   fi
  fi
  
- ##########################################
++##########################################
 +# Intel GVT-g detection
 +if test "$vgt" = "yes" ; then
 +  vgt="yes"
 +fi
 +
-+##########################################
+ ##########################################
  # RDMA needs OpenFabrics libraries
  if test "$rdma" != "no" ; then
-   cat > $TMPC <<EOF
-@@ -5309,6 +5322,7 @@ if test "$darwin" = "yes" ; then
+@@ -6470,6 +6483,7 @@ if test "$darwin" = "yes" ; then
  fi
- echo "pixman            $pixman"
  echo "SDL support       $sdl $(echo_version $sdl $sdlversion)"
+ echo "SDL image support $sdl_image"
 +echo "Intel GVT-g support $vgt"
  echo "GTK support       $gtk $(echo_version $gtk $gtk_version)"
  echo "GTK GL support    $gtk_gl"
  echo "VTE support       $vte $(echo_version $vte $vteversion)"
-@@ -5602,6 +5616,9 @@ if test "$sdl" = "yes" ; then
-   echo "CONFIG_SDLABI=$sdlabi" >> $config_host_mak
-   echo "SDL_CFLAGS=$sdl_cflags" >> $config_host_mak
+@@ -6827,6 +6841,9 @@ if test "$sdl" = "yes" ; then
+       echo "CONFIG_SDL_IMAGE=y" >> $config_host_mak
+   fi
  fi
 +if test "$vgt" = "yes" ; then
 +  echo "CONFIG_VGT=y" >> $config_host_mak
@@ -79,14 +62,16 @@ index 130e224..4aea2f3 100755
    echo "CONFIG_COCOA=y" >> $config_host_mak
  fi
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 86c0e28..098d48d 100644
+index b3772f3962..95838d5937 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
-@@ -1,5 +1,9 @@
+@@ -7,6 +7,11 @@ common-obj-$(CONFIG_FW_CFG_DMA) += ramfb-standalone.o
  common-obj-$(CONFIG_ADS7846) += ads7846.o
  common-obj-$(CONFIG_VGA_CIRRUS) += cirrus_vga.o
+ common-obj-$(call land,$(CONFIG_VGA_CIRRUS),$(CONFIG_VGA_ISA))+=cirrus_vga_isa.o
 +obj-$(CONFIG_VGT) += vgt_vga.o
 +obj-$(CONFIG_VGT) += vgt_console.o intel-tools/
++obj-$(call lnot,$(CONFIG_VGT)) += vgt-stub.o
 +vgt_console.o-cflags := -I/usr/include/libdrm
 +vgt_console.o-libs := -ldrm -ldrm_intel
  common-obj-$(CONFIG_G364FB) += g364fb.o
@@ -94,7 +79,7 @@ index 86c0e28..098d48d 100644
  common-obj-$(CONFIG_PL110) += pl110.o
 diff --git a/hw/display/intel-tools/Makefile.objs b/hw/display/intel-tools/Makefile.objs
 new file mode 100644
-index 0000000..6fa4960
+index 0000000000..6fa4960821
 --- /dev/null
 +++ b/hw/display/intel-tools/Makefile.objs
 @@ -0,0 +1,5 @@
@@ -105,7 +90,7 @@ index 0000000..6fa4960
 +intel_chipset.o-libs := -ldrm -ldrm_intel
 diff --git a/hw/display/intel-tools/igt_debug.h b/hw/display/intel-tools/igt_debug.h
 new file mode 100644
-index 0000000..d424f72
+index 0000000000..d424f72e44
 --- /dev/null
 +++ b/hw/display/intel-tools/igt_debug.h
 @@ -0,0 +1,68 @@
@@ -179,7 +164,7 @@ index 0000000..d424f72
 +#endif /* IGT_DEBUG_H */
 diff --git a/hw/display/intel-tools/intel_batchbuffer.c b/hw/display/intel-tools/intel_batchbuffer.c
 new file mode 100644
-index 0000000..992d002
+index 0000000000..992d002c22
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.c
 @@ -0,0 +1,393 @@
@@ -578,7 +563,7 @@ index 0000000..992d002
 +
 diff --git a/hw/display/intel-tools/intel_batchbuffer.h b/hw/display/intel-tools/intel_batchbuffer.h
 new file mode 100644
-index 0000000..7f8876f
+index 0000000000..7f8876f8e0
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_batchbuffer.h
 @@ -0,0 +1,200 @@
@@ -784,7 +769,7 @@ index 0000000..7f8876f
 +#endif
 diff --git a/hw/display/intel-tools/intel_chipset.c b/hw/display/intel-tools/intel_chipset.c
 new file mode 100644
-index 0000000..d1217ad
+index 0000000000..d1217ad271
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.c
 @@ -0,0 +1,115 @@
@@ -905,7 +890,7 @@ index 0000000..d1217ad
 +}
 diff --git a/hw/display/intel-tools/intel_chipset.h b/hw/display/intel-tools/intel_chipset.h
 new file mode 100644
-index 0000000..378ee00
+index 0000000000..378ee004a5
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_chipset.h
 @@ -0,0 +1,522 @@
@@ -1433,7 +1418,7 @@ index 0000000..378ee00
 +#endif /* _INTEL_CHIPSET_H */
 diff --git a/hw/display/intel-tools/intel_reg.h b/hw/display/intel-tools/intel_reg.h
 new file mode 100644
-index 0000000..0ffa803
+index 0000000000..92380c1671
 --- /dev/null
 +++ b/hw/display/intel-tools/intel_reg.h
 @@ -0,0 +1,3618 @@
@@ -4044,7 +4029,7 @@ index 0000000..0ffa803
 +   Dfp2Index,
 +   Lfp2Index,
 +   NumDisplayTypes
-+} DisplayType;
++} IntelPipeDisplayType;
 +
 +/* What's connected to the pipes (as reported by the BIOS) */
 +#define PIPE_ACTIVE_MASK		0xff
@@ -5056,10 +5041,18 @@ index 0000000..0ffa803
 +
 +#endif /* _I810_REG_H */
 diff --git a/hw/display/vga.c b/hw/display/vga.c
-index b6be2b4..fcf2586 100644
+index fc81eb77ff..f38e8ebb26 100644
 --- a/hw/display/vga.c
 +++ b/hw/display/vga.c
-@@ -1746,6 +1746,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
+@@ -28,6 +28,7 @@
+ #include "qapi/error.h"
+ #include "hw/i386/pc.h"
+ #include "hw/display/vga.h"
++#include "hw/display/vgt_vga.h"
+ #include "hw/pci/pci.h"
+ #include "vga_int.h"
+ #include "vga_regs.h"
+@@ -1758,6 +1759,7 @@ static void vga_draw_blank(VGACommonState *s, int full_update)
  #define GMODE_TEXT     0
  #define GMODE_GRAPH    1
  #define GMODE_BLANK 2
@@ -5067,7 +5060,7 @@ index b6be2b4..fcf2586 100644
  
  static void vga_update_display(void *opaque)
  {
-@@ -1759,7 +1760,9 @@ static void vga_update_display(void *opaque)
+@@ -1771,7 +1773,9 @@ static void vga_update_display(void *opaque)
          /* nothing to do */
      } else {
          full_update = 0;
@@ -5078,17 +5071,19 @@ index b6be2b4..fcf2586 100644
              graphic_mode = GMODE_BLANK;
          } else {
              graphic_mode = s->gr[VGA_GFX_MISC] & VGA_GR06_GRAPHICS_MODE;
-@@ -1770,6 +1773,9 @@ static void vga_update_display(void *opaque)
+@@ -1782,6 +1786,11 @@ static void vga_update_display(void *opaque)
              full_update = 1;
          }
          switch(graphic_mode) {
++#ifdef CONFIG_VGT
 +        case GMODE_XENGT:
 +            xengt_draw_primary(s->con, full_update);
 +            break;
++#endif
          case GMODE_TEXT:
              vga_draw_text(s, full_update);
              break;
-@@ -2294,7 +2300,7 @@ void vga_init(VGACommonState *s, Object *obj, MemoryRegion *address_space,
+@@ -2306,7 +2315,7 @@ void vga_init(VGACommonState *s, Object *obj, MemoryRegion *address_space,
      }
      s->vbe_extended = object_property_get_bool(qdev_get_machine(),
                                                 PC_MACHINE_TRAD_COMPAT,
@@ -5099,7 +5094,7 @@ index b6be2b4..fcf2586 100644
  void vga_init_vbe(VGACommonState *s, Object *obj, MemoryRegion *system_memory)
 diff --git a/hw/display/vgt-stub.c b/hw/display/vgt-stub.c
 new file mode 100644
-index 0000000..f6571ba
+index 0000000000..943a050eaa
 --- /dev/null
 +++ b/hw/display/vgt-stub.c
 @@ -0,0 +1,32 @@
@@ -5112,20 +5107,17 @@ index 0000000..f6571ba
 + * the COPYING file in the top-level directory.
 + *
 + */
-+#include "hw/hw.h"
-+#include "ui/console.h"
-+#include "hw/i386/pc.h"
++#include "qemu/osdep.h"
++#include "hw/display/vgt_vga.h"
 +
-+DeviceState *vgt_vga_init(PCIBus *pci_bus)
++bool vgt_vga_enabled;
++PCIDevice *vgt_bridge = NULL;
++
++void vgt_vga_init(PCIBus *pci_bus)
 +{
-+    return NULL;
 +}
 +
 +void vgt_bridge_pci_conf_init(PCIDevice *pdev)
-+{
-+}
-+
-+void vgt_kvm_set_opregion_addr(uint32_t addr)
 +{
 +}
 +
@@ -5134,13 +5126,16 @@ index 0000000..f6571ba
 +{
 +}
 +
-+
++bool xengt_is_enabled(void)
++{
++    return false;
++}
 diff --git a/hw/display/vgt_console.c b/hw/display/vgt_console.c
 new file mode 100644
-index 0000000..2f9f79f
+index 0000000000..08c0dfdcf2
 --- /dev/null
 +++ b/hw/display/vgt_console.c
-@@ -0,0 +1,529 @@
+@@ -0,0 +1,530 @@
 +/*
 + * QEMU vGT/XenGT Console support
 + *
@@ -5165,9 +5160,10 @@ index 0000000..2f9f79f
 + * THE SOFTWARE.
 + */
 +#include "qemu/osdep.h"
++#include "sysemu/sysemu.h"
 +#include "hw/hw.h"
 +#include "ui/console.h"
-+#include "hw/i386/pc.h"
++#include "hw/display/vgt_vga.h"
 +#include "vga_int.h"
 +#include "ui/pixel_ops.h"
 +#include "qemu/timer.h"
@@ -5672,10 +5668,10 @@ index 0000000..2f9f79f
 +}
 diff --git a/hw/display/vgt_vga.c b/hw/display/vgt_vga.c
 new file mode 100644
-index 0000000..4207a06
+index 0000000000..5e39c6c11d
 --- /dev/null
 +++ b/hw/display/vgt_vga.c
-@@ -0,0 +1,330 @@
+@@ -0,0 +1,340 @@
 +/*
 + * QEMU vGT/XenGT Legacy VGA support
 + *
@@ -5702,9 +5698,10 @@ index 0000000..4207a06
 + * THE SOFTWARE.
 + */
 +#include "qemu/osdep.h"
++#include "sysemu/sysemu.h"
 +#include "hw/hw.h"
 +#include "ui/console.h"
-+#include "hw/i386/pc.h"
++#include "hw/display/vgt_vga.h"
 +#include "hw/pci/pci.h"
 +#include "hw/pci/pci_host.h"
 +#include "hw/pci/pci_bridge.h"
@@ -5744,6 +5741,9 @@ index 0000000..4207a06
 +int vgt_primary = 1; /* -1 means "not specified */
 +int guest_domid = 0;
 +int vgt_cap = 0;
++
++/* For vga_common_init hook */
++PCIDevice *vgt_bridge = NULL;
 +
 +/*
 + *  Inform vGT driver to create a vGT instance
@@ -5898,7 +5898,7 @@ index 0000000..4207a06
 +    assert(pdev != NULL && host_dev != NULL);
 +
 +    host_dev->addr.domain = 0;
-+    host_dev->addr.bus = pci_bus_num(pdev->bus);
++    host_dev->addr.bus = pci_bus_num(pci_get_bus(pdev));
 +    host_dev->addr.slot = PCI_SLOT(pdev->devfn);
 +    host_dev->addr.function = PCI_FUNC(pdev->devfn);
 +}
@@ -5992,12 +5992,18 @@ index 0000000..4207a06
 +    create_vgt_instance();
 +
 +    printf("Create vgt VGA successfully\n");
++
++    vgt_bridge = dev;
 +}
 +
 +static TypeInfo isa_info = {
 +    .name          = "vgt-isa",
 +    .parent        = TYPE_PCI_BRIDGE,
 +    .instance_size = sizeof(PCIBridge),
++    .interfaces = (InterfaceInfo[]) {
++        { INTERFACE_CONVENTIONAL_PCI_DEVICE },
++        { },
++    },
 +};
 +
 +static void vgt_register_types(void)
@@ -6007,12 +6013,20 @@ index 0000000..4207a06
 +
 +type_init(vgt_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 122f156..f203cc4 100644
+index 9c324a66cf..f06bcbb9e1 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -228,6 +228,14 @@ static void pc_init1(MachineState *machine,
- 
-     pc_register_ferr_irq(pcms->gsi[13]);
+@@ -34,6 +34,7 @@
+ #include "hw/southbridge/piix.h"
+ #include "hw/display/ramfb.h"
+ #include "hw/display/vgpu.h"
++#include "hw/display/vgt_vga.h"
+ #include "hw/firmware/smbios.h"
+ #include "hw/pci/pci.h"
+ #include "hw/pci/pci_ids.h"
+@@ -225,6 +226,14 @@ static void pc_init1(MachineState *machine,
+         x86_register_ferr_irq(x86ms->gsi[13]);
+     }
  
 +    /*
 +     * Initialize XenGT hooks before normal VGA init.
@@ -6026,10 +6040,18 @@ index 122f156..f203cc4 100644
  
      assert(pcms->vmport != ON_OFF_AUTO__MAX);
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index e75b4a6..8c48d83 100644
+index b9b4250f8c..ab0b4e7f29 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -1424,6 +1424,35 @@ void destroy_hvm_domain(bool reboot)
+@@ -17,6 +17,7 @@
+ #include "hw/southbridge/piix.h"
+ #include "hw/irq.h"
+ #include "hw/hw.h"
++#include "hw/display/vgt_vga.h"
+ #include "hw/i386/apic-msidef.h"
+ #include "hw/xen/xen_common.h"
+ #include "hw/xen/xen-legacy-backend.h"
+@@ -1574,6 +1575,25 @@ void destroy_hvm_domain(bool reboot)
  void xen_register_framebuffer(MemoryRegion *mr)
  {
      framebuffer = mr;
@@ -6045,16 +6067,6 @@ index e75b4a6..8c48d83 100644
 +     * VBE_DISPI_INDEX_LFB_ADDRESS_H register.
 +     */
 +    if (vgt_vga_enabled) {
-+        PCIBus *bus;
-+        PCIDevice *vgt_bridge;
-+
-+        bus = pci_find_primary_bus();
-+        if (!bus) {
-+            DPRINTF("Could not find primary bus!");
-+            return;
-+        }
-+
-+        vgt_bridge = pci_find_device(bus, 0, PCI_DEVFN(0x1f, 0));
 +        if (!vgt_bridge) {
 +            DPRINTF("Could not find VGT bridge!");
 +            return;
@@ -6065,11 +6077,25 @@ index e75b4a6..8c48d83 100644
  }
  
  void xen_shutdown_fatal_error(const char *fmt, ...)
-diff --git a/hw/pci-host/piix.c b/hw/pci-host/piix.c
-index 072a04e..15e818d 100644
---- a/hw/pci-host/piix.c
-+++ b/hw/pci-host/piix.c
-@@ -309,6 +309,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
+diff --git a/hw/pci-host/i440fx.c b/hw/pci-host/i440fx.c
+index f27131102d..866ba6e95e 100644
+--- a/hw/pci-host/i440fx.c
++++ b/hw/pci-host/i440fx.c
+@@ -29,11 +29,13 @@
+ #include "hw/pci-host/i440fx.h"
+ #include "hw/qdev-properties.h"
+ #include "hw/sysbus.h"
++#include "hw/xen/xen.h"
+ #include "qapi/error.h"
+ #include "migration/vmstate.h"
+ #include "hw/pci-host/pam.h"
+ #include "qapi/visitor.h"
+ #include "qemu/error-report.h"
++#include "hw/display/vgt_vga.h"
+ 
+ /*
+  * I440FX chipset data sheet.
+@@ -267,6 +269,10 @@ static void i440fx_realize(PCIDevice *dev, Error **errp)
      if (object_property_get_bool(qdev_get_machine(), "iommu", NULL)) {
          warn_report("i440fx doesn't support emulated iommu");
      }
@@ -6080,49 +6106,45 @@ index 072a04e..15e818d 100644
  }
  
  PCIBus *i440fx_init(const char *host_type, const char *pci_type,
-diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index e8ff0cb..f3fa855 100644
---- a/include/hw/i386/pc.h
-+++ b/include/hw/i386/pc.h
-@@ -332,6 +332,18 @@ int isa_vga_mm_init(hwaddr vram_base,
-                     hwaddr ctrl_base, int it_shift,
-                     MemoryRegion *address_space);
- 
-+/* vgt_vga.c */
+diff --git a/include/hw/display/vgt_vga.h b/include/hw/display/vgt_vga.h
+new file mode 100644
+index 0000000000..26d6768338
+--- /dev/null
++++ b/include/hw/display/vgt_vga.h
+@@ -0,0 +1,28 @@
++/*
++ * QEMU VGA Emulator.
++ *
++ * Copyright (c) Citrix Systems, Inc
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2 or later.
++ * See the COPYING file in the top-level directory.
++ */
++#ifndef QEMU_HW_DISPLAY_VGT_VGA_H
++#define QEMU_HW_DISPLAY_VGT_VGA_H
++
 +extern bool vgt_vga_enabled;
 +extern int vgt_low_gm_sz;
 +extern int vgt_high_gm_sz;
 +extern int vgt_fence_sz;
 +extern int vgt_cap;
++extern PCIDevice *vgt_bridge;
 +
 +void vgt_vga_init(PCIBus *pci_bus);
 +void vgt_bridge_pci_conf_init(PCIDevice *dev);
 +void vgt_bridge_pci_write(PCIDevice *dev,
 +                          uint32_t address, uint32_t val, int len);
 +
- /* ne2000.c */
- static inline bool isa_ne2000_init(ISABus *bus, int base, int irq, NICInfo *nd)
- {
-diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
-index b064a55..dcc38ab 100644
---- a/include/sysemu/sysemu.h
-+++ b/include/sysemu/sysemu.h
-@@ -106,6 +106,10 @@ typedef enum {
- extern int vga_interface_type;
- #define xenfb_enabled (vga_interface_type == VGA_XENFB)
- 
 +void xengt_drm_init(void);
 +bool xengt_is_enabled(void);
 +void xengt_draw_primary(QemuConsole *con, int full_update);
 +
- extern int graphic_width;
- extern int graphic_height;
- extern int graphic_depth;
++#endif
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 8d7dac9..26f7bb3 100644
+index f970e84989..ebf8ccfa00 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1550,6 +1550,53 @@ Disable VGA card.
+@@ -1866,6 +1866,53 @@ Disable VGA card.
  @end table
  ETEXI
  
@@ -6177,12 +6199,20 @@ index 8d7dac9..26f7bb3 100644
      "-full-screen    start in full screen\n", QEMU_ARCH_ALL)
  STEXI
 diff --git a/vl.c b/vl.c
-index bbafe4c..38526e8 100644
+index 42d99a1f21..1a6753347f 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -4195,6 +4195,35 @@ int main(int argc, char **argv, char **envp)
-                     exit(1);
-                 }
+@@ -62,6 +62,7 @@ int main(int argc, char **argv)
+ #include "hw/isa/isa.h"
+ #include "hw/scsi/scsi.h"
+ #include "hw/display/vga.h"
++#include "hw/display/vgt_vga.h"
+ #include "hw/bt.h"
+ #include "sysemu/watchdog.h"
+ #include "hw/firmware/smbios.h"
+@@ -3829,6 +3830,35 @@ int main(int argc, char **argv, char **envp)
+             case QEMU_OPTION_nouserconfig:
+                 /* Nothing to be parsed here. Especially, do not error out below. */
                  break;
 +#ifdef CONFIG_VGT
 +            case QEMU_OPTION_xengt:
@@ -6214,5 +6244,5 @@ index bbafe4c..38526e8 100644
 +		break;
 +#endif
              default:
-                 os_parse_cmd_args(popt->index, optarg);
-             }
+                 if (os_parse_cmd_args(popt->index, optarg)) {
+                     error_report("Option not supported in this build");

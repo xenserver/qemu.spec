@@ -6,10 +6,10 @@ Like many QMP commands, it returns nothing on success (if the VM is
 migratable). If the VM is not migratable, it returns an error message
 indicating which device is preventing migration.
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 3b865752d0..3b8a6a918e 100644
+index 47c7bc0808..01a5f5abb9 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
-@@ -2207,6 +2207,11 @@ int save_snapshot(const char *name, Error **errp)
+@@ -2652,6 +2652,11 @@ int save_snapshot(const char *name, Error **errp)
      return ret;
  }
  
@@ -18,16 +18,16 @@ index 3b865752d0..3b8a6a918e 100644
 +    qemu_savevm_state_blocked(errp);
 +}
 +
- void qmp_xen_save_devices_state(const char *filename, Error **errp)
+ void qmp_xen_save_devices_state(const char *filename, bool has_live, bool live,
+                                 Error **errp)
  {
-     QEMUFile *f;
-diff --git a/qapi-schema.json b/qapi-schema.json
-index 417a8f1928..c0e4afbd3e 100644
---- a/qapi-schema.json
-+++ b/qapi-schema.json
-@@ -3261,6 +3261,23 @@
- ##
- { 'command': 'migrate-incoming', 'data': {'uri': 'str' } }
+diff --git a/qapi/misc.json b/qapi/misc.json
+index b91ac34d88..5367459153 100644
+--- a/qapi/misc.json
++++ b/qapi/misc.json
+@@ -1617,6 +1617,23 @@
+           }
+ }
  
 +##
 +# @query-migratable:
@@ -47,5 +47,5 @@ index 417a8f1928..c0e4afbd3e 100644
 +{ 'command': 'query-migratable' }
 +
  ##
- # @xen-save-devices-state:
+ # @query-memory-devices:
  #

@@ -11,14 +11,8 @@ Required for compliance with NVMe revision 1.2.1. See NVM Express 1.2.1,
 Section 5.10 ("Get Log Page command").
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
----
- hw/block/nvme.c       | 209 ++++++++++++++++++++++++++++++++++++++++++
- hw/block/nvme.h       |   7 +-
- hw/block/trace-events |   3 +
- 3 files changed, 217 insertions(+), 2 deletions(-)
-
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 3d0b6d2b9d..236e8eb7d3 100644
+index a09a14ebe3..7f784a0265 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -37,6 +37,8 @@
@@ -325,21 +319,10 @@ index 3d0b6d2b9d..236e8eb7d3 100644
  
      if (n->params.cmb_size_mb) {
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index 0f3b109a6c..79449a45d6 100644
+index fff4c2d1d0..548a2f20d7 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
-@@ -387,8 +387,8 @@ enum NvmeAsyncEventRequest {
-     NVME_AER_TYPE_SMART                     = 1,
-     NVME_AER_TYPE_IO_SPECIFIC               = 6,
-     NVME_AER_TYPE_VENDOR_SPECIFIC           = 7,
--    NVME_AER_INFO_ERR_INVALID_SQ            = 0,
--    NVME_AER_INFO_ERR_INVALID_DB            = 1,
-+    NVME_AER_INFO_ERR_INVALID_DB_REGISTER   = 0,
-+    NVME_AER_INFO_ERR_INVALID_DB_VALUE      = 1,
-     NVME_AER_INFO_ERR_DIAG_FAIL             = 2,
-     NVME_AER_INFO_ERR_PERS_INTERNAL_ERR     = 3,
-     NVME_AER_INFO_ERR_TRANS_INTERNAL_ERR    = 4,
-@@ -799,6 +799,8 @@ typedef struct NvmeCtrl {
+@@ -77,6 +77,8 @@ typedef struct NvmeCtrl {
      BlockConf    conf;
      NvmeParams   params;
  
@@ -348,7 +331,7 @@ index 0f3b109a6c..79449a45d6 100644
      uint32_t    page_size;
      uint16_t    page_bits;
      uint16_t    max_prp_ents;
-@@ -821,6 +823,7 @@ typedef struct NvmeCtrl {
+@@ -99,6 +101,7 @@ typedef struct NvmeCtrl {
      NvmeRequest **aer_reqs;
      QSIMPLEQ_HEAD(, NvmeAsyncEvent) aer_queue;
  
@@ -357,7 +340,7 @@ index 0f3b109a6c..79449a45d6 100644
      NvmeSQueue      **sq;
      NvmeCQueue      **cq;
 diff --git a/hw/block/trace-events b/hw/block/trace-events
-index 8882725903..1221366b9b 100644
+index 4273e3be8d..cd5343b55f 100644
 --- a/hw/block/trace-events
 +++ b/hw/block/trace-events
 @@ -30,6 +30,7 @@ nvme_getfeat_numq(int result) "get feature number of queues, result=%d"
@@ -384,6 +367,18 @@ index 8882725903..1221366b9b 100644
  nvme_err_startfail_cq(void) "nvme_start_ctrl failed because there are non-admin completion queues"
  nvme_err_startfail_sq(void) "nvme_start_ctrl failed because there are non-admin submission queues"
  nvme_err_startfail_nbarasq(void) "nvme_start_ctrl failed because the admin submission queue address is null"
--- 
-2.21.0
-
+diff --git a/include/block/nvme.h b/include/block/nvme.h
+index 1b0accd4fe..5a10b8b674 100644
+--- a/include/block/nvme.h
++++ b/include/block/nvme.h
+@@ -386,8 +386,8 @@ enum NvmeAsyncEventRequest {
+     NVME_AER_TYPE_SMART                     = 1,
+     NVME_AER_TYPE_IO_SPECIFIC               = 6,
+     NVME_AER_TYPE_VENDOR_SPECIFIC           = 7,
+-    NVME_AER_INFO_ERR_INVALID_SQ            = 0,
+-    NVME_AER_INFO_ERR_INVALID_DB            = 1,
++    NVME_AER_INFO_ERR_INVALID_DB_REGISTER   = 0,
++    NVME_AER_INFO_ERR_INVALID_DB_VALUE      = 1,
+     NVME_AER_INFO_ERR_DIAG_FAIL             = 2,
+     NVME_AER_INFO_ERR_PERS_INTERNAL_ERR     = 3,
+     NVME_AER_INFO_ERR_TRANS_INTERNAL_ERR    = 4,

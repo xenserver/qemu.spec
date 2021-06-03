@@ -4,17 +4,12 @@ Date: Tue, 31 Mar 2020 08:38:15 +0000
 Subject: [PATCH] CP-33348 - Allow media replace qmp command to take a numeric
  socket fds for nbd.
 
----
- block/nbd.c         | 39 +++++++++++----------------------------
- util/qemu-sockets.c | 24 +++++++++++++++++++-----
- 2 files changed, 30 insertions(+), 33 deletions(-)
-
 diff --git a/block/nbd.c b/block/nbd.c
-index a50d24b50a..e77cf34605 100644
+index eb380102c0..251b695f56 100644
 --- a/block/nbd.c
 +++ b/block/nbd.c
-@@ -192,10 +192,13 @@ static void nbd_parse_filename(const char *filename, QDict *options,
-         goto out;
+@@ -1645,10 +1645,13 @@ static void nbd_parse_filename(const char *filename, QDict *options,
+         return;
      }
  
 -    /* are we a UNIX or TCP socket? */
@@ -28,11 +23,10 @@ index a50d24b50a..e77cf34605 100644
      } else {
          InetSocketAddress *addr = g_new(InetSocketAddress, 1);
  
-@@ -262,40 +265,20 @@ static SocketAddress *nbd_config(BDRVNBDState *s, QDict *options,
+@@ -1712,29 +1715,21 @@ static SocketAddress *nbd_config(BDRVNBDState *s, QDict *options,
  {
      SocketAddress *saddr = NULL;
      QDict *addr = NULL;
--    QObject *crumpled_addr = NULL;
 -    Visitor *iv = NULL;
 -    Error *local_err = NULL;
 -
@@ -46,21 +40,12 @@ index a50d24b50a..e77cf34605 100644
          error_setg(errp, "NBD server address missing");
          goto done;
      }
--
--    crumpled_addr = qdict_crumple(addr, errp);
--    if (!crumpled_addr) {
+ 
+-    iv = qobject_input_visitor_new_flat_confused(addr, errp);
+-    if (!iv) {
 -        goto done;
 -    }
 -
--    /*
--     * FIXME .numeric, .to, .ipv4 or .ipv6 don't work with -drive
--     * server.type=inet.  .to doesn't matter, it's ignored anyway.
--     * That's because when @options come from -blockdev or
--     * blockdev_add, members are typed according to the QAPI schema,
--     * but when they come from -drive, they're all QString.  The
--     * visitor expects the former.
--     */
--    iv = qobject_input_visitor_new(crumpled_addr);
 -    visit_type_SocketAddress(iv, NULL, &saddr, &local_err);
 -    if (local_err) {
 -        error_propagate(errp, local_err);
@@ -70,17 +55,16 @@ index a50d24b50a..e77cf34605 100644
 +    uri = qdict_get_str(addr, "uri");
 +    saddr = socket_parse(uri, errp);
  done:
-     QDECREF(addr);
--    qobject_decref(crumpled_addr);
+     qobject_unref(addr);
 -    visit_free(iv);
      return saddr;
  }
  
 diff --git a/util/qemu-sockets.c b/util/qemu-sockets.c
-index dfeff50cd5..52f704e876 100644
+index bcc06d0e01..694b262dc8 100644
 --- a/util/qemu-sockets.c
 +++ b/util/qemu-sockets.c
-@@ -1042,14 +1042,22 @@ fail:
+@@ -1068,18 +1068,26 @@ SocketAddress *socket_parse(const char *str, Error **errp)
      return NULL;
  }
  
@@ -91,16 +75,20 @@ index dfeff50cd5..52f704e876 100644
 +            -1 : monitor_fdset_get_fd(fdset_id, O_RDWR));
 +}
 +
- static int socket_get_fd(const char *fdstr, Error **errp)
+ static int socket_get_fd(const char *fdstr, int num, Error **errp)
  {
 -    int fd;
 +    int fd = -1;
+     if (num != 1) {
+         error_setg_errno(errp, EINVAL, "socket_get_fd: too many connections");
+         return -1;
+     }
      if (cur_mon) {
 -        fd = monitor_get_fd(cur_mon, fdstr, errp);
 -        if (fd < 0) {
 -            return -1;
 -        }
-+        /* 
++        /*
 +         * Don't create error object if search fails
 +         * as we fall back to look in the fdset
 +         */
@@ -108,7 +96,7 @@ index dfeff50cd5..52f704e876 100644
      } else {
          if (qemu_strtoi(fdstr, NULL, 10, &fd) < 0) {
              error_setg_errno(errp, errno,
-@@ -1058,6 +1066,12 @@ static int socket_get_fd(const char *fdstr, Error **errp)
+@@ -1088,6 +1096,12 @@ static int socket_get_fd(const char *fdstr, int num, Error **errp)
              return -1;
          }
      }
@@ -121,6 +109,3 @@ index dfeff50cd5..52f704e876 100644
      if (!fd_is_socket(fd)) {
          error_setg(errp, "File descriptor '%s' is not a socket", fdstr);
          close(fd);
--- 
-2.17.1
-

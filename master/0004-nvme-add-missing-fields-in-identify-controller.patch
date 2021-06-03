@@ -7,15 +7,11 @@ Not used by the device model but added for completeness. See NVM Express
 1.2.1, Section 5.11 ("Identify command"), Figure 90.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
----
- hw/block/nvme.h | 34 +++++++++++++++++++++++++++++-----
- 1 file changed, 29 insertions(+), 5 deletions(-)
-
-diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index 3c09fc6edb..0c89a639aa 100644
---- a/hw/block/nvme.h
-+++ b/hw/block/nvme.h
-@@ -544,7 +544,13 @@ typedef struct NvmeIdCtrl {
+diff --git a/include/block/nvme.h b/include/block/nvme.h
+index 3ec8efcc43..1b0accd4fe 100644
+--- a/include/block/nvme.h
++++ b/include/block/nvme.h
+@@ -543,7 +543,13 @@ typedef struct NvmeIdCtrl {
      uint8_t     ieee[3];
      uint8_t     cmic;
      uint8_t     mdts;
@@ -30,7 +26,7 @@ index 3c09fc6edb..0c89a639aa 100644
      uint16_t    oacs;
      uint8_t     acl;
      uint8_t     aerl;
-@@ -552,10 +558,22 @@ typedef struct NvmeIdCtrl {
+@@ -551,10 +557,22 @@ typedef struct NvmeIdCtrl {
      uint8_t     lpa;
      uint8_t     elpe;
      uint8_t     npss;
@@ -55,7 +51,7 @@ index 3c09fc6edb..0c89a639aa 100644
      uint32_t    nn;
      uint16_t    oncs;
      uint16_t    fuses;
-@@ -563,8 +581,14 @@ typedef struct NvmeIdCtrl {
+@@ -562,8 +580,14 @@ typedef struct NvmeIdCtrl {
      uint8_t     vwc;
      uint16_t    awun;
      uint16_t    awupf;
@@ -72,6 +68,3 @@ index 3c09fc6edb..0c89a639aa 100644
      NvmePSD     psd[32];
      uint8_t     vs[1024];
  } NvmeIdCtrl;
--- 
-2.21.0
-

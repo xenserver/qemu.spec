@@ -1,0 +1,109 @@
+From c7b942d7f84ef54f266921bf7668d43f1f2c7c79 Mon Sep 17 00:00:00 2001
+From: John Snow <jsnow@redhat.com>
+Date: Thu, 28 May 2020 18:21:26 -0400
+Subject: [PATCH 1/1] scripts/qmp: Fix shebang and imports
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+There's more wrong with these scripts; They are in various stages of
+disrepair. That's beyond the scope of this current patchset.
+
+This just mechanically corrects the imports and the shebangs, as part of
+ensuring that the python/qemu/lib refactoring didn't break anything
+needlessly.
+
+Signed-off-by: John Snow <jsnow@redhat.com>
+Message-Id: <20200528222129.23826-2-jsnow@redhat.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+diff --git a/scripts/qmp/qmp b/scripts/qmp/qmp
+index 6cb46fdae2..3af770b978 100755
+--- a/scripts/qmp/qmp
++++ b/scripts/qmp/qmp
+@@ -12,7 +12,9 @@
+ 
+ from __future__ import print_function
+ import sys, os
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ def print_response(rsp, prefix=[]):
+     if type(rsp) == list:
+diff --git a/scripts/qmp/qom-fuse b/scripts/qmp/qom-fuse
+index 4d85970a78..93d4a88700 100755
+--- a/scripts/qmp/qom-fuse
++++ b/scripts/qmp/qom-fuse
+@@ -15,7 +15,9 @@ import fuse, stat
+ from fuse import Fuse
+ import os, posix
+ from errno import *
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ fuse.fuse_python_api = (0, 2)
+ 
+diff --git a/scripts/qmp/qom-get b/scripts/qmp/qom-get
+index ec5275d53a..0209a7fb4e 100755
+--- a/scripts/qmp/qom-get
++++ b/scripts/qmp/qom-get
+@@ -14,7 +14,9 @@
+ from __future__ import print_function
+ import sys
+ import os
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ cmd, args = sys.argv[0], sys.argv[1:]
+ socket_path = None
+diff --git a/scripts/qmp/qom-list b/scripts/qmp/qom-list
+index 0f97440973..946f918945 100755
+--- a/scripts/qmp/qom-list
++++ b/scripts/qmp/qom-list
+@@ -14,7 +14,9 @@
+ from __future__ import print_function
+ import sys
+ import os
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ cmd, args = sys.argv[0], sys.argv[1:]
+ socket_path = None
+diff --git a/scripts/qmp/qom-set b/scripts/qmp/qom-set
+index 26ed9e3263..3cc6bfa6c1 100755
+--- a/scripts/qmp/qom-set
++++ b/scripts/qmp/qom-set
+@@ -14,7 +14,9 @@
+ from __future__ import print_function
+ import sys
+ import os
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ cmd, args = sys.argv[0], sys.argv[1:]
+ socket_path = None
+diff --git a/scripts/qmp/qom-tree b/scripts/qmp/qom-tree
+index 31603c681f..783712f18c 100755
+--- a/scripts/qmp/qom-tree
++++ b/scripts/qmp/qom-tree
+@@ -16,7 +16,9 @@
+ from __future__ import print_function
+ import sys
+ import os
+-from qmp import QEMUMonitorProtocol
++
++sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
++from qemu.qmp import QEMUMonitorProtocol
+ 
+ cmd, args = sys.argv[0], sys.argv[1:]
+ socket_path = None

@@ -1,0 +1,26 @@
+From dd8525472a17bc7f21aa6024aaa19ad53d28750a Mon Sep 17 00:00:00 2001
+From: Li Qiang <liq3ea@163.com>
+Date: Wed, 12 Aug 2020 09:17:12 -0700
+Subject: [PATCH 1/1] hw: ehci: destroy sglist in error path
+
+This may cause resource leak.
+
+Signed-off-by: Li Qiang <liq3ea@163.com>
+Message-Id: <20200812161712.29361-1-liq3ea@163.com>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+---
+ hw/usb/hcd-ehci.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hw/usb/hcd-ehci.c b/hw/usb/hcd-ehci.c
+index 1495e8f7fa..58cceacbf8 100644
+--- a/hw/usb/hcd-ehci.c
++++ b/hw/usb/hcd-ehci.c
+@@ -1445,6 +1445,7 @@ static int ehci_process_itd(EHCIState *ehci,
+             dev = ehci_find_device(ehci, devaddr);
+             if (dev == NULL) {
+                 ehci_trace_guest_bug(ehci, "no device found");
++                qemu_sglist_destroy(&ehci->isgl);
+                 return -1;
+             }
+             pid = dir ? USB_TOKEN_IN : USB_TOKEN_OUT;

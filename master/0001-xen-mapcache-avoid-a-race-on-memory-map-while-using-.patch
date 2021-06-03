@@ -1,0 +1,55 @@
+From 323280bd16296ed0c2b6dcb477151f651c6e4e9a Mon Sep 17 00:00:00 2001
+From: Igor Druzhinin <igor.druzhinin@citrix.com>
+Date: Tue, 20 Apr 2021 04:35:02 +0100
+Subject: [PATCH] xen-mapcache: avoid a race on memory map while using
+ MAP_FIXED
+
+When we're replacing the existing mapping there is possibility of a race
+on memory map with other threads doing mmap operations - the address being
+unmapped/re-mapped could be occupied by another thread in between.
+
+Linux mmap man page recommends keeping the existing mappings in place to
+reserve the place and instead utilize the fact that the next mmap operation
+with MAP_FIXED flag passed will implicitly destroy the existing mappings
+behind the chosen address. This behavior is guaranteed by POSIX / BSD and
+therefore is portable.
+
+Note that it wouldn't make the replacement atomic for parallel accesses to
+the replaced region - those might still fail with SIGBUS due to
+xenforeignmemory_map not being atomic. So we're still not expecting those.
+
+Tested-by: Anthony PERARD <anthony.perard@citrix.com>
+Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
+Reviewed-by: Paul Durrant <paul@xen.org>
+Message-Id: <1618889702-13104-1-git-send-email-igor.druzhinin@citrix.com>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+---
+ hw/i386/xen/xen-mapcache.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
+index 5b120ed44b1e..e82b7dcdd2e5 100644
+--- a/hw/i386/xen/xen-mapcache.c
++++ b/hw/i386/xen/xen-mapcache.c
+@@ -171,7 +171,20 @@ static void xen_remap_bucket(MapCacheEntry *entry,
+         if (!(entry->flags & XEN_MAPCACHE_ENTRY_DUMMY)) {
+             ram_block_notify_remove(entry->vaddr_base, entry->size);
+         }
+-        if (munmap(entry->vaddr_base, entry->size) != 0) {
++
++        /*
++         * If an entry is being replaced by another mapping and we're using
++         * MAP_FIXED flag for it - there is possibility of a race for vaddr
++         * address with another thread doing an mmap call itself
++         * (see man 2 mmap). To avoid that we skip explicit unmapping here
++         * and allow the kernel to destroy the previous mappings by replacing
++         * them in mmap call later.
++         *
++         * Non-identical replacements are not allowed therefore.
++         */
++        assert(!vaddr || (entry->vaddr_base == vaddr && entry->size == size));
++
++        if (!vaddr && munmap(entry->vaddr_base, entry->size) != 0) {
+             perror("unmap fails");
+             exit(-1);
+         }

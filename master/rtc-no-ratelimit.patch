@@ -8,11 +8,11 @@ doesn't lessen security since RTC updates were not rate limited with
 qemu-trad (and a guest can consume a lot of dom0 CPU by just writing
 random IO ports anyway).
 
-diff --git a/monitor.c b/monitor.c
-index e0f8801..6aaa85a 100644
---- a/monitor.c
-+++ b/monitor.c
-@@ -396,7 +396,6 @@ static void monitor_json_emitter(Monitor *mon, const QObject *data)
+diff --git a/monitor/monitor.c b/monitor/monitor.c
+index 3ef28171c0..3d63e2e01a 100644
+--- a/monitor/monitor.c
++++ b/monitor/monitor.c
+@@ -226,7 +226,6 @@ int error_vprintf_unless_qmp(const char *fmt, va_list ap)
  
  static MonitorQAPIEventConf monitor_qapi_event_conf[QAPI_EVENT__MAX] = {
      /* Limit guest-triggerable events to 1 per second */

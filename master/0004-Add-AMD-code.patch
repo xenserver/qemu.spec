@@ -1,13 +1,14 @@
 diff --git a/hw/xen/Makefile.objs b/hw/xen/Makefile.objs
-index 64a70bc6cb..5d4b5cf26e 100644
+index 84df60a928..58a8e4efc1 100644
 --- a/hw/xen/Makefile.objs
 +++ b/hw/xen/Makefile.objs
-@@ -2,4 +2,4 @@
- common-obj-$(CONFIG_XEN) += xen_backend.o xen_devconfig.o xen_pvdev.o xen-common.o
+@@ -2,5 +2,5 @@
+ common-obj-$(CONFIG_XEN) += xen-legacy-backend.o xen_devconfig.o xen_pvdev.o xen-common.o xen-bus.o xen-bus-helper.o xen-backend.o
  
  obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen-host-pci-device.o
 -obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen_pt.o xen_pt_config_init.o xen_pt_graphics.o xen_pt_msi.o
 +obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen_pt.o xen_pt_config_init.o xen_pt_graphics.o xen_pt_amd_graphics.o xen_pt_msi.o
+ obj-$(CONFIG_XEN_PCI_PASSTHROUGH) += xen_pt_load_rom.o
 diff --git a/hw/xen/gim_ioctl.h b/hw/xen/gim_ioctl.h
 new file mode 100644
 index 0000000000..d5293d1321
@@ -106,16 +107,15 @@ index 0000000000..d5293d1321
 +#endif
 diff --git a/hw/xen/xen_pt_amd_graphics.c b/hw/xen/xen_pt_amd_graphics.c
 new file mode 100644
-index 0000000000..796b0a8053
+index 0000000000..6e50876d49
 --- /dev/null
 +++ b/hw/xen/xen_pt_amd_graphics.c
-@@ -0,0 +1,1038 @@
+@@ -0,0 +1,1037 @@
 +#include "qemu/osdep.h"
 +#include "qemu-common.h"
 +#include "qemu/main-loop.h"
 +#include "sysemu/sysemu.h"
 +#include "qapi/error.h"
-+#include "hw/xen/xen_backend.h"
 +#include "xen_pt.h"
 +#include "xen-host-pci-device.h"
 +#include "gim_ioctl.h"
@@ -1149,7 +1149,7 @@ index 0000000000..796b0a8053
 + * End:
 + */
 diff --git a/hw/xen/xen_pt_graphics.c b/hw/xen/xen_pt_graphics.c
-index 511778cdd2..91faa224ef 100644
+index 4ff5ebd1c7..8134d376dc 100644
 --- a/hw/xen/xen_pt_graphics.c
 +++ b/hw/xen/xen_pt_graphics.c
 @@ -47,6 +47,11 @@ static struct VGARegion vga_args[] = {

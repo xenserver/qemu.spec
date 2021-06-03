@@ -5,29 +5,30 @@ Subject: [PATCH] CP-17697 Initial port of NVIDIA VGPU support from QEMU-trad
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index 551c050..86c0e28 100644
+index f2182e3bef..b3772f3962 100644
 --- a/hw/display/Makefile.objs
 +++ b/hw/display/Makefile.objs
-@@ -41,3 +41,5 @@ virtio-gpu-3d.o-cflags := $(VIRGL_CFLAGS)
- virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
- obj-$(CONFIG_DPCD) += dpcd.o
- obj-$(CONFIG_XLNX_ZYNQMP) += xlnx_dp.o
-+
+@@ -58,4 +58,6 @@ virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
+ common-obj-$(CONFIG_DPCD) += dpcd.o
+ common-obj-$(CONFIG_XLNX_ZYNQMP_ARM) += xlnx_dp.o
+ 
 +obj-y += vgpu_fb.o
++
+ common-obj-$(CONFIG_ATI_VGA) += ati.o ati_2d.o ati_dbg.o
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000..ef1a799
+index 0000000000..28d7ff131b
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,316 @@
+@@ -0,0 +1,315 @@
 +#include "qemu/osdep.h"
 +#include "cpu.h"
 +#include "hw/hw.h"
 +#include "hw/sysbus.h"
++#include "hw/display/vgpu.h"
++#include "hw/xen/xen_common.h"
 +#include "ui/console.h"
-+#include "hw/xen/xen_backend.h"
 +
-+#include <sys/types.h>
 +#include <sys/socket.h>
 +#include <netinet/in.h>
 +
@@ -63,7 +64,6 @@ index 0000000..ef1a799
 +#define DEMU_FIFO_TIMEOUT   (60 * 5)
 +#define DEMU_SURFACE_PATH    "/xen.vgpu.%d"
 +
-+#define TYPE_VGPU "vgpu"
 +#define VGPU(obj) \
 +    OBJECT_CHECK(VGPUState, (obj), TYPE_VGPU)
 +
@@ -336,3 +336,35 @@ index 0000000..ef1a799
 +}
 +
 +type_init(vgpu_register_types)
+diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
+index abe6fb38f9..9c324a66cf 100644
+--- a/hw/i386/pc_piix.c
++++ b/hw/i386/pc_piix.c
+@@ -33,6 +33,7 @@
+ #include "hw/pci-host/i440fx.h"
+ #include "hw/southbridge/piix.h"
+ #include "hw/display/ramfb.h"
++#include "hw/display/vgpu.h"
+ #include "hw/firmware/smbios.h"
+ #include "hw/pci/pci.h"
+ #include "hw/pci/pci_ids.h"
+@@ -423,6 +424,7 @@ static void pc_i440fx_machine_options(MachineClass *m)
+     m->default_machine_opts = "firmware=bios-256k.bin";
+     m->default_display = "std";
+     machine_class_allow_dynamic_sysbus_dev(m, TYPE_RAMFB_DEVICE);
++    machine_class_allow_dynamic_sysbus_dev(m, TYPE_VGPU);
+ 
+     hc->unplug_request = NULL;
+ }
+diff --git a/include/hw/display/vgpu.h b/include/hw/display/vgpu.h
+new file mode 100644
+index 0000000000..f0bbfef7e9
+--- /dev/null
++++ b/include/hw/display/vgpu.h
+@@ -0,0 +1,6 @@
++#ifndef HW_DISPLAY_VGPU_H
++#define HW_DISPLAY_VGPU_H
++
++#define TYPE_VGPU "vgpu"
++
++#endif /* HW_DISPLAY_VGPU_H */

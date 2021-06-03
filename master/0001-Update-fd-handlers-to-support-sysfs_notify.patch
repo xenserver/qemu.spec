@@ -1,8 +1,8 @@
 diff --git a/include/block/aio.h b/include/block/aio.h
-index 406e323..1557ef8 100644
+index 6b0d52f732..cd61b04b7f 100644
 --- a/include/block/aio.h
 +++ b/include/block/aio.h
-@@ -343,6 +343,15 @@ void aio_set_fd_handler(AioContext *ctx,
+@@ -342,6 +342,15 @@ void aio_set_fd_handler(AioContext *ctx,
                          AioPollFn *io_poll,
                          void *opaque);
  
@@ -19,10 +19,10 @@ index 406e323..1557ef8 100644
   * registered with aio_set_fd_handler.  Do nothing if the file descriptor is
   * not registered.
 diff --git a/include/qemu/main-loop.h b/include/qemu/main-loop.h
-index d7e24af..64eb029 100644
+index f6ba78ea73..b36dab6ce8 100644
 --- a/include/qemu/main-loop.h
 +++ b/include/qemu/main-loop.h
-@@ -203,6 +203,11 @@ void qemu_set_fd_handler(int fd,
+@@ -217,6 +217,11 @@ void qemu_set_fd_handler(int fd,
                           IOHandler *fd_write,
                           void *opaque);
  
@@ -35,10 +35,10 @@ index d7e24af..64eb029 100644
  /**
   * event_notifier_set_handler: Register an EventNotifier with the main loop
 diff --git a/util/aio-posix.c b/util/aio-posix.c
-index 2d51239..8575495 100644
+index 31a8e03ca7..62317806e9 100644
 --- a/util/aio-posix.c
 +++ b/util/aio-posix.c
-@@ -29,6 +29,7 @@ struct AioHandler
+@@ -28,6 +28,7 @@ struct AioHandler
      GPollFD pfd;
      IOHandler *io_read;
      IOHandler *io_write;
@@ -46,7 +46,7 @@ index 2d51239..8575495 100644
      AioPollFn *io_poll;
      IOHandler *io_poll_begin;
      IOHandler *io_poll_end;
-@@ -57,6 +58,7 @@ static inline int epoll_events_from_pfd(int pfd_events)
+@@ -56,6 +57,7 @@ static inline int epoll_events_from_pfd(int pfd_events)
  {
      return (pfd_events & G_IO_IN ? EPOLLIN : 0) |
             (pfd_events & G_IO_OUT ? EPOLLOUT : 0) |
@@ -54,7 +54,16 @@ index 2d51239..8575495 100644
             (pfd_events & G_IO_HUP ? EPOLLHUP : 0) |
             (pfd_events & G_IO_ERR ? EPOLLERR : 0);
  }
-@@ -129,6 +131,7 @@ static int aio_epoll(AioContext *ctx, GPollFD *pfds,
+@@ -108,7 +110,7 @@ static int aio_epoll(AioContext *ctx, int64_t timeout)
+ {
+     GPollFD pfd = {
+         .fd = ctx->epollfd,
+-        .events = G_IO_IN | G_IO_OUT | G_IO_HUP | G_IO_ERR,
++        .events = G_IO_IN | G_IO_OUT | G_IO_PRI | G_IO_HUP | G_IO_ERR,
+     };
+     AioHandler *node;
+     int i, ret = 0;
+@@ -129,6 +131,7 @@ static int aio_epoll(AioContext *ctx, int64_t timeout)
              node = events[i].data.ptr;
              node->pfd.revents = (ev & EPOLLIN ? G_IO_IN : 0) |
                  (ev & EPOLLOUT ? G_IO_OUT : 0) |
@@ -62,8 +71,8 @@ index 2d51239..8575495 100644
                  (ev & EPOLLHUP ? G_IO_HUP : 0) |
                  (ev & EPOLLERR ? G_IO_ERR : 0);
          }
-@@ -200,13 +203,14 @@ static AioHandler *find_aio_handler(AioContext *ctx, int fd)
-     return NULL;
+@@ -225,13 +228,14 @@ static bool aio_remove_fd_handler(AioContext *ctx, AioHandler *node)
+     return true;
  }
  
 -void aio_set_fd_handler(AioContext *ctx,
@@ -83,8 +92,8 @@ index 2d51239..8575495 100644
 +                         void *opaque)
  {
      AioHandler *node;
-     bool is_new = false;
-@@ -217,7 +221,7 @@ void aio_set_fd_handler(AioContext *ctx,
+     AioHandler *new_node = NULL;
+@@ -244,7 +248,7 @@ void aio_set_fd_handler(AioContext *ctx,
      node = find_aio_handler(ctx, fd);
  
      /* Are we deleting the fd handler? */
@@ -93,22 +102,23 @@ index 2d51239..8575495 100644
          if (node == NULL) {
              qemu_lockcnt_unlock(&ctx->list_lock);
              return;
-@@ -259,12 +263,14 @@ void aio_set_fd_handler(AioContext *ctx,
+@@ -264,6 +268,7 @@ void aio_set_fd_handler(AioContext *ctx,
          /* Update handler with latest information */
-         node->io_read = io_read;
-         node->io_write = io_write;
-+        node->io_exception = io_exception;
-         node->io_poll = io_poll;
-         node->opaque = opaque;
-         node->is_external = is_external;
+         new_node->io_read = io_read;
+         new_node->io_write = io_write;
++        new_node->io_exception = io_exception;
+         new_node->io_poll = io_poll;
+         new_node->opaque = opaque;
+         new_node->is_external = is_external;
+@@ -277,6 +282,7 @@ void aio_set_fd_handler(AioContext *ctx,
  
-         node->pfd.events = (io_read ? G_IO_IN | G_IO_HUP | G_IO_ERR : 0);
-         node->pfd.events |= (io_write ? G_IO_OUT | G_IO_ERR : 0);
-+        node->pfd.events |= (io_exception ? G_IO_PRI | G_IO_ERR : 0);
+         new_node->pfd.events = (io_read ? G_IO_IN | G_IO_HUP | G_IO_ERR : 0);
+         new_node->pfd.events |= (io_write ? G_IO_OUT | G_IO_ERR : 0);
++        new_node->pfd.events |= (io_exception ? G_IO_PRI | G_IO_ERR : 0);
+ 
+         QLIST_INSERT_HEAD_RCU(&ctx->aio_handlers, new_node, node);
      }
- 
-     aio_epoll_update(ctx, node, is_new);
-@@ -276,6 +282,18 @@ void aio_set_fd_handler(AioContext *ctx,
+@@ -307,6 +313,18 @@ void aio_set_fd_handler(AioContext *ctx,
      }
  }
  
@@ -121,13 +131,13 @@ index 2d51239..8575495 100644
 +                        void *opaque)
 +{
 +    aio_set_fd_handler3(ctx, fd, is_external, io_read, io_write, NULL,
-+                        NULL, opaque);
++                        io_poll, opaque);
 +}
 +
  void aio_set_fd_poll(AioContext *ctx, int fd,
                       IOHandler *io_poll_begin,
                       IOHandler *io_poll_end)
-@@ -375,6 +393,10 @@ bool aio_pending(AioContext *ctx)
+@@ -406,6 +424,10 @@ bool aio_pending(AioContext *ctx)
              result = true;
              break;
          }
@@ -138,7 +148,7 @@ index 2d51239..8575495 100644
      }
      qemu_lockcnt_dec(&ctx->list_lock);
  
-@@ -410,6 +432,13 @@ static bool aio_dispatch_handlers(AioContext *ctx)
+@@ -441,6 +463,13 @@ static bool aio_dispatch_handlers(AioContext *ctx)
              node->io_write(node->opaque);
              progress = true;
          }
@@ -152,20 +162,11 @@ index 2d51239..8575495 100644
  
          if (node->deleted) {
              if (qemu_lockcnt_dec_if_lock(&ctx->list_lock)) {
-@@ -614,7 +643,7 @@ bool aio_poll(AioContext *ctx, bool blocking)
-             AioHandler epoll_handler;
- 
-             epoll_handler.pfd.fd = ctx->epollfd;
--            epoll_handler.pfd.events = G_IO_IN | G_IO_OUT | G_IO_HUP | G_IO_ERR;
-+            epoll_handler.pfd.events = G_IO_IN | G_IO_OUT | G_IO_PRI | G_IO_HUP | G_IO_ERR;
-             npfd = 0;
-             add_pollfd(&epoll_handler);
-             ret = aio_epoll(ctx, pollfds, npfd, timeout);
-diff --git a/util/iohandler.c b/util/iohandler.c
-index 623b55b..ff2f02d 100644
---- a/util/iohandler.c
-+++ b/util/iohandler.c
-@@ -66,6 +66,17 @@ void qemu_set_fd_handler(int fd,
+diff --git a/util/main-loop.c b/util/main-loop.c
+index eda63fe4e0..29bbc601b2 100644
+--- a/util/main-loop.c
++++ b/util/main-loop.c
+@@ -568,6 +568,17 @@ void qemu_set_fd_handler(int fd,
                         fd_read, fd_write, NULL, opaque);
  }
  
