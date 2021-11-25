@@ -1,4 +1,4 @@
-xen-hvm: Allocate VRAM in a reserved area
+xen-hvm: Allocate some memory region in a reserved area
 
 When allocating the VRAM, QEMU allocates it immediately after RAM. This
 mostly works fine as there is a gap between the end of RAM and the start
@@ -9,6 +9,9 @@ causes breakage since a BAR may be mapped to the same location.
 Force RAM block address for guest memory allocation to always point to
 a reserved area in guest address space.
 
+They are only two memory regions that allocated with guest memory at the
+moment, the VRAM and some memory for the TPM. Allocate a reserved address for
+those.
 diff --git a/exec.c b/exec.c
 index ffdb518535..af8a3bf120 100644
 --- a/exec.c
@@ -25,7 +28,7 @@ index ffdb518535..af8a3bf120 100644
                  error_propagate(errp, err);
                  qemu_mutex_unlock_ramlist();
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index d93fdb49bf..bd46734c67 100644
+index 0beef2a001..fb8b3189ff 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
 @@ -261,7 +261,7 @@ static void xen_ram_init(PCMachineState *pcms,
@@ -37,7 +40,7 @@ index d93fdb49bf..bd46734c67 100644
                     Error **errp)
  {
      unsigned long nr_pfn;
-@@ -273,13 +273,15 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -273,11 +273,17 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
          fprintf(stderr, "%s: do not alloc "RAM_ADDR_FMT
                  " bytes of ram at "RAM_ADDR_FMT" when runstate is INMIGRATE\n",
                  __func__, size, ram_addr);
@@ -48,14 +51,16 @@ index d93fdb49bf..bd46734c67 100644
      if (mr == &ram_memory) {
 -        return;
 +        return ram_addr;
++    }
++
++    if (mr->name && !strcmp(mr->name, "vga.vram")) {
++        ram_addr = VRAM_RESERVED_ADDRESS;
++    } else if (mr->name && !strcmp(mr->name, "tpm-crb-cmd")) {
++        ram_addr = TPM_RESERVED_ADDRESS;
      }
  
-+    ram_addr = VRAM_RESERVED_ADDRESS;
-+
      trace_xen_ram_alloc(ram_addr, size);
- 
-     nr_pfn = size >> TARGET_PAGE_BITS;
-@@ -295,6 +297,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -295,6 +301,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
      }
  
      g_free(pfn_list);
@@ -64,7 +69,7 @@ index d93fdb49bf..bd46734c67 100644
  
  static XenPhysmap *get_physmapping(hwaddr start_addr, ram_addr_t size)
 diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
-index 894a0415b4..2a973ffa7f 100644
+index 894a0415b4..41933ad651 100644
 --- a/include/hw/xen/xen.h
 +++ b/include/hw/xen/xen.h
 @@ -39,8 +39,8 @@ void xenstore_store_pv_console_info(int i, struct Chardev *chr);
@@ -78,11 +83,12 @@ index 894a0415b4..2a973ffa7f 100644
  void xen_hvm_modified_memory(ram_addr_t start, ram_addr_t length);
  
  void xen_register_framebuffer(struct MemoryRegion *mr);
-@@ -48,4 +48,6 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
+@@ -48,4 +48,7 @@ void xen_register_framebuffer(struct MemoryRegion *mr);
  void xen_unassigned_access(hwaddr addr, bool is_write, void *val,
                             unsigned size);
  
 +#define VRAM_RESERVED_ADDRESS  0xff000000
++#define TPM_RESERVED_ADDRESS   0xfed46000
 +
  #endif /* QEMU_HW_XEN_H */
 diff --git a/stubs/xen-hvm.c b/stubs/xen-hvm.c
