@@ -1,0 +1,5 @@
+{
+    "type": "coverity",
+    "project": "foundations-qemu",
+    "stream": "foundations-cov-qemu"
+}
