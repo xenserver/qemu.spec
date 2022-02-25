@@ -33,6 +33,8 @@
 0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 # N/A (6.0.0)
 0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
+# a021a2dd8b790437d27db95774969349632f856a
+0001-xen-mapcache-Avoid-entry-lock-overflow.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch

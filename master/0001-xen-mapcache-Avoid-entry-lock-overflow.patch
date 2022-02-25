@@ -1,0 +1,52 @@
+From a021a2dd8b790437d27db95774969349632f856a Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Mon, 24 Jan 2022 10:44:50 +0000
+Subject: [PATCH] xen-mapcache: Avoid entry->lock overflow
+
+In some cases, a particular mapcache entry may be mapped 256 times
+causing the lock field to wrap to 0. For example, this may happen when
+using emulated NVME and the guest submits a large scatter-gather write.
+At this point, the entry map be remapped causing QEMU to write the wrong
+data or crash (since remap is not atomic).
+
+Avoid this overflow by increasing the lock field to a uint32_t and also
+detect it and abort rather than continuing regardless.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Reviewed-by: Paul Durrant <paul@xen.org>
+Reviewed-by: Stefano Stabellini <sstabellini@kernel.org>
+Message-Id: <20220124104450.152481-1-ross.lagerwall@citrix.com>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+---
+ hw/i386/xen/xen-mapcache.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i386/xen/xen-mapcache.c b/hw/i386/xen/xen-mapcache.c
+index bd47c3d672..f2ef977963 100644
+--- a/hw/i386/xen/xen-mapcache.c
++++ b/hw/i386/xen/xen-mapcache.c
+@@ -52,7 +52,7 @@ typedef struct MapCacheEntry {
+     hwaddr paddr_index;
+     uint8_t *vaddr_base;
+     unsigned long *valid_mapping;
+-    uint8_t lock;
++    uint32_t lock;
+ #define XEN_MAPCACHE_ENTRY_DUMMY (1 << 0)
+     uint8_t flags;
+     hwaddr size;
+@@ -355,6 +355,12 @@ tryagain:
+     if (lock) {
+         MapCacheRev *reventry = g_malloc0(sizeof(MapCacheRev));
+         entry->lock++;
++        if (entry->lock == 0) {
++            fprintf(stderr,
++                    "mapcache entry lock overflow: "TARGET_FMT_plx" -> %p\n",
++                    entry->paddr_index, entry->vaddr_base);
++            abort();
++        }
+         reventry->dma = dma;
+         reventry->vaddr_req = mapcache->last_entry->vaddr_base + address_offset;
+         reventry->paddr_index = mapcache->last_entry->paddr_index;
+-- 
+2.27.0
+
