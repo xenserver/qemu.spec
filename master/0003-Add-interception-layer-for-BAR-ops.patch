@@ -1,8 +1,8 @@
 diff --git a/hw/xen/xen_pt.c b/hw/xen/xen_pt.c
-index ac09f74dd1..dc3ec5bb90 100644
+index 9c4a77e6eb..3fb9d6b95f 100644
 --- a/hw/xen/xen_pt.c
 +++ b/hw/xen/xen_pt.c
-@@ -259,7 +259,7 @@ static void xen_pt_pci_write_config(PCIDevice *d, uint32_t addr,
+@@ -260,7 +260,7 @@ static void xen_pt_pci_write_config(PCIDevice *d, uint32_t addr,
              chk |= (uint32_t)~PCI_ROM_ADDRESS_MASK;
  
          if ((chk != XEN_PT_BAR_ALLF) &&
@@ -11,7 +11,7 @@ index ac09f74dd1..dc3ec5bb90 100644
              XEN_PT_WARN(d, "Guest attempt to set address to unused "
                          "Base Address Register. (addr: 0x%02x, len: %d)\n",
                          addr, len);
-@@ -416,31 +416,149 @@ static void xen_pt_pci_write_config(PCIDevice *d, uint32_t addr,
+@@ -417,31 +417,149 @@ out:
  
  /* register regions */
  
@@ -175,7 +175,7 @@ index ac09f74dd1..dc3ec5bb90 100644
  static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
  {
      int i = 0;
-@@ -455,7 +573,9 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -456,7 +574,9 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              continue;
          }
  
@@ -186,7 +186,7 @@ index ac09f74dd1..dc3ec5bb90 100644
  
          if (r->type & XEN_HOST_PCI_REGION_TYPE_IO) {
              type = PCI_BASE_ADDRESS_SPACE_IO;
-@@ -471,9 +591,21 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -472,9 +592,21 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              *cmd |= PCI_COMMAND_MEMORY;
          }
  
@@ -210,7 +210,7 @@ index ac09f74dd1..dc3ec5bb90 100644
  
          XEN_PT_LOG(&s->dev, "IO region %i registered (size=0x%08"PRIx64
                     " base_addr=0x%08"PRIx64" type: %#x)\n",
-@@ -493,19 +625,27 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
+@@ -494,19 +626,27 @@ static int xen_pt_register_regions(XenPCIPassthroughState *s, uint16_t *cmd)
              xen_host_pci_set_long(d, PCI_ROM_ADDRESS, bar_data);
          }
  
@@ -245,7 +245,7 @@ index ac09f74dd1..dc3ec5bb90 100644
      return 0;
  }
  
-@@ -515,14 +655,11 @@ static int xen_pt_bar_from_region(XenPCIPassthroughState *s, MemoryRegion *mr)
+@@ -516,14 +656,11 @@ static int xen_pt_bar_from_region(XenPCIPassthroughState *s, MemoryRegion *mr)
  {
      int i = 0;
  
@@ -262,7 +262,7 @@ index ac09f74dd1..dc3ec5bb90 100644
      return -1;
  }
  
-@@ -578,64 +715,43 @@ static void xen_pt_region_update(XenPCIPassthroughState *s,
+@@ -579,64 +716,43 @@ static void xen_pt_region_update(XenPCIPassthroughState *s,
  {
      PCIDevice *d = &s->dev;
      MemoryRegion *mr = sec->mr;
@@ -338,7 +338,7 @@ index ac09f74dd1..dc3ec5bb90 100644
      }
  }
  
-@@ -702,7 +818,6 @@ xen_igd_passthrough_isa_bridge_create(XenPCIPassthroughState *s,
+@@ -703,7 +819,6 @@ xen_igd_passthrough_isa_bridge_create(XenPCIPassthroughState *s,
  static void xen_pt_destroy(PCIDevice *d) {
  
      XenPCIPassthroughState *s = XEN_PT_DEVICE(d);
@@ -346,7 +346,7 @@ index ac09f74dd1..dc3ec5bb90 100644
      uint8_t machine_irq = s->machine_irq;
      uint8_t intx;
      int rc;
-@@ -749,7 +864,7 @@ static void xen_pt_destroy(PCIDevice *d) {
+@@ -750,7 +865,7 @@ static void xen_pt_destroy(PCIDevice *d) {
      /* delete all emulated config registers */
      xen_pt_config_delete(s);
  
@@ -355,7 +355,7 @@ index ac09f74dd1..dc3ec5bb90 100644
  
      if (s->listener_set) {
          memory_listener_unregister(&s->memory_listener);
-@@ -918,10 +1033,9 @@ static void xen_pt_realize(PCIDevice *d, Error **errp)
+@@ -925,10 +1040,9 @@ out:
      return;
  
  err_out:
@@ -369,10 +369,10 @@ index ac09f74dd1..dc3ec5bb90 100644
      xen_pt_destroy(d);
      assert(rc);
 diff --git a/hw/xen/xen_pt.h b/hw/xen/xen_pt.h
-index 5e8bf03afe..6244c0cdc6 100644
+index 9167bbaf6d..89bde3a131 100644
 --- a/hw/xen/xen_pt.h
 +++ b/hw/xen/xen_pt.h
-@@ -95,6 +95,7 @@ typedef struct XenPTRegion {
+@@ -94,6 +94,7 @@ typedef struct XenPTRegion {
          uint64_t pio_base;
          uint64_t u;
      } access;
@@ -380,7 +380,7 @@ index 5e8bf03afe..6244c0cdc6 100644
  } XenPTRegion;
  
  /* XenPTRegInfo declaration
-@@ -193,6 +194,7 @@ typedef struct XenPTMSIXEntry {
+@@ -192,6 +193,7 @@ typedef struct XenPTMSIXEntry {
      uint32_t latch[4];
      bool updated; /* indicate whether MSI ADDR or DATA is updated */
  } XenPTMSIXEntry;
@@ -388,7 +388,7 @@ index 5e8bf03afe..6244c0cdc6 100644
  typedef struct XenPTMSIX {
      uint32_t ctrl_offset;
      bool enabled;
-@@ -207,6 +209,18 @@ typedef struct XenPTMSIX {
+@@ -206,6 +208,18 @@ typedef struct XenPTMSIX {
      XenPTMSIXEntry msix_entry[0];
  } XenPTMSIX;
  
@@ -407,7 +407,7 @@ index 5e8bf03afe..6244c0cdc6 100644
  struct XenPCIPassthroughState {
      PCIDevice dev;
  
-@@ -215,16 +229,13 @@ struct XenPCIPassthroughState {
+@@ -214,16 +228,13 @@ struct XenPCIPassthroughState {
      bool permissive;
      bool permissive_warned;
      XenHostPCIDevice real_device;
@@ -425,7 +425,7 @@ index 5e8bf03afe..6244c0cdc6 100644
  
      MemoryListener memory_listener;
      MemoryListener io_listener;
-@@ -329,8 +340,8 @@ static inline bool is_igd_vga_passthrough(XenHostPCIDevice *dev)
+@@ -328,8 +339,8 @@ static inline bool is_igd_vga_passthrough(XenHostPCIDevice *dev)
      return (has_igd_gfx_passthru
              && ((dev->class_code >> 0x8) == PCI_CLASS_DISPLAY_VGA));
  }
@@ -437,10 +437,10 @@ index 5e8bf03afe..6244c0cdc6 100644
                       Error **errp);
  #endif /* XEN_PT_H */
 diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
-index ee2c1d8a8b..aa599e5d9f 100644
+index 888127fb43..12609d99df 100644
 --- a/hw/xen/xen_pt_config_init.c
 +++ b/hw/xen/xen_pt_config_init.c
-@@ -408,7 +408,7 @@ static XenPTBarFlag xen_pt_bar_reg_parse(XenPCIPassthroughState *s,
+@@ -410,7 +410,7 @@ static XenPTBarFlag xen_pt_bar_reg_parse(XenPCIPassthroughState *s,
  
          if ((type & XEN_HOST_PCI_REGION_TYPE_MEM)
              && (type & XEN_HOST_PCI_REGION_TYPE_MEM_64)) {
@@ -449,7 +449,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
              if (region->bar_flag != XEN_PT_BAR_FLAG_UPPER) {
                  return XEN_PT_BAR_FLAG_UPPER;
              }
-@@ -456,13 +456,13 @@ static int xen_pt_bar_reg_init(XenPCIPassthroughState *s, XenPTRegInfo *reg,
+@@ -458,8 +458,8 @@ static int xen_pt_bar_reg_init(XenPCIPassthroughState *s, XenPTRegInfo *reg,
      }
  
      /* set BAR flag */
@@ -460,13 +460,16 @@ index ee2c1d8a8b..aa599e5d9f 100644
          reg_field = XEN_PT_INVALID_REG;
      }
  
+@@ -485,7 +485,7 @@ static int xen_pt_bar_reg_read(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
+     *value = base_address_with_flags(&s->real_device.io_regions[index]);
+ 
      /* set emulate mask depend on BAR flag */
 -    switch (s->bases[index].bar_flag) {
 +    switch (s->bar[index].region.bar_flag) {
      case XEN_PT_BAR_FLAG_MEM:
-         reg->emu_mask = XEN_PT_BAR_MEM_EMU_MASK;
+         bar_emu_mask = XEN_PT_BAR_MEM_EMU_MASK;
          break;
-@@ -507,7 +507,7 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
+@@ -510,7 +510,7 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
                                  uint32_t valid_mask)
  {
      XenPTRegInfo *reg = cfg_entry->reg;
@@ -475,7 +478,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
      PCIDevice *d = PCI_DEVICE(s);
      const PCIIORegion *r;
      uint32_t writable_mask = 0;
-@@ -524,11 +524,11 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
+@@ -527,11 +527,11 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
      }
  
      r = &d->io_regions[index];
@@ -490,7 +493,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
      case XEN_PT_BAR_FLAG_MEM:
          bar_emu_mask = XEN_PT_BAR_MEM_EMU_MASK;
          if (!r_size) {
-@@ -557,7 +557,7 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
+@@ -560,7 +560,7 @@ static int xen_pt_bar_reg_write(XenPCIPassthroughState *s, XenPTReg *cfg_entry,
      *data = XEN_PT_MERGE_VALUE(*val, *data, writable_mask);
  
      /* check whether we need to update the virtual region address or not */
@@ -499,7 +502,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
      case XEN_PT_BAR_FLAG_UPPER:
      case XEN_PT_BAR_FLAG_MEM:
          /* nothing to do */
-@@ -581,7 +581,7 @@ static int xen_pt_exp_rom_bar_reg_write(XenPCIPassthroughState *s,
+@@ -584,7 +584,7 @@ static int xen_pt_exp_rom_bar_reg_write(XenPCIPassthroughState *s,
                                          uint32_t dev_value, uint32_t valid_mask)
  {
      XenPTRegInfo *reg = cfg_entry->reg;
@@ -508,7 +511,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
      PCIDevice *d = PCI_DEVICE(s);
      uint32_t writable_mask = 0;
      uint32_t throughable_mask = get_throughable_mask(s, reg, valid_mask);
-@@ -590,9 +590,9 @@ static int xen_pt_exp_rom_bar_reg_write(XenPCIPassthroughState *s,
+@@ -593,9 +593,9 @@ static int xen_pt_exp_rom_bar_reg_write(XenPCIPassthroughState *s,
      uint32_t *data = cfg_entry->ptr.word;
  
      r_size = d->io_regions[PCI_ROM_SLOT].size;
@@ -521,7 +524,7 @@ index ee2c1d8a8b..aa599e5d9f 100644
      /* set emulate mask and read-only mask */
      bar_ro_mask = (reg->ro_mask | (r_size - 1)) & ~PCI_ROM_ADDRESS_ENABLE;
 diff --git a/hw/xen/xen_pt_graphics.c b/hw/xen/xen_pt_graphics.c
-index 135c8df1e7..97eccc7611 100644
+index b69732729b..4ff5ebd1c7 100644
 --- a/hw/xen/xen_pt_graphics.c
 +++ b/hw/xen/xen_pt_graphics.c
 @@ -50,11 +50,16 @@ static struct VGARegion vga_args[] = {
@@ -564,7 +567,7 @@ index 135c8df1e7..97eccc7611 100644
      }
  
 diff --git a/hw/xen/xen_pt_msi.c b/hw/xen/xen_pt_msi.c
-index cc514f9157..f791bec284 100644
+index fb4b887b92..1d8f00d16a 100644
 --- a/hw/xen/xen_pt_msi.c
 +++ b/hw/xen/xen_pt_msi.c
 @@ -604,7 +604,7 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
