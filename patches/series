@@ -70,7 +70,6 @@ ignore-rtc-century-changes.patch
 
 # PCI passthrough
 igd-upt.patch
-pt-avoid-invalid-bar-registers.patch
 
 check-unmigratable-devices-when-saving.patch
 query-migratable.patch
