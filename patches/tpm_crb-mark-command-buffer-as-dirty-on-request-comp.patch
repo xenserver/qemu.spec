@@ -1,0 +1,32 @@
+From ef179b9c98cf6dd76dbdc15f492a0c414de4a84f Mon Sep 17 00:00:00 2001
+From: Anthony PERARD <anthony.perard@citrix.com>
+Date: Mon, 11 Apr 2022 15:47:49 +0100
+Subject: [PATCH] tpm_crb: mark command buffer as dirty on request completion
+
+At the moment, there doesn't seems to be any way to know that QEMU
+made modification to the command buffer. This is potentially an issue
+on Xen while migrating a guest, as modification to the buffer after
+the migration as started could be ignored and not transfered to the
+destination.
+
+Mark the memory region of the command buffer as dirty once a request
+is completed.
+
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+Message-Id: <20220411144749.47185-1-anthony.perard@citrix.com>
+---
+ hw/tpm/tpm_crb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hw/tpm/tpm_crb.c b/hw/tpm/tpm_crb.c
+index faae733120..74977e744e 100644
+--- a/hw/tpm/tpm_crb.c
++++ b/hw/tpm/tpm_crb.c
+@@ -194,6 +194,7 @@ static void tpm_crb_request_completed(TPMIf *ti, int ret)
+         ARRAY_FIELD_DP32(s->regs, CRB_CTRL_STS,
+                          tpmSts, 1); /* fatal error */
+     }
++    memory_region_set_dirty(&s->cmdmem, 0, CRB_CTRL_CMD_SIZE);
+ }
+ 
+ static enum TPMVersion tpm_crb_get_version(TPMIf *ti)

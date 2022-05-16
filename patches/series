@@ -62,6 +62,8 @@ dont-init-cpus-on-xen.patch
 remove-ioapic.patch
 ignore-rtc-century-changes.patch
 0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
+# https://lore.kernel.org/qemu-devel/20220411144749.47185-1-anthony.perard@citrix.com/
+tpm_crb-mark-command-buffer-as-dirty-on-request-comp.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
