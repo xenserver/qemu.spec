@@ -28,10 +28,10 @@ index ffdb518535..af8a3bf120 100644
                  error_propagate(errp, err);
                  qemu_mutex_unlock_ramlist();
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 0beef2a001..fb8b3189ff 100644
+index ab0b4e7f29..66eec5a7fc 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -261,7 +261,7 @@ static void xen_ram_init(PCMachineState *pcms,
+@@ -261,23 +261,33 @@ static void xen_ram_init(PCMachineState *pcms,
      }
  }
  
@@ -40,7 +40,17 @@ index 0beef2a001..fb8b3189ff 100644
                     Error **errp)
  {
      unsigned long nr_pfn;
-@@ -273,11 +273,17 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+     xen_pfn_t *pfn_list;
+     int i;
+ 
++    // Only vga.vram MemoryRegion is moved, any other region are still at
++    // their starting location, even after migration.
++    if (mr->name && !strcmp(mr->name, "tpm-crb-cmd")) {
++        ram_addr = TPM_RESERVED_ADDRESS;
++    }
++
+     if (runstate_check(RUN_STATE_INMIGRATE)) {
+         /* RAM already populated in Xen */
          fprintf(stderr, "%s: do not alloc "RAM_ADDR_FMT
                  " bytes of ram at "RAM_ADDR_FMT" when runstate is INMIGRATE\n",
                  __func__, size, ram_addr);
@@ -55,12 +65,10 @@ index 0beef2a001..fb8b3189ff 100644
 +
 +    if (mr->name && !strcmp(mr->name, "vga.vram")) {
 +        ram_addr = VRAM_RESERVED_ADDRESS;
-+    } else if (mr->name && !strcmp(mr->name, "tpm-crb-cmd")) {
-+        ram_addr = TPM_RESERVED_ADDRESS;
      }
  
      trace_xen_ram_alloc(ram_addr, size);
-@@ -295,6 +301,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+@@ -295,6 +305,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
      }
  
      g_free(pfn_list);
