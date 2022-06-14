@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.0.5}
+%{!?xsrel: %global xsrel 5.0.6}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
@@ -106,6 +106,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Jun 14 2022 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.6
+- CA-366527: Fix passthrough of multiple different devices
+
 * Fri Feb 25 2022 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.0.5
 - CA-362592: Fix mapcache/iothread SIGBUS
 
