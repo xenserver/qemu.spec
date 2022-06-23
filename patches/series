@@ -121,12 +121,6 @@ rtc-no-ratelimit.patch
 # Intel GVT-g support
 gvt-g.patch
 
-# AMD MxGPU patches
-0001-Update-fd-handlers-to-support-sysfs_notify.patch
-0002-Fix-up-PCI-command-register-for-AMD-ATI-GPU-VFs.patch
-0003-Add-interception-layer-for-BAR-ops.patch
-0004-Add-AMD-code.patch
-
 #
 # Technical debt to unblock further development.  Needs removing
 #
