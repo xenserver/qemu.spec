@@ -64,6 +64,8 @@ ignore-rtc-century-changes.patch
 0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
 # https://lore.kernel.org/qemu-devel/20220411144749.47185-1-anthony.perard@citrix.com/
 tpm_crb-mark-command-buffer-as-dirty-on-request-comp.patch
+# https://lore.kernel.org/qemu-devel/20220801142725.815399-1-ross.lagerwall@citrix.com/
+tpm_emulator-Avoid-double-initialization-during-migr.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch

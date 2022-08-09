@@ -1,0 +1,39 @@
+From 01af879d6c50d9d46dd6a3cdc35705a84913543e Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Mon, 1 Aug 2022 15:14:00 +0100
+Subject: [PATCH] tpm_emulator: Avoid double initialization during migration
+
+When resuming after a migration, the backend sends CMD_INIT to the
+emulator from the startup callback, then it sends the migration state
+from the vmstate to the emulator, then it sends CMD_INIT again. Skip the
+first CMD_INIT during a migration to avoid initializing the TPM twice.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/hw/tpm/tpm_emulator.c b/hw/tpm/tpm_emulator.c
+index 22f9113432..9147264147 100644
+--- a/hw/tpm/tpm_emulator.c
++++ b/hw/tpm/tpm_emulator.c
+@@ -31,6 +31,7 @@
+ #include "qemu/module.h"
+ #include "qemu/sockets.h"
+ #include "io/channel-socket.h"
++#include "sysemu/runstate.h"
+ #include "sysemu/tpm_backend.h"
+ #include "tpm_int.h"
+ #include "tpm_util.h"
+@@ -387,6 +388,15 @@ err_exit:
+ 
+ static int tpm_emulator_startup_tpm(TPMBackend *tb, size_t buffersize)
+ {
++    /* TPM startup will be done from post_load hook */
++    if (runstate_check(RUN_STATE_INMIGRATE)) {
++        if (buffersize != 0) {
++            return tpm_emulator_set_buffer_size(tb, buffersize, NULL);
++        }
++
++        return 0;
++    }
++
+     return tpm_emulator_startup_tpm_resume(tb, buffersize, false);
+ }
+ 
