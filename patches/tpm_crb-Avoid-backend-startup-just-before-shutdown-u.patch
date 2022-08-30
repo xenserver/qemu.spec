@@ -1,0 +1,42 @@
+From b2957cc373af9a60603d0254f95e06ea5110d27a Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Fri, 26 Aug 2022 13:09:30 +0100
+Subject: [PATCH] tpm_crb: Avoid backend startup just before shutdown under Xen
+
+When running under Xen and the guest reboots, it boots into a new domain
+with a new QEMU process (and a new swtpm process if using the emulator
+backend). The existing reset function is triggered just before the old
+QEMU process exists which causes QEMU to startup the TPM backend and
+then immediately shut it down. This is probably harmless but when using
+the emulated backend, it wastes CPU and IO time reloading state, etc.
+
+Fix this by calling the reset function directly from realize() when
+running under Xen. During a reboot, this will be called by the QEMU
+process for the new domain.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/hw/tpm/tpm_crb.c b/hw/tpm/tpm_crb.c
+index 74977e744e..ebab1289a4 100644
+--- a/hw/tpm/tpm_crb.c
++++ b/hw/tpm/tpm_crb.c
+@@ -22,6 +22,7 @@
+ #include "hw/qdev-properties.h"
+ #include "hw/pci/pci_ids.h"
+ #include "hw/acpi/tpm.h"
++#include "hw/xen/xen.h"
+ #include "migration/vmstate.h"
+ #include "sysemu/tpm_backend.h"
+ #include "sysemu/reset.h"
+@@ -305,7 +306,11 @@ static void tpm_crb_realize(DeviceState *dev, Error **errp)
+                      TPM_PPI_ADDR_BASE, OBJECT(s));
+     }
+ 
+-    qemu_register_reset(tpm_crb_reset, dev);
++    if (xen_enabled()) {
++        tpm_crb_reset(dev);
++    } else {
++        qemu_register_reset(tpm_crb_reset, dev);
++    }
+ }
+ 
+ static void tpm_crb_class_init(ObjectClass *klass, void *data)
