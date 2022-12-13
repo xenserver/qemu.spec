@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.1.0}
+%{!?xsrel: %global xsrel 5.1.1}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
@@ -106,6 +106,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Dec 13 2022 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.1.1
+- CA-370278: tpm_crb: Avoid backend startup just before shutdown
+
 * Wed Aug 17 2022 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.1.0
 - CP-40114: Remove mxGPU patches
 - Enable TPM support
