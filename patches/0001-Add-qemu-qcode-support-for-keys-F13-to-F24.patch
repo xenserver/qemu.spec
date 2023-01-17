@@ -1,0 +1,42 @@
+From 77dbd46a3812448f019aac16447d09f0ed47bd59 Mon Sep 17 00:00:00 2001
+From: Willem van de Velde <williamvdvelde@gmail.com>
+Date: Wed, 1 Mar 2023 08:14:52 +0100
+Subject: [PATCH] Add qemu qcode support for keys F13 to F24
+
+To be able to use the function keys F13 to F24 these should be defined in de keycodemapdb and added to the qapi.
+The keycodemapdb is updated in its own repository, this patch enables the use of those keys within qemu.
+
+Signed-off-by: Willem van de Velde <williamvdvelde@gmail.com>
+diff --git a/qapi/ui.json b/qapi/ui.json
+index ebb2279753..a783896989 100644
+--- a/qapi/ui.json
++++ b/qapi/ui.json
+@@ -784,6 +784,19 @@
+ # @lang1: since 6.1
+ # @lang2: since 6.1
+ #
++# @f13: since 8.0
++# @f14: since 8.0
++# @f15: since 8.0
++# @f16: since 8.0
++# @f17: since 8.0
++# @f18: since 8.0
++# @f19: since 8.0
++# @f20: since 8.0
++# @f21: since 8.0
++# @f22: since 8.0
++# @f23: since 8.0
++# @f24: since 8.0
++#
+ # 'sysrq' was mistakenly added to hack around the fact that
+ # the ps2 driver was not generating correct scancodes sequences
+ # when 'alt+print' was pressed. This flaw is now fixed and the
+@@ -817,7 +830,7 @@
+             'volumeup', 'volumedown', 'mediaselect',
+             'mail', 'calculator', 'computer',
+             'ac_home', 'ac_back', 'ac_forward', 'ac_refresh', 'ac_bookmarks',
+-            'lang1', 'lang2' ] }
++            'lang1', 'lang2','f13','f14','f15','f16','f17','f18','f19','f20','f21','f22','f23','f24' ] }
+ 
+ ##
+ # @KeyValue:

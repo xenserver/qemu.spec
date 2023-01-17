@@ -1,0 +1,37 @@
+From 8353a101d142b1ab3ed722ec6d2a376bf0f5e300 Mon Sep 17 00:00:00 2001
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: Mon, 27 Feb 2023 17:15:56 +0000
+Subject: [PATCH] ps2: Don't send key release event for Lang1, Lang2 keys
+
+The scancodes for the Lang1 and Lang2 keys (i.e. Hangeul, Hanja) are
+special since they already have the 0x80 bit set which is commonly used
+to indicate a key release in AT set 1. Reportedly, real hardware does
+not send a key release scancode. So, skip sending a release for these
+keys. This ensures that Windows behaves correctly and interprets it as a
+single keypress rather than two consecutive keypresses.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+diff --git a/hw/input/ps2.c b/hw/input/ps2.c
+index 67f92f6112..8e7b39ca75 100644
+--- a/hw/input/ps2.c
++++ b/hw/input/ps2.c
+@@ -365,6 +365,9 @@ static void ps2_keyboard_event(DeviceState *dev, QemuConsole *src,
+                     ps2_put_keycode(s, 0xaa);
+                 }
+             }
++        } else if ((qcode == Q_KEY_CODE_LANG1 || qcode == Q_KEY_CODE_LANG2)
++                   && !key->down) {
++            /* Ignore release for these keys */
+         } else {
+             if (qcode < qemu_input_map_qcode_to_atset1_len)
+                 keycode = qemu_input_map_qcode_to_atset1[qcode];
+@@ -459,6 +462,9 @@ static void ps2_keyboard_event(DeviceState *dev, QemuConsole *src,
+                     ps2_put_keycode(s, 0x12);
+                 }
+             }
++        } else if ((qcode == Q_KEY_CODE_LANG1 || qcode == Q_KEY_CODE_LANG2) &&
++                   !key->down) {
++            /* Ignore release for these keys */
+         } else {
+             if (qcode < qemu_input_map_qcode_to_atset2_len)
+                 keycode = qemu_input_map_qcode_to_atset2[qcode];

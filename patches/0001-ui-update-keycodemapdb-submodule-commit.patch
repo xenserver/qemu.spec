@@ -1,0 +1,47 @@
+From f4d87ce47c60935e639c76f8973623fd7616cef4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Daniel=20P=2E=20Berrang=C3=A9?= <berrange@redhat.com>
+Date: Tue, 5 May 2020 11:24:25 +0100
+Subject: [PATCH] ui: update keycodemapdb submodule commit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Primarily this is to pull in a fix for Win32 keycodes. The other useful
+change is the removal of build timestamp from generated files which is
+desirable for reproducable builds.
+
+The make rules need updating due to slightly changed CLI syntax - more
+args must now come after the command name.
+
+6119e6e19a050df847418de7babe5166779955e4 Fix scan codes for Korean keys
+685684a8404301780714e8a89a871981e7cae988 Fix argument order in output headers
+b3774853042c951b200d767697285781cc59a83c Add HTML entries for Korean layout keys
+8e54850d800e4697a2798fb82ac740e760f8530b Add macOS entries for Japanese keyboards
+27acf0ef828bf719b2053ba398b195829413dbdd Fix win32 keycode for VK_OEM_102
+317d3eeb963a515e15a63fa356d8ebcda7041a51 Add support for generating RST formatted docs pages
+7381b9bfadd31c4c9e9a10b5bb5032f9189d4352 Introduce separate args for title & subtitle with docs generator
+6280c94f306df6a20bbc100ba15a5a81af0366e6 keymap-gen: Name sections in pod output
+df4e56f8fab65ba714ec18f4e7338a966a1620ad Add an empty meson project
+16e5b0787687d8904dad2c026107409eb9bfcb95 remove buildtime from generated files
+044f21dd0d4f62519aae9f1d53a026407a0b664f add header file generators
+7779876a6b06755e3bb2c94ee3ded50635bcb0fa c++: add extern declaration to the generated file
+0e0a317889464397d6f1ae03aad0d2ca593aab04 move CLanguageGenerator closer to CLanguageGenerator itself
+
+Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Daniel P. Berrangé <berrange@redhat.com>
+diff --git a/Makefile b/Makefile
+index b437a346d7..c1f32d4ae8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -292,9 +292,10 @@ ui/input-keymap-%.c: $(KEYCODEMAP_GEN) $(KEYCODEMAP_CSV) $(SRC_PATH)/ui/Makefile
+ 	    stem=$* && src=$${stem%-to-*} dst=$${stem#*-to-} && \
+ 	    test -e $(KEYCODEMAP_GEN) && \
+ 	    $(PYTHON) $(KEYCODEMAP_GEN) \
++	          code-map \
+ 	          --lang glib2 \
+ 	          --varname qemu_input_map_$${src}_to_$${dst} \
+-	          code-map $(KEYCODEMAP_CSV) $${src} $${dst} \
++	          $(KEYCODEMAP_CSV) $${src} $${dst} \
+ 	        > $@ || rm -f $@, "GEN", "$@")
+ 
+ $(KEYCODEMAP_GEN): .git-submodule-status
