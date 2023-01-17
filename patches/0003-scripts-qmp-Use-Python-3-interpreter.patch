@@ -1,0 +1,63 @@
+From 06d4c71f4869386abf97f45f61c21e9dc449943f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <f4bug@amsat.org>
+Date: Tue, 12 May 2020 12:32:35 +0200
+Subject: [PATCH 3/3] scripts/qmp: Use Python 3 interpreter
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Philippe Mathieu-Daudé <f4bug@amsat.org>
+Reviewed-by: John Snow <jsnow@redhat.com>
+Reviewed-by: Kevin Wolf <kwolf@redhat.com>
+Message-Id: <20200512103238.7078-4-philmd@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+---
+ scripts/qmp/qom-get  | 2 +-
+ scripts/qmp/qom-list | 2 +-
+ scripts/qmp/qom-set  | 2 +-
+ scripts/qmp/qom-tree | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/qmp/qom-get b/scripts/qmp/qom-get
+index 007b4cd442..7c5ede91bb 100755
+--- a/scripts/qmp/qom-get
++++ b/scripts/qmp/qom-get
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ ##
+ # QEMU Object Model test tools
+ #
+diff --git a/scripts/qmp/qom-list b/scripts/qmp/qom-list
+index 03bda3446b..bb68fd65d4 100755
+--- a/scripts/qmp/qom-list
++++ b/scripts/qmp/qom-list
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ ##
+ # QEMU Object Model test tools
+ #
+diff --git a/scripts/qmp/qom-set b/scripts/qmp/qom-set
+index c37fe78b00..19881d85e9 100755
+--- a/scripts/qmp/qom-set
++++ b/scripts/qmp/qom-set
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ ##
+ # QEMU Object Model test tools
+ #
+diff --git a/scripts/qmp/qom-tree b/scripts/qmp/qom-tree
+index 1c8acf61e7..fa91147a03 100755
+--- a/scripts/qmp/qom-tree
++++ b/scripts/qmp/qom-tree
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/env python3
+ ##
+ # QEMU Object Model test tools
+ #
+-- 
+2.31.1
+

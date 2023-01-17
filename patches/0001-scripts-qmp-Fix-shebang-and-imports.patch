@@ -17,13 +17,22 @@ Signed-off-by: John Snow <jsnow@redhat.com>
 Message-Id: <20200528222129.23826-2-jsnow@redhat.com>
 Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
 Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+---
+ scripts/qmp/qmp      | 4 +++-
+ scripts/qmp/qom-fuse | 4 +++-
+ scripts/qmp/qom-get  | 4 +++-
+ scripts/qmp/qom-list | 4 +++-
+ scripts/qmp/qom-set  | 4 +++-
+ scripts/qmp/qom-tree | 4 +++-
+ 6 files changed, 18 insertions(+), 6 deletions(-)
+
 diff --git a/scripts/qmp/qmp b/scripts/qmp/qmp
-index 6cb46fdae2..3af770b978 100755
+index 0625fc2aba..8e52e4a54d 100755
 --- a/scripts/qmp/qmp
 +++ b/scripts/qmp/qmp
-@@ -12,7 +12,9 @@
+@@ -11,7 +11,9 @@
+ # See the COPYING file in the top-level directory.
  
- from __future__ import print_function
  import sys, os
 -from qmp import QEMUMonitorProtocol
 +
@@ -33,7 +42,7 @@ index 6cb46fdae2..3af770b978 100755
  def print_response(rsp, prefix=[]):
      if type(rsp) == list:
 diff --git a/scripts/qmp/qom-fuse b/scripts/qmp/qom-fuse
-index 4d85970a78..93d4a88700 100755
+index 6bada2c33d..5fa6b3bf64 100755
 --- a/scripts/qmp/qom-fuse
 +++ b/scripts/qmp/qom-fuse
 @@ -15,7 +15,9 @@ import fuse, stat
@@ -48,11 +57,11 @@ index 4d85970a78..93d4a88700 100755
  fuse.fuse_python_api = (0, 2)
  
 diff --git a/scripts/qmp/qom-get b/scripts/qmp/qom-get
-index ec5275d53a..0209a7fb4e 100755
+index 7c5ede91bb..666df71832 100755
 --- a/scripts/qmp/qom-get
 +++ b/scripts/qmp/qom-get
-@@ -14,7 +14,9 @@
- from __future__ import print_function
+@@ -13,7 +13,9 @@
+ 
  import sys
  import os
 -from qmp import QEMUMonitorProtocol
@@ -63,11 +72,11 @@ index ec5275d53a..0209a7fb4e 100755
  cmd, args = sys.argv[0], sys.argv[1:]
  socket_path = None
 diff --git a/scripts/qmp/qom-list b/scripts/qmp/qom-list
-index 0f97440973..946f918945 100755
+index bb68fd65d4..5074fd939f 100755
 --- a/scripts/qmp/qom-list
 +++ b/scripts/qmp/qom-list
-@@ -14,7 +14,9 @@
- from __future__ import print_function
+@@ -13,7 +13,9 @@
+ 
  import sys
  import os
 -from qmp import QEMUMonitorProtocol
@@ -78,11 +87,11 @@ index 0f97440973..946f918945 100755
  cmd, args = sys.argv[0], sys.argv[1:]
  socket_path = None
 diff --git a/scripts/qmp/qom-set b/scripts/qmp/qom-set
-index 26ed9e3263..3cc6bfa6c1 100755
+index 19881d85e9..240a78187f 100755
 --- a/scripts/qmp/qom-set
 +++ b/scripts/qmp/qom-set
-@@ -14,7 +14,9 @@
- from __future__ import print_function
+@@ -13,7 +13,9 @@
+ 
  import sys
  import os
 -from qmp import QEMUMonitorProtocol
@@ -93,11 +102,11 @@ index 26ed9e3263..3cc6bfa6c1 100755
  cmd, args = sys.argv[0], sys.argv[1:]
  socket_path = None
 diff --git a/scripts/qmp/qom-tree b/scripts/qmp/qom-tree
-index 31603c681f..783712f18c 100755
+index fa91147a03..25b0781323 100755
 --- a/scripts/qmp/qom-tree
 +++ b/scripts/qmp/qom-tree
-@@ -16,7 +16,9 @@
- from __future__ import print_function
+@@ -15,7 +15,9 @@
+ 
  import sys
  import os
 -from qmp import QEMUMonitorProtocol
@@ -107,3 +116,6 @@ index 31603c681f..783712f18c 100755
  
  cmd, args = sys.argv[0], sys.argv[1:]
  socket_path = None
+-- 
+2.31.1
+

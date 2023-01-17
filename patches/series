@@ -3,6 +3,30 @@
 #
 # b946434f2659a182afc17e155be6791ebfb302eb
 0001-usb-fix-setup_len-init-CVE-2020-14364.patch
+# bc7f3b0b0d33fb58272a98c862dc9a1fa913fcd3 (5.0.0-rc1)
+0001-scripts-checkpatch.pl-Only-allow-Python-3-interprete.patch
+# 3d004a371e88a7454eb8ab8c19e6b0bd067b34cd (5.0.0-rc1)
+0002-scripts-Explicit-usage-of-Python-3-scripts-with-__ma.patch
+# b92e7dae2b2626c0afc8ac980660b2ffc3e35bf0 (5.0.0-rc1)
+0003-scripts-minikconf-Explicit-usage-of-Python-3.patch
+# 91aef87a2b8afb333934b02ce2d0d64a3fe11874 (5.0.0-rc1)
+0004-scripts-tracetool-Remove-shebang-header.patch
+# d2cdbd54db6e5976d02d7a2c48cb49915d34086d (5.0.0-rc1)
+0005-scripts-Explicit-usage-of-Python-3-scripts-without-_.patch
+# b38c2458d4ccbabbfdf1beb9df483b609a9513f8 (5.0.0-rc1)
+0006-scripts-signrom-remove-Python-2-support-add-shebang.patch
+# 15b015690b62c7c463fa6f5cdb2bc669749eefc3 (5.0.0-rc1)
+0001-tests-qemu-iotests-check-Allow-use-of-python3-interp.patch
+# 903cb1bf398666014180d00711e2c1a9ffdadd5a (5.0.0-rc1)
+0001-tests-qemu-iotests-Explicit-usage-of-Python-3-script.patch
+# 7c4775260807f1428484a5cebc7bc360c46a872d (5.0.0-rc1)
+0002-tests-qemu-iotests-Explicit-usage-of-Python3-scripts.patch
+# 6dd360ce3fd599ec373fa1206e850ee106a8e710 (5.0.0-rc1)
+0007-make-all-Python-scripts-executable.patch
+# 423edd9a31b3c78007bb5d9c9a9b3c0c618a10a8 (5.0.0-rc1)
+0002-drop-from-__future__-import-print_function.patch
+# 06d4c71f4869386abf97f45f61c21e9dc449943f (5.1.0-rc1)
+0003-scripts-qmp-Use-Python-3-interpreter.patch
 # c7b942d7f84ef54f266921bf7668d43f1f2c7c79 (5.1.0-rc1)
 0001-scripts-qmp-Fix-shebang-and-imports.patch
 # 045b1d4dbb44da67f1f86efa75b02843c0e951ef (5.2.0-rc1)

@@ -1,0 +1,37 @@
+From 15b015690b62c7c463fa6f5cdb2bc669749eefc3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Thu, 30 Jan 2020 17:32:22 +0100
+Subject: [PATCH 1/1] tests/qemu-iotests/check: Allow use of python3
+ interpreter
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+As we want to enforce a unique and explicit Python 3 interpreter,
+we need let this script handle 'python3' too.
+
+Suggested-by: Kevin Wolf <kwolf@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Message-Id: <20200130163232.10446-3-philmd@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+---
+ tests/qemu-iotests/check | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tests/qemu-iotests/check b/tests/qemu-iotests/check
+index fff5fa956a..1789ada52e 100755
+--- a/tests/qemu-iotests/check
++++ b/tests/qemu-iotests/check
+@@ -846,7 +846,8 @@ do
+ 
+         start=$(_wallclock)
+ 
+-        if [ "$(head -n 1 "$source_iotests/$seq")" == "#!/usr/bin/env python" ]; then
++        if [ "$(head -n 1 "$source_iotests/$seq" | sed 's/3$//')" \
++            == "#!/usr/bin/env python" ]; then
+             if $python_usable; then
+                 run_command="$PYTHON $seq"
+             else
+-- 
+2.31.1
+

@@ -1,0 +1,41 @@
+From d2cdbd54db6e5976d02d7a2c48cb49915d34086d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Thu, 30 Jan 2020 17:32:31 +0100
+Subject: [PATCH 5/5] scripts: Explicit usage of Python 3 (scripts without
+ __main__)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Use the program search path to find the Python 3 interpreter.
+
+Patch created mechanically by running:
+
+  $ sed -i "s,^#\!/usr/bin/\(env\ \)\?python$,#\!/usr/bin/env python3," \
+      $(git grep -lF '#!/usr/bin/env python' \
+      | xargs grep -L 'if __name__.*__main__')
+
+Reported-by: Vladimir Sementsov-Ogievskiy <vsementsov@virtuozzo.com>
+Suggested-by: Daniel P. Berrangé <berrange@redhat.com>
+Suggested-by: Stefan Hajnoczi <stefanha@redhat.com>
+Acked-by: Stefan Hajnoczi <stefanha@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Message-Id: <20200130163232.10446-12-philmd@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+---
+ scripts/analyse-9p-simpletrace.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/analyse-9p-simpletrace.py b/scripts/analyse-9p-simpletrace.py
+index 710e01adba..f20050fddd 100755
+--- a/scripts/analyse-9p-simpletrace.py
++++ b/scripts/analyse-9p-simpletrace.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ # Pretty print 9p simpletrace log
+ # Usage: ./analyse-9p-simpletrace <trace-events> <trace-pid>
+ #
+-- 
+2.31.1
+

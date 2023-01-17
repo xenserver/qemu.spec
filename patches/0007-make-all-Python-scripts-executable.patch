@@ -1,0 +1,42 @@
+From 6dd360ce3fd599ec373fa1206e850ee106a8e710 Mon Sep 17 00:00:00 2001
+From: Paolo Bonzini <pbonzini@redhat.com>
+Date: Tue, 4 Feb 2020 17:02:37 +0100
+Subject: [PATCH 7/7] make all Python scripts executable
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Scripts that have a Python shebang are meant to be executed directly from the
+shell; give them 755 permissions.
+
+Cc: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Message-Id: <20200204160237.16889-1-pbonzini@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+---
+ scripts/minikconf.py   | 0
+ scripts/signrom.py     | 0
+ tests/qemu-iotests/222 | 0
+ tests/qemu-iotests/245 | 0
+ 4 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100644 => 100755 scripts/minikconf.py
+ mode change 100644 => 100755 scripts/signrom.py
+ mode change 100644 => 100755 tests/qemu-iotests/222
+ mode change 100644 => 100755 tests/qemu-iotests/245
+
+diff --git a/scripts/minikconf.py b/scripts/minikconf.py
+old mode 100644
+new mode 100755
+diff --git a/scripts/signrom.py b/scripts/signrom.py
+old mode 100644
+new mode 100755
+diff --git a/tests/qemu-iotests/222 b/tests/qemu-iotests/222
+old mode 100644
+new mode 100755
+diff --git a/tests/qemu-iotests/245 b/tests/qemu-iotests/245
+old mode 100644
+new mode 100755
+-- 
+2.31.1
+

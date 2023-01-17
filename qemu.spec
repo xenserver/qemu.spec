@@ -22,7 +22,7 @@ Conflicts: xenopsd-xc < 0.123.0
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=%{package_srccommit}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
 Source1: qemu_trad_image.py
 Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycodemapdb/archive?at=%{keycodemapdb_cset}&format=tar.gz&prefix=%{keycodemapdb_path}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz
-BuildRequires: python2-devel
+BuildRequires: python3-devel
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
 BuildRequires: xen-dom0-libs-devel xen-libs-devel libusbx-devel
@@ -92,8 +92,8 @@ rm -rf %{buildroot}/usr/share/applications/
 %{__install} -D -m 644 %{SOURCE1} %{buildroot}%{_libdir}/xen/bin/qemu_trad_image.py
 
 # QMP scripts
-%{__install} -d -m 755 %{buildroot}%{python2_sitelib}/
-cp -r python/qemu %{buildroot}%{python2_sitelib}/
+%{__install} -d -m 755 %{buildroot}%{python3_sitelib}/
+cp -r python/qemu %{buildroot}%{python3_sitelib}/
 cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_install}
 
@@ -101,7 +101,7 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{_libdir}/xen/bin
 %{_datarootdir}/qemu
 %{_libexecdir}/*
-%{python2_sitelib}/qemu
+%{python3_sitelib}/qemu
 
 %{?_cov_results_package}
 
