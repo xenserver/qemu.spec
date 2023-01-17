@@ -21,6 +21,8 @@
 0001-ide-atapi-assert-that-the-buffer-pointer-is-in-range.patch
 # b8d7f1bc59276fec85e4d09f1567613a3e14d31e
 0001-ide-atapi-check-logical-block-address-and-read-size-.patch
+# f4d87ce47c60935e639c76f8973623fd7616cef4 (6.0.0-rc0)
+0001-ui-update-keycodemapdb-submodule-commit.patch
 # 3de46e6fc489c52c9431a8a832ad8170a7569bd8 (6.0.0-rc1)
 0001-e1000-fail-early-for-evil-descriptor.patch
 # 705df5466c98f3efdd2b68d3b31dad86858acad7 (6.0.0-rc1)
@@ -29,6 +31,8 @@
 0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
 # 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
 0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
+# d7696ff884e35c6dacf83a7cbe3355e3b0a90125 (6.1.0-rc0)
+0001-input-Add-lang1-and-lang2-to-QKeyCode.patch
 # ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
 0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 # N/A (6.0.0)
@@ -95,6 +99,12 @@ query-migratable.patch
 nvme-ns-fix-null.patch
 nvme-ns-allow-inactive.patch
 nvme-close-backend.patch
+
+# Key handling
+# https://lore.kernel.org/qemu-devel/20230301125211.278808-1-williamvdvelde@gmail.com/
+0001-Add-qemu-qcode-support-for-keys-F13-to-F24.patch
+# https://lore.kernel.org/qemu-devel/20230227173308.3944546-1-ross.lagerwall@citrix.com/
+0001-ps2-Don-t-send-key-release-event-for-Lang1-Lang2-key.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)

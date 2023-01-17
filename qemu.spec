@@ -2,7 +2,7 @@
 %{!?xsrel: %global xsrel 4.6.2}
 
 # submodule ui/keycodemapdb
-%define keycodemapdb_cset 6b3d716e2b6472eb7189d3220552280ef3d832ce
+%define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
 %define keycodemapdb_path ui/keycodemapdb
 
 # Control whether we build with the address sanitizer.
