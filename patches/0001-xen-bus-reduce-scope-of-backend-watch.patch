@@ -1,0 +1,150 @@
+From c4583c8c394ee49ce7d5271f572abd3b000fa9e4 Mon Sep 17 00:00:00 2001
+From: Paul Durrant <pdurrant@amazon.com>
+Date: Thu, 1 Oct 2020 09:15:00 +0100
+Subject: [PATCH 1/1] xen-bus: reduce scope of backend watch
+
+Currently a single watch on /local/domain/X/backend is registered by each
+QEMU process running in service domain X (where X is usually 0). The purpose
+of this watch is to ensure that QEMU is notified when the Xen toolstack
+creates a new device backend area.
+Such a backend area is specific to a single frontend area created for a
+specific guest domain and, since each QEMU process is also created to service
+a specfic guest domain, it is unnecessary and inefficient to notify all QEMU
+processes.
+Only the QEMU process associated with the same guest domain need
+receive the notification. This patch re-factors the watch registration code
+such that notifications are targetted appropriately.
+
+Reported-by: Jerome Leseinne <jerome.leseinne@gmail.com>
+Signed-off-by: Paul Durrant <pdurrant@amazon.com>
+Reviewed-by: Anthony PERARD <anthony.perard@citrix.com>
+Message-Id: <20201001081500.1026-1-paul@xen.org>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+diff --git a/hw/xen/xen-backend.c b/hw/xen/xen-backend.c
+index da065f81b7..5349303e9d 100644
+--- a/hw/xen/xen-backend.c
++++ b/hw/xen/xen-backend.c
+@@ -41,6 +41,12 @@ static void xen_backend_table_add(XenBackendImpl *impl)
+     g_hash_table_insert(xen_backend_table_get(), (void *)impl->type, impl);
+ }
+ 
++static const char **xen_backend_table_keys(unsigned int *count)
++{
++    return (const char **)g_hash_table_get_keys_as_array(
++        xen_backend_table_get(), count);
++}
++
+ static const XenBackendImpl *xen_backend_table_lookup(const char *type)
+ {
+     return g_hash_table_lookup(xen_backend_table_get(), type);
+@@ -70,6 +76,11 @@ void xen_backend_register(const XenBackendInfo *info)
+     xen_backend_table_add(impl);
+ }
+ 
++const char **xen_backend_get_types(unsigned int *count)
++{
++    return xen_backend_table_keys(count);
++}
++
+ static QLIST_HEAD(, XenBackendInstance) backend_list;
+ 
+ static void xen_backend_list_add(XenBackendInstance *backend)
+diff --git a/hw/xen/xen-bus.c b/hw/xen/xen-bus.c
+index c2ad22a42d..849250eb59 100644
+--- a/hw/xen/xen-bus.c
++++ b/hw/xen/xen-bus.c
+@@ -435,7 +435,15 @@ static void xen_bus_unrealize(BusState *bus, Error **errp)
+     trace_xen_bus_unrealize();
+ 
+     if (xenbus->backend_watch) {
+-        xen_bus_remove_watch(xenbus, xenbus->backend_watch, NULL);
++        unsigned int i;
++
++        for (i = 0; i < xenbus->backend_types; i++) {
++            if (xenbus->backend_watch[i]) {
++                xen_bus_remove_watch(xenbus, xenbus->backend_watch[i], NULL);
++            }
++        }
++
++        g_free(xenbus->backend_watch);
+         xenbus->backend_watch = NULL;
+     }
+ 
+@@ -451,8 +459,11 @@ static void xen_bus_unrealize(BusState *bus, Error **errp)
+ 
+ static void xen_bus_realize(BusState *bus, Error **errp)
+ {
++    char *key = g_strdup_printf("%u", xen_domid);
+     XenBus *xenbus = XEN_BUS(bus);
+     unsigned int domid;
++    const char **type;
++    unsigned int i;
+     Error *local_err = NULL;
+ 
+     trace_xen_bus_realize();
+@@ -474,19 +485,32 @@ static void xen_bus_realize(BusState *bus, Error **errp)
+ 
+     module_call_init(MODULE_INIT_XEN_BACKEND);
+ 
+-    xenbus->backend_watch =
+-        xen_bus_add_watch(xenbus, "", /* domain root node */
+-                          "backend", xen_bus_backend_changed, &local_err);
+-    if (local_err) {
+-        /* This need not be treated as a hard error so don't propagate */
+-        error_reportf_err(local_err,
+-                          "failed to set up enumeration watch: ");
++    type = xen_backend_get_types(&xenbus->backend_types);
++    xenbus->backend_watch = g_new(XenWatch *, xenbus->backend_types);
++
++    for (i = 0; i < xenbus->backend_types; i++) {
++        char *node = g_strdup_printf("backend/%s", type[i]);
++
++        xenbus->backend_watch[i] =
++            xen_bus_add_watch(xenbus, node, key, xen_bus_backend_changed,
++                              &local_err);
++        if (local_err) {
++            /* This need not be treated as a hard error so don't propagate */
++            error_reportf_err(local_err,
++                              "failed to set up '%s' enumeration watch: ",
++                              type[i]);
++        }
++
++        g_free(node);
+     }
+ 
++    g_free(type);
++    g_free(key);
+     return;
+ 
+ fail:
+     xen_bus_unrealize(bus, &error_abort);
++    g_free(key);
+ }
+ 
+ static void xen_bus_unplug_request(HotplugHandler *hotplug,
+diff --git a/include/hw/xen/xen-backend.h b/include/hw/xen/xen-backend.h
+index 010d712638..aac2fd454d 100644
+--- a/include/hw/xen/xen-backend.h
++++ b/include/hw/xen/xen-backend.h
+@@ -31,6 +31,7 @@ void xen_backend_set_device(XenBackendInstance *backend,
+ XenDevice *xen_backend_get_device(XenBackendInstance *backend);
+ 
+ void xen_backend_register(const XenBackendInfo *info);
++const char **xen_backend_get_types(unsigned int *nr);
+ 
+ void xen_backend_device_create(XenBus *xenbus, const char *type,
+                                const char *name, QDict *opts, Error **errp);
+diff --git a/include/hw/xen/xen-bus.h b/include/hw/xen/xen-bus.h
+index 3d5532258d..cb506589cf 100644
+--- a/include/hw/xen/xen-bus.h
++++ b/include/hw/xen/xen-bus.h
+@@ -69,7 +69,8 @@ typedef struct XenBus {
+     domid_t backend_id;
+     struct xs_handle *xsh;
+     XenWatchList *watch_list;
+-    XenWatch *backend_watch;
++    unsigned int backend_types;
++    XenWatch **backend_watch;
+     QLIST_HEAD(, XenDevice) inactive_devices;
+ } XenBus;
+ 
