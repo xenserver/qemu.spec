@@ -19,6 +19,8 @@
 0006-block-Avoid-stale-pointer-dereference-in-blk_get_aio.patch
 # 813212288970c39b1800f63e83ac6e96588095c6 (5.2.0-rc4)
 0001-ide-atapi-assert-that-the-buffer-pointer-is-in-range.patch
+# c4583c8c394ee49ce7d5271f572abd3b000fa9e4 (v5.2.0)
+0001-xen-bus-reduce-scope-of-backend-watch.patch
 # b8d7f1bc59276fec85e4d09f1567613a3e14d31e
 0001-ide-atapi-check-logical-block-address-and-read-size-.patch
 # f4d87ce47c60935e639c76f8973623fd7616cef4 (6.0.0-rc0)
