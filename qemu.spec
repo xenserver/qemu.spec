@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.1}
+%{!?xsrel: %global xsrel 5.2.2}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -106,6 +106,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Apr 18 2023 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.2
+- CA-376325: XSI-1393: Backport: xen-bus: reduce scope of backend watch
+
 * Fri Mar 03 2023 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.1
 - CA-374355: Fix use of Lang1/Lang2 keys
 
