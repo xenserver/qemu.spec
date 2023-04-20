@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 4.6.2}
+%{!?xsrel: %global xsrel 4.6.3}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -106,6 +106,11 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Thu Apr 20 2023 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-4.6.3
+- Convert to Koji-based build
+- CA-374355: Fix use of Lang1/Lang2 keys
+- CA-376325: XSI-1393: Backport: xen-bus: reduce scope of backend watch
+
 * Wed May 25 2022 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-4.6.2
 - CA-366527: Fix passthrough of multiple different devices
 - CA-362592: Fix mapcache/iothread SIGBUS
