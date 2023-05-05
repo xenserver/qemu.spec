@@ -15,7 +15,6 @@ Version: 4.2.1
 Release: %{?xsrel}%{?dist}
 License: GPL
 Requires: xs-clipboardd
-Requires: xengt-userspace
 ## We broke an interface used by xenopsd-xc without version signalling
 ## so we have to carry a conflicts line to say we broke it.
 Conflicts: xenopsd-xc < 0.123.0
