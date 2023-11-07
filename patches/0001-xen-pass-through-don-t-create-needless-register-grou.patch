@@ -1,0 +1,57 @@
+From c0e86b7624cb9d6db03e0d48cf82659e5b89a6a6 Mon Sep 17 00:00:00 2001
+From: Chuck Zmudzinski <brchuckz@aol.com>
+Date: Wed, 29 Jun 2022 02:04:05 -0400
+Subject: [PATCH 1/1] xen/pass-through: don't create needless register group
+
+Currently we are creating a register group for the Intel IGD OpRegion
+for every device we pass through, but the XEN_PCI_INTEL_OPREGION
+register group is only valid for an Intel IGD. Add a check to make
+sure the device is an Intel IGD and a check that the administrator has
+enabled gfx_passthru in the xl domain configuration. Require both checks
+to be true before creating the register group. Use the existing
+is_igd_vga_passthrough() function to check for a graphics device from
+any vendor and that the administrator enabled gfx_passthru in the xl
+domain configuration, but further require that the vendor be Intel,
+because only Intel IGD devices have an Intel OpRegion. These are the
+same checks hvmloader and libxl do to determine if the Intel OpRegion
+needs to be mapped into the guest's memory. Also, move the comment
+about trapping 0xfc for the Intel OpRegion where it belongs after
+applying this patch.
+
+Signed-off-by: Chuck Zmudzinski <brchuckz@aol.com>
+Reviewed-by: Anthony PERARD <anthony.perard@citrix.com>
+Message-Id: <c76dff6369ccf2256bd9eed5141da1db767293d2.1656480662.git.brchuckz@aol.com>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+---
+ hw/xen/xen_pt_config_init.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
+index bff0962795e3..4758514ddfcf 100644
+--- a/hw/xen/xen_pt_config_init.c
++++ b/hw/xen/xen_pt_config_init.c
+@@ -2032,12 +2032,16 @@ void xen_pt_config_init(XenPCIPassthroughState *s, Error **errp)
+             }
+         }
+ 
+-        /*
+-         * By default we will trap up to 0x40 in the cfg space.
+-         * If an intel device is pass through we need to trap 0xfc,
+-         * therefore the size should be 0xff.
+-         */
+         if (xen_pt_emu_reg_grps[i].grp_id == XEN_PCI_INTEL_OPREGION) {
++            if (!is_igd_vga_passthrough(&s->real_device) ||
++                s->real_device.vendor_id != PCI_VENDOR_ID_INTEL) {
++                continue;
++            }
++            /*
++             * By default we will trap up to 0x40 in the cfg space.
++             * If an intel device is pass through we need to trap 0xfc,
++             * therefore the size should be 0xff.
++             */
+             reg_grp_offset = XEN_PCI_INTEL_OPREGION;
+         }
+ 
+-- 
+2.41.0
+

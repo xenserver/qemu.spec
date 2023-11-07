@@ -1,0 +1,41 @@
+From fb36fb9344c284a58f3f3ec5be6408fc51eaf3f1 Mon Sep 17 00:00:00 2001
+From: Ruili Ji <ruili.ji@amd.com>
+Date: Tue, 6 Sep 2022 14:09:41 +0800
+Subject: [PATCH 1/1] hw/xen: set pci Atomic Ops requests for passthrough
+ device
+
+Make guest os access pci device control 2 reg for passthrough device
+as struct XenPTRegInfo described in the file hw/xen/xen_pt.h.
+/* reg read only field mask (ON:RO/ROS, OFF:other) */
+uint32_t ro_mask;
+/* reg emulate field mask (ON:emu, OFF:passthrough) */
+uint32_t emu_mask;
+
+Resolves: https://gitlab.com/qemu-project/qemu/-/issues/1196
+Signed-off-by: Aaron Liu <Aaron.Liu@amd.com>
+Signed-off-by: Ruili Ji <ruili.ji@amd.com>
+Message-ID: <BL1PR12MB599341DC55BA53FE588DE14E9B7E9@BL1PR12MB5993.namprd12.prod.outlook.com>
+Reviewed-by: Paul Durrant <paul@xen.org>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+---
+ hw/xen/xen_pt_config_init.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
+index 4758514ddfcf..cde898b7442b 100644
+--- a/hw/xen/xen_pt_config_init.c
++++ b/hw/xen/xen_pt_config_init.c
+@@ -985,8 +985,8 @@ static XenPTRegInfo xen_pt_emu_reg_pcie[] = {
+         .offset     = 0x28,
+         .size       = 2,
+         .init_val   = 0x0000,
+-        .ro_mask    = 0xFFE0,
+-        .emu_mask   = 0xFFFF,
++        .ro_mask    = 0xFFA0,
++        .emu_mask   = 0xFFBF,
+         .init       = xen_pt_devctrl2_reg_init,
+         .u.w.read   = xen_pt_word_reg_read,
+         .u.w.write  = xen_pt_word_reg_write,
+-- 
+2.41.0
+

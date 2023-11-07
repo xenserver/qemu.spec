@@ -65,6 +65,14 @@
 0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
 # a021a2dd8b790437d27db95774969349632f856a
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
+# be9c61da9fc57eb7d293f380d0805ca6f46c2657 (7.1.0-rc1)
+0001-xen-pass-through-merge-emulated-bits-correctly.patch
+# c0e86b7624cb9d6db03e0d48cf82659e5b89a6a6 (7.1.0-rc1)
+0001-xen-pass-through-don-t-create-needless-register-grou.patch
+# fb36fb9344c284a58f3f3ec5be6408fc51eaf3f1 (7.2.0-rc1)
+0001-hw-xen-set-pci-Atomic-Ops-requests-for-passthrough-d.patch
+# 3856734d80fbf46683e4080117ed961f5ab1300b (8.0.0-rc1)
+0001-hw-xen-xen_pt-fix-uninitialized-variable.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch

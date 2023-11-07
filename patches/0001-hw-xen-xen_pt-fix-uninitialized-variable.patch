@@ -1,0 +1,42 @@
+From 3856734d80fbf46683e4080117ed961f5ab1300b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Fri, 27 Jan 2023 06:08:14 +0100
+Subject: [PATCH 1/1] hw/xen/xen_pt: fix uninitialized variable
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+xen_pt_config_reg_init() reads only that many bytes as the size of the
+register that is being initialized. It uses
+xen_host_pci_get_{byte,word,long} and casts its last argument to
+expected pointer type. This means for smaller registers higher bits of
+'val' are not initialized. Then, the function fails if any of those
+higher bits are set.
+
+Fix this by initializing 'val' with zero.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Reviewed-by: Stefano Stabellini <sstabellini@kernel.org>
+Message-Id: <20230127050815.4155276-1-marmarek@invisiblethingslab.com>
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+---
+ hw/xen/xen_pt_config_init.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
+index cde898b7442b..8b9b554352fc 100644
+--- a/hw/xen/xen_pt_config_init.c
++++ b/hw/xen/xen_pt_config_init.c
+@@ -1924,7 +1924,7 @@ static void xen_pt_config_reg_init(XenPCIPassthroughState *s,
+     if (reg->init) {
+         uint32_t host_mask, size_mask;
+         unsigned int offset;
+-        uint32_t val;
++        uint32_t val = 0;
+ 
+         /* initialize emulate register */
+         rc = reg->init(s, reg_entry->reg,
+-- 
+2.41.0
+
