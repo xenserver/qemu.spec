@@ -67,7 +67,7 @@
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
 
 #
-# CP-46102 More PCI passthrough devices for NetScaler MPX (single VPX):
+# CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
 #
 # be9c61da9fc57eb7d293f380d0805ca6f46c2657 (7.1.0-rc1)
 0001-xen-pass-through-merge-emulated-bits-correctly.patch

@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.2}
+%{!?xsrel: %global xsrel 5.2.4}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -106,6 +106,15 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Nov 21 2023 Bernhard Kaindl <bernhard.kaindl@cloud.com> - 4.2.1-5.2.4
+- CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
+  - hw/xen: set pci Atomic Ops requests for passthrough device
+  - hw/xen/xen_pt: fix uninitialized variable
+  - xen/pass-through: don't create needless register group
+  - xen/pass-through: merge emulated bits correctly
+  - Emulate the multifunction bit and set it based on the multifunction
+    property of the PCIDevice (which can be set using QAPI).
+
 * Tue Apr 18 2023 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.2
 - CA-376325: XSI-1393: Backport: xen-bus: reduce scope of backend watch
 
