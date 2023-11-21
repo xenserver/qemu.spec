@@ -65,6 +65,10 @@
 0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
 # a021a2dd8b790437d27db95774969349632f856a
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
+
+#
+# CP-46102 More PCI passthrough devices for NetScaler MPX (single VPX):
+#
 # be9c61da9fc57eb7d293f380d0805ca6f46c2657 (7.1.0-rc1)
 0001-xen-pass-through-merge-emulated-bits-correctly.patch
 # c0e86b7624cb9d6db03e0d48cf82659e5b89a6a6 (7.1.0-rc1)
@@ -73,6 +77,8 @@
 0001-hw-xen-set-pci-Atomic-Ops-requests-for-passthrough-d.patch
 # 3856734d80fbf46683e4080117ed961f5ab1300b (8.0.0-rc1)
 0001-hw-xen-xen_pt-fix-uninitialized-variable.patch
+# Reviewed by maintainer: https://lists.xenproject.org/archives/html/xen-devel/2023-11/msg00198.html
+xen_pt-Emulate-multifunction-bit-in-header-type.patch
 
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch

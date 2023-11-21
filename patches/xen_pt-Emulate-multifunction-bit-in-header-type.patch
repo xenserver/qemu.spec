@@ -1,0 +1,50 @@
+Pending upstream patch:
+https://lists.xenproject.org/archives/html/xen-devel/2023-11/msg00198.html
+Reviewed by Maintainer:
+https://lists.xenproject.org/archives/html/xen-devel/2023-11/msg00307.html
+
+Subject: [PATCH] xen/pt: Emulate multifunction bit in header type
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+Date: 03/11/2023, 18:26
+To: <xen-devel@lists.xenproject.org>
+
+The intention of the code appears to have been to unconditionally set
+the multifunction bit but since the emulation mask is 0x00 it has no
+effect. Instead, emulate the bit and set it based on the multifunction
+property of the PCIDevice (which can be set using QAPI).
+
+This allows making passthrough devices appear as functions in a Xen
+guest.
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
+Reviewed-by: Paul Durrant <paul@xen.org>
+---
+ hw/xen/xen_pt_config_init.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/hw/xen/xen_pt_config_init.c b/hw/xen/xen_pt_config_init.c
+index 2b8680b112fa..e6ec32e3ccd2 100644
+--- a/hw/xen/xen_pt_config_init.c
++++ b/hw/xen/xen_pt_config_init.c
+@@ -291,7 +291,10 @@ static int xen_pt_header_type_reg_init(XenPCIPassthroughState *s,
+                                        uint32_t *data)
+ {
+     /* read PCI_HEADER_TYPE */
+-    *data = reg->init_val | 0x80;
++    *data = reg->init_val;
++    if ((PCI_DEVICE(s)->cap_present & QEMU_PCI_CAP_MULTIFUNCTION)) {
++        *data |= PCI_HEADER_TYPE_MULTI_FUNCTION;
++    }
+     return 0;
+ }
+
+@@ -676,7 +679,7 @@ static XenPTRegInfo xen_pt_emu_reg_header0[] = {
+         .size       = 1,
+         .init_val   = 0x00,
+         .ro_mask    = 0xFF,
+-        .emu_mask   = 0x00,
++        .emu_mask   = PCI_HEADER_TYPE_MULTI_FUNCTION,
+         .init       = xen_pt_header_type_reg_init,
+         .u.b.read   = xen_pt_byte_reg_read,
+         .u.b.write  = xen_pt_byte_reg_write,
+-- 2.41.0
