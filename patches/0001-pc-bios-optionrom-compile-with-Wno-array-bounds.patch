@@ -1,0 +1,37 @@
+From e5a888cdcb5dc3db5abf46440c5753e873a9fc9f Mon Sep 17 00:00:00 2001
+From: Paolo Bonzini <pbonzini@redhat.com>
+Date: Wed, 13 Apr 2022 14:22:12 +0200
+Subject: [PATCH] pc-bios/optionrom: compile with -Wno-array-bounds
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Avoids the following bogus warning:
+
+pvh_main.c: In function ‘pvh_load_kernel’:
+pvh_main.c:101:42: warning: array subscript 0 is outside array bounds of ‘uint16_t[0]’ {aka ‘short unsigned int[]’} [-Warray-bounds]
+  101 |         uint32_t ebda_paddr = ((uint32_t)*((uint16_t *)EBDA_BASE_ADDR)) << 4;
+      |                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cc: qemu-stable@nongnu.org
+Reviewed-by: Richard Henderson <richard.henderson@linaro.org>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ pc-bios/optionrom/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/pc-bios/optionrom/Makefile b/pc-bios/optionrom/Makefile
+index e33a24da0d..2d1cf3659c 100644
+--- a/pc-bios/optionrom/Makefile
++++ b/pc-bios/optionrom/Makefile
+@@ -19,6 +19,7 @@ override CFLAGS += -march=i486
+ QEMU_CFLAGS := $(filter -W%, $(QEMU_CFLAGS)) $(CFLAGS_NOPIE) -ffreestanding
+ QEMU_CFLAGS += $(call cc-option, $(QEMU_CFLAGS), -fno-stack-protector)
+ QEMU_CFLAGS += $(call cc-option, $(QEMU_CFLAGS), -m16)
++QEMU_CFLAGS += $(call cc-option, $(QEMU_CFLAGS), -Wno-array-bounds)
+ ifeq ($(filter -m16, $(QEMU_CFLAGS)),)
+ # Attempt to work around compilers that lack -m16 (GCC <= 4.8, clang <= ??)
+ # On GCC we add -fno-toplevel-reorder to keep the order of asm blocks with
+-- 
+2.34.1
+

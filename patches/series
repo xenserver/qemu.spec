@@ -25,6 +25,8 @@
 0007-make-all-Python-scripts-executable.patch
 # 423edd9a31b3c78007bb5d9c9a9b3c0c618a10a8 (5.0.0-rc1)
 0002-drop-from-__future__-import-print_function.patch
+# ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
+0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 # 06d4c71f4869386abf97f45f61c21e9dc449943f (5.1.0-rc1)
 0003-scripts-qmp-Use-Python-3-interpreter.patch
 # c7b942d7f84ef54f266921bf7668d43f1f2c7c79 (5.1.0-rc1)
@@ -41,6 +43,8 @@
 0001-pci-assert-configuration-access-is-within-bounds.patch
 # e6cada9231af022ffc2e351c70dfaea8530496e1 (5.1.0-rc1)
 0006-block-Avoid-stale-pointer-dereference-in-blk_get_aio.patch
+# f2dfe54c74f768a5bf78c9e5918918727f9d9459 (v5.1.0)
+0001-configure-Do-not-ignore-malloc-value.patch
 # 813212288970c39b1800f63e83ac6e96588095c6 (5.2.0-rc4)
 0001-ide-atapi-assert-that-the-buffer-pointer-is-in-range.patch
 # c4583c8c394ee49ce7d5271f572abd3b000fa9e4 (v5.2.0)
@@ -57,14 +61,32 @@
 0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
 # 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
 0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
-# d7696ff884e35c6dacf83a7cbe3355e3b0a90125 (6.1.0-rc0)
-0001-input-Add-lang1-and-lang2-to-QKeyCode.patch
-# ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
-0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 # N/A (6.0.0)
 0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
-# a021a2dd8b790437d27db95774969349632f856a
+# b565b44ec202fbe52a017273319db83f067fe574 (v6.0.0)
+0001-net-eth-Use-correct-in6_address-offset-in-_eth_get_r.patch
+# 38462440ca22a8ead2ec1e98ef3c45e264fa6f60 (v6.0.0)
+0002-net-eth-Simplify-_eth_get_rss_ex_dst_addr.patch
+# dbd8d3f959e5ba9b1804a5c99c7f8af42d96809b (v6.0.0)
+0003-net-eth-Better-describe-_eth_get_rss_ex_dst_addr-s-o.patch
+# 6f10f77dcdbc151217d19229d9aeeb93c9c1c408 (v6.0.0)
+0004-net-eth-Check-size-earlier-in-_eth_get_rss_ex_dst_ad.patch
+# ef763586c943815eb0836c54c207ce8572e176a7 (v6.0.0)
+0005-net-eth-Check-iovec-has-enough-data-earlier.patch
+# 7d6a4f123e00c9dbd40867ae1a650a4fd0bc4a3d (v6.0.0)
+0006-net-eth-Read-ip6_ext_hdr_routing-buffer-before-acces.patch
+# c7274b5ef43614dd133daec1e2018f71d8744088 (v6.0.0)
+0007-net-eth-Add-an-assert-and-invert-if-statement-to-sim.patch
+# bbd2d5a8120771ec59b86a80a1f51884e0a26e53 (v6.0.0)
+0001-build-no-pie-is-no-functional-linker-flag.patch
+# d7696ff884e35c6dacf83a7cbe3355e3b0a90125 (6.1.0-rc0)
+0001-input-Add-lang1-and-lang2-to-QKeyCode.patch
+# a021a2dd8b790437d27db95774969349632f856a (v7.0.0)
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
+# 79854b95446396c8e7f397800c5d86c3d9a7540d (v7.0.0)
+0001-block-qdict-Fix-Werror-maybe-uninitialized.patch
+# 236d15222e06750d6b889030ed04c849b1dc279e (v7.1.0)
+0001-pc-bios-optionrom-compile-with-Wno-array-bounds.patch
 
 #
 # CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
@@ -210,5 +232,10 @@ disable-dirty-vram-tracking.patch
 
 # Build configuration
 build-configuration.patch
+
+#
+# Compile and build fixes when upgrading to XenServer 9 with higher version of GCC/glibc
+#
+0001-CP-46162-Resolve-the-Null-pointer-error-in-configure.patch
 
 # Debug patches

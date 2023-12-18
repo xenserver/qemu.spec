@@ -1,0 +1,37 @@
+From 1d762f1f1267d79868009953bcd5b3db21a678b5 Mon Sep 17 00:00:00 2001
+From: Stephen Cheng <stephen.cheng@cloud.com>
+Date: Mon, 18 Dec 2023 10:45:15 +0800
+Subject: [PATCH] CP-46162: Resolve the Null pointer error in configure
+
+Signed-off-by: Stephen Cheng <stephen.cheng@cloud.com>
+---
+ configure | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 08371fb722..8c245f8890 100755
+--- a/configure
++++ b/configure
+@@ -4776,7 +4776,8 @@ cat > $TMPC <<EOF
+ 
+ int main(void)
+ {
+-    return clock_adjtime(0, 0);
++    struct timex a = {};
++    return clock_adjtime(0, &a);
+ }
+ EOF
+ clock_adjtime=no
+@@ -4885,7 +4886,8 @@ cat > $TMPC <<EOF
+ #include <time.h>
+ int main(void) {
+   timer_create(CLOCK_REALTIME, NULL, NULL);
+-  return clock_gettime(CLOCK_REALTIME, NULL);
++  struct timespec a = {};
++  return clock_gettime(CLOCK_REALTIME, &a);
+ }
+ EOF
+ 
+-- 
+2.34.1
+

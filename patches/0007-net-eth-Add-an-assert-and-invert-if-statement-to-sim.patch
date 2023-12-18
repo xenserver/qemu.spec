@@ -1,0 +1,51 @@
+From d5b1bd7afeddac1c6b1cd9b862dc5fdbe76da71f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Wed, 10 Mar 2021 19:31:23 +0100
+Subject: [PATCH 7/7] net/eth: Add an assert() and invert if() statement to
+ simplify code
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+To simplify the function body, invert the if() statement, returning
+earlier.
+Since we already checked there is enough data in the iovec buffer,
+simply add an assert() call to consume the bytes_read variable.
+
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+Reviewed-by: Miroslav Rezanina <mrezanin@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/eth.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/net/eth.c b/net/eth.c
+index 8f0a0d133b..7f4d54fa3f 100644
+--- a/net/eth.c
++++ b/net/eth.c
+@@ -416,15 +416,14 @@ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+     bytes_read = iov_to_buf(pkt, pkt_frags, ext_hdr_offset,
+                             &rt_hdr, sizeof(rt_hdr));
+     assert(bytes_read == sizeof(rt_hdr));
+-
+-    if ((rt_hdr.rtype == 2) && (rt_hdr.segleft == 1)) {
+-        bytes_read = iov_to_buf(pkt, pkt_frags, ext_hdr_offset + sizeof(rt_hdr),
+-                                dst_addr, sizeof(*dst_addr));
+-
+-        return bytes_read == sizeof(*dst_addr);
++    if ((rt_hdr.rtype != 2) || (rt_hdr.segleft != 1)) {
++        return false;
+     }
++    bytes_read = iov_to_buf(pkt, pkt_frags, ext_hdr_offset + sizeof(rt_hdr),
++                            dst_addr, sizeof(*dst_addr));
++    assert(bytes_read == sizeof(*dst_addr));
+ 
+-    return false;
++    return true;
+ }
+ 
+ static bool
+-- 
+2.34.1
+

@@ -1,0 +1,55 @@
+From 26ff87b8a8245d1726f2d5fd16fbb7a55c9929e4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Wed, 10 Mar 2021 19:31:18 +0100
+Subject: [PATCH 2/7] net/eth: Simplify _eth_get_rss_ex_dst_addr()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The length field is already contained in the ip6_ext_hdr structure.
+Check it direcly in eth_parse_ipv6_hdr() before calling
+_eth_get_rss_ex_dst_addr(), which gets a bit simplified.
+
+Reviewed-by: Miroslav Rezanina <mrezanin@redhat.com>
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/eth.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/net/eth.c b/net/eth.c
+index 38dc2b4caa..a7d250ebe3 100644
+--- a/net/eth.c
++++ b/net/eth.c
+@@ -407,9 +407,7 @@ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+ {
+     struct ip6_ext_hdr_routing *rthdr = (struct ip6_ext_hdr_routing *) ext_hdr;
+ 
+-    if ((rthdr->rtype == 2) &&
+-        (rthdr->len == sizeof(struct in6_address) / 8) &&
+-        (rthdr->segleft == 1)) {
++    if ((rthdr->rtype == 2) && (rthdr->segleft == 1)) {
+ 
+         size_t input_size = iov_size(pkt, pkt_frags);
+         size_t bytes_read;
+@@ -528,10 +526,12 @@ bool eth_parse_ipv6_hdr(const struct iovec *pkt, int pkt_frags,
+         }
+ 
+         if (curr_ext_hdr_type == IP6_ROUTING) {
+-            info->rss_ex_dst_valid =
+-                _eth_get_rss_ex_dst_addr(pkt, pkt_frags,
+-                                         ip6hdr_off + info->full_hdr_len,
+-                                         &ext_hdr, &info->rss_ex_dst);
++            if (ext_hdr.ip6r_len == sizeof(struct in6_address) / 8) {
++                info->rss_ex_dst_valid =
++                    _eth_get_rss_ex_dst_addr(pkt, pkt_frags,
++                                             ip6hdr_off + info->full_hdr_len,
++                                             &ext_hdr, &info->rss_ex_dst);
++            }
+         } else if (curr_ext_hdr_type == IP6_DESTINATON) {
+             info->rss_ex_src_valid =
+                 _eth_get_rss_ex_src_addr(pkt, pkt_frags,
+-- 
+2.34.1
+

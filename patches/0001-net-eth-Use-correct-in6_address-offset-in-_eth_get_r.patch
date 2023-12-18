@@ -1,0 +1,39 @@
+From 98628343e94184e3740a99251a4f79eb29e656a5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Wed, 10 Mar 2021 19:31:17 +0100
+Subject: [PATCH 1/7] net/eth: Use correct in6_address offset in
+ _eth_get_rss_ex_dst_addr()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The in6_address comes after the ip6_ext_hdr_routing header,
+not after the ip6_ext_hdr one. Fix the offset.
+
+Cc: qemu-stable@nongnu.org
+Reported-by: Stefano Garzarella <sgarzare@redhat.com>
+Fixes: eb700029c78 ("net_pkt: Extend packet abstraction as required by e1000e functionality")
+Reviewed-by: Miroslav Rezanina <mrezanin@redhat.com>
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/eth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/eth.c b/net/eth.c
+index 0c1d413ee2..38dc2b4caa 100644
+--- a/net/eth.c
++++ b/net/eth.c
+@@ -419,7 +419,7 @@ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+         }
+ 
+         bytes_read = iov_to_buf(pkt, pkt_frags,
+-                                rthdr_offset + sizeof(*ext_hdr),
++                                rthdr_offset + sizeof(*rthdr),
+                                 dst_addr, sizeof(*dst_addr));
+ 
+         return bytes_read == sizeof(*dst_addr);
+-- 
+2.34.1
+

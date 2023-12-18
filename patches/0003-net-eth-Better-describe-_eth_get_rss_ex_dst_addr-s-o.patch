@@ -1,0 +1,51 @@
+From 1f591276f06b3dc3f26da5d14e01df5fe761ff78 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Wed, 10 Mar 2021 19:31:19 +0100
+Subject: [PATCH 3/7] net/eth: Better describe _eth_get_rss_ex_dst_addr's
+ offset argument
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The 'offset' argument represents the offset to the ip6_ext_hdr
+header, rename it as 'ext_hdr_offset'.
+
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+Reviewed-by: Miroslav Rezanina <mrezanin@redhat.com>
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/eth.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/net/eth.c b/net/eth.c
+index a7d250ebe3..ba26f31c2e 100644
+--- a/net/eth.c
++++ b/net/eth.c
+@@ -401,7 +401,7 @@ eth_is_ip6_extension_header_type(uint8_t hdr_type)
+ 
+ static bool
+ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+-                        size_t rthdr_offset,
++                        size_t ext_hdr_offset,
+                         struct ip6_ext_hdr *ext_hdr,
+                         struct in6_address *dst_addr)
+ {
+@@ -412,12 +412,12 @@ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+         size_t input_size = iov_size(pkt, pkt_frags);
+         size_t bytes_read;
+ 
+-        if (input_size < rthdr_offset + sizeof(*ext_hdr)) {
++        if (input_size < ext_hdr_offset + sizeof(*ext_hdr)) {
+             return false;
+         }
+ 
+         bytes_read = iov_to_buf(pkt, pkt_frags,
+-                                rthdr_offset + sizeof(*rthdr),
++                                ext_hdr_offset + sizeof(*rthdr),
+                                 dst_addr, sizeof(*dst_addr));
+ 
+         return bytes_read == sizeof(*dst_addr);
+-- 
+2.34.1
+

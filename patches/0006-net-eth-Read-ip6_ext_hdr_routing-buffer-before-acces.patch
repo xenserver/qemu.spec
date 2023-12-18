@@ -1,0 +1,141 @@
+From a99f8540a854f41ce66082cf72fc701d1bda6779 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Philippe=20Mathieu-Daud=C3=A9?= <philmd@redhat.com>
+Date: Wed, 10 Mar 2021 19:31:22 +0100
+Subject: [PATCH 6/7] net/eth: Read ip6_ext_hdr_routing buffer before accessing
+ it
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We can't know the caller read enough data in the memory pointed
+by ext_hdr to cast it as a ip6_ext_hdr_routing.
+Declare rt_hdr on the stack and fill it again from the iovec.
+
+Since we already checked there is enough data in the iovec buffer,
+simply add an assert() call to consume the bytes_read variable.
+
+This fix a 2 bytes buffer overrun in eth_parse_ipv6_hdr() reported
+by QEMU fuzzer:
+
+  $ cat << EOF | ./qemu-system-i386 -M pc-q35-5.0 \
+    -accel qtest -monitor none \
+    -serial none -nographic -qtest stdio
+  outl 0xcf8 0x80001010
+  outl 0xcfc 0xe1020000
+  outl 0xcf8 0x80001004
+  outw 0xcfc 0x7
+  write 0x25 0x1 0x86
+  write 0x26 0x1 0xdd
+  write 0x4f 0x1 0x2b
+  write 0xe1020030 0x4 0x190002e1
+  write 0xe102003a 0x2 0x0807
+  write 0xe1020048 0x4 0x12077cdd
+  write 0xe1020400 0x4 0xba077cdd
+  write 0xe1020420 0x4 0x190002e1
+  write 0xe1020428 0x4 0x3509d807
+  write 0xe1020438 0x1 0xe2
+  EOF
+  =================================================================
+  ==2859770==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7ffdef904902 at pc 0x561ceefa78de bp 0x7ffdef904820 sp 0x7ffdef904818
+  READ of size 1 at 0x7ffdef904902 thread T0
+      #0 0x561ceefa78dd in _eth_get_rss_ex_dst_addr net/eth.c:410:17
+      #1 0x561ceefa41fb in eth_parse_ipv6_hdr net/eth.c:532:17
+      #2 0x561cef7de639 in net_tx_pkt_parse_headers hw/net/net_tx_pkt.c:228:14
+      #3 0x561cef7dbef4 in net_tx_pkt_parse hw/net/net_tx_pkt.c:273:9
+      #4 0x561ceec29f22 in e1000e_process_tx_desc hw/net/e1000e_core.c:730:29
+      #5 0x561ceec28eac in e1000e_start_xmit hw/net/e1000e_core.c:927:9
+      #6 0x561ceec1baab in e1000e_set_tdt hw/net/e1000e_core.c:2444:9
+      #7 0x561ceebf300e in e1000e_core_write hw/net/e1000e_core.c:3256:9
+      #8 0x561cef3cd4cd in e1000e_mmio_write hw/net/e1000e.c:110:5
+
+  Address 0x7ffdef904902 is located in stack of thread T0 at offset 34 in frame
+      #0 0x561ceefa320f in eth_parse_ipv6_hdr net/eth.c:486
+
+    This frame has 1 object(s):
+      [32, 34) 'ext_hdr' (line 487) <== Memory access at offset 34 overflows this variable
+  HINT: this may be a false positive if your program uses some custom stack unwind mechanism, swapcontext or vfork
+        (longjmp and C++ exceptions *are* supported)
+  SUMMARY: AddressSanitizer: stack-buffer-overflow net/eth.c:410:17 in _eth_get_rss_ex_dst_addr
+  Shadow bytes around the buggy address:
+    0x10003df188d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df188e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df188f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18910: 00 00 00 00 00 00 00 00 00 00 00 00 f1 f1 f1 f1
+  =>0x10003df18920:[02]f3 f3 f3 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18930: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18940: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18950: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18960: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    0x10003df18970: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  Shadow byte legend (one shadow byte represents 8 application bytes):
+    Addressable:           00
+    Partially addressable: 01 02 03 04 05 06 07
+    Stack left redzone:      f1
+    Stack right redzone:     f3
+  ==2859770==ABORTING
+
+Add the corresponding qtest case with the fuzzer reproducer.
+
+FWIW GCC 11 similarly reported:
+
+  net/eth.c: In function 'eth_parse_ipv6_hdr':
+  net/eth.c:410:15: error: array subscript 'struct ip6_ext_hdr_routing[0]' is partly outside array bounds of 'struct ip6_ext_hdr[1]' [-Werror=array-bounds]
+    410 |     if ((rthdr->rtype == 2) && (rthdr->segleft == 1)) {
+        |          ~~~~~^~~~~~~
+  net/eth.c:485:24: note: while referencing 'ext_hdr'
+    485 |     struct ip6_ext_hdr ext_hdr;
+        |                        ^~~~~~~
+  net/eth.c:410:38: error: array subscript 'struct ip6_ext_hdr_routing[0]' is partly outside array bounds of 'struct ip6_ext_hdr[1]' [-Werror=array-bounds]
+    410 |     if ((rthdr->rtype == 2) && (rthdr->segleft == 1)) {
+        |                                 ~~~~~^~~~~~~~~
+  net/eth.c:485:24: note: while referencing 'ext_hdr'
+    485 |     struct ip6_ext_hdr ext_hdr;
+        |                        ^~~~~~~
+
+Cc: qemu-stable@nongnu.org
+Buglink: https://bugs.launchpad.net/qemu/+bug/1879531
+Reported-by: Alexander Bulekov <alxndr@bu.edu>
+Reported-by: Miroslav Rezanina <mrezanin@redhat.com>
+Reviewed-by: Stefano Garzarella <sgarzare@redhat.com>
+Reviewed-by: Miroslav Rezanina <mrezanin@redhat.com>
+Fixes: eb700029c78 ("net_pkt: Extend packet abstraction as required by e1000e functionality")
+Signed-off-by: Philippe Mathieu-Daudé <philmd@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/eth.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/net/eth.c b/net/eth.c
+index 1a2c4b25a4..8f0a0d133b 100644
+--- a/net/eth.c
++++ b/net/eth.c
+@@ -405,17 +405,20 @@ _eth_get_rss_ex_dst_addr(const struct iovec *pkt, int pkt_frags,
+                         struct ip6_ext_hdr *ext_hdr,
+                         struct in6_address *dst_addr)
+ {
+-    struct ip6_ext_hdr_routing *rthdr = (struct ip6_ext_hdr_routing *) ext_hdr;
++    struct ip6_ext_hdr_routing rt_hdr;
+     size_t input_size = iov_size(pkt, pkt_frags);
+     size_t bytes_read;
+ 
+-    if (input_size < ext_hdr_offset + sizeof(*rthdr) + sizeof(*dst_addr)) {
++    if (input_size < ext_hdr_offset + sizeof(rt_hdr) + sizeof(*dst_addr)) {
+         return false;
+     }
+ 
+-    if ((rthdr->rtype == 2) && (rthdr->segleft == 1)) {
+-        bytes_read = iov_to_buf(pkt, pkt_frags,
+-                                ext_hdr_offset + sizeof(*rthdr),
++    bytes_read = iov_to_buf(pkt, pkt_frags, ext_hdr_offset,
++                            &rt_hdr, sizeof(rt_hdr));
++    assert(bytes_read == sizeof(rt_hdr));
++
++    if ((rt_hdr.rtype == 2) && (rt_hdr.segleft == 1)) {
++        bytes_read = iov_to_buf(pkt, pkt_frags, ext_hdr_offset + sizeof(rt_hdr),
+                                 dst_addr, sizeof(*dst_addr));
+ 
+         return bytes_read == sizeof(*dst_addr);
+-- 
+2.34.1
+

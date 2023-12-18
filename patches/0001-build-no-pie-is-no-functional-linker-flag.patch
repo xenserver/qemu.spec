@@ -1,0 +1,72 @@
+From b7b8a6fa487f0380bcfbfc647c0938ab0be6571e Mon Sep 17 00:00:00 2001
+From: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+Date: Mon, 14 Dec 2020 16:09:38 +0100
+Subject: [PATCH] build: -no-pie is no functional linker flag
+
+Recent binutils changes dropping unsupported options [1] caused a build
+issue in regard to the optionroms.
+
+  ld -m elf_i386 -T /<<PKGBUILDDIR>>/pc-bios/optionrom//flat.lds -no-pie \
+    -s -o multiboot.img multiboot.o
+  ld.bfd: Error: unable to disambiguate: -no-pie (did you mean --no-pie ?)
+
+This isn't really a regression in ld.bfd, filing the bug upstream
+revealed that this never worked as a ld flag [2] - in fact it seems we
+were by accident setting --nmagic).
+
+Since it never had the wanted effect this usage of LDFLAGS_NOPIE, should be
+droppable without any effect. This also is the only use-case of LDFLAGS_NOPIE
+in .mak, therefore we can also remove it from being added there.
+
+[1]: https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=983d925d
+[2]: https://sourceware.org/bugzilla/show_bug.cgi?id=27050#c5
+
+Signed-off-by: Christian Ehrhardt <christian.ehrhardt@canonical.com>
+Message-Id: <20201214150938.1297512-1-christian.ehrhardt@canonical.com>
+Cc: qemu-stable@nongnu.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ configure                  | 2 --
+ pc-bios/optionrom/Makefile | 4 ++--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/configure b/configure
+index 8c245f8890..7b71b5347a 100755
+--- a/configure
++++ b/configure
+@@ -2045,7 +2045,6 @@ EOF
+   # check we support --no-pie first...
+   if compile_prog "-Werror -fno-pie" "-no-pie"; then
+     CFLAGS_NOPIE="-fno-pie"
+-    LDFLAGS_NOPIE="-nopie"
+   fi
+ 
+   if compile_prog "-fPIE -DPIE" "-pie"; then
+@@ -7531,7 +7530,6 @@ if test "$sparse" = "yes" ; then
+   echo "QEMU_CFLAGS  += -Wbitwise -Wno-transparent-union -Wno-old-initializer -Wno-non-pointer-null" >> $config_host_mak
+ fi
+ echo "LDFLAGS=$LDFLAGS" >> $config_host_mak
+-echo "LDFLAGS_NOPIE=$LDFLAGS_NOPIE" >> $config_host_mak
+ echo "QEMU_LDFLAGS=$QEMU_LDFLAGS" >> $config_host_mak
+ echo "LD_REL_FLAGS=$LD_REL_FLAGS" >> $config_host_mak
+ echo "LD_I386_EMULATION=$ld_i386_emulation" >> $config_host_mak
+diff --git a/pc-bios/optionrom/Makefile b/pc-bios/optionrom/Makefile
+index 2d1cf3659c..05e729078f 100644
+--- a/pc-bios/optionrom/Makefile
++++ b/pc-bios/optionrom/Makefile
+@@ -48,10 +48,10 @@ build-all: multiboot.bin linuxboot.bin linuxboot_dma.bin kvmvapic.bin pvh.bin
+ 	$(call quiet-command,$(CPP) $(QEMU_INCLUDES) $(QEMU_DGFLAGS) -c -o - $< | $(AS) $(ASFLAGS) -o $@,"AS","$(TARGET_DIR)$@")
+ 
+ pvh.img: pvh.o pvh_main.o
+-	$(call quiet-command,$(LD) $(LDFLAGS_NOPIE) -m $(LD_I386_EMULATION) -T $(SRC_PATH)/pc-bios/optionrom/flat.lds -s -o $@ $^,"BUILD","$(TARGET_DIR)$@")
++	$(call quiet-command,$(LD) -m $(LD_I386_EMULATION) -T $(SRC_PATH)/pc-bios/optionrom/flat.lds -s -o $@ $^,"BUILD","$(TARGET_DIR)$@")
+ 
+ %.img: %.o
+-	$(call quiet-command,$(LD) $(LDFLAGS_NOPIE) -m $(LD_I386_EMULATION) -T $(SRC_PATH)/pc-bios/optionrom/flat.lds -s -o $@ $<,"BUILD","$(TARGET_DIR)$@")
++	$(call quiet-command,$(LD) -m $(LD_I386_EMULATION) -T $(SRC_PATH)/pc-bios/optionrom/flat.lds -s -o $@ $<,"BUILD","$(TARGET_DIR)$@")
+ 
+ %.raw: %.img
+ 	$(call quiet-command,$(OBJCOPY) -O binary -j .text $< $@,"BUILD","$(TARGET_DIR)$@")
+-- 
+2.34.1
+
