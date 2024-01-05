@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.4}
+%{!?xsrel: %global xsrel 5.2.5}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -106,6 +106,15 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Fri Jan 05 2024 Stephen Cheng <stephen.cheng@cloud.com> - 4.2.1-5.2.5
+- CP-46162: Backport patches for building qemu with rawhide(xs9) toolchain
+  - Do not ignore malloc value
+  - Fix the null pointer errors in configure
+  - Fix -Werror=maybe-uninitialized build failure
+  - Fix net/eth.c compile errors
+  - Compile with -Wno-array-bounds
+  - Remove -no-pie linker flag
+
 * Tue Nov 21 2023 Bernhard Kaindl <bernhard.kaindl@cloud.com> - 4.2.1-5.2.4
 - CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
   - hw/xen: set pci Atomic Ops requests for passthrough device
