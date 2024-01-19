@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.5}
+%{!?xsrel: %global xsrel 5.2.6}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -20,7 +20,6 @@ Requires: xengt-userspace
 ## so we have to carry a conflicts line to say we broke it.
 Conflicts: xenopsd-xc < 0.123.0
 Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=%{package_srccommit}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
-Source1: qemu_trad_image.py
 Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycodemapdb/archive?at=%{keycodemapdb_cset}&format=tar.gz&prefix=%{keycodemapdb_path}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz
 BuildRequires: python3-devel
 BuildRequires: libaio-devel glib2-devel
@@ -89,7 +88,6 @@ rm -rf %{buildroot}/usr/include %{buildroot}%{_libdir}/pkgconfig %{buildroot}%{_
        %{buildroot}/usr/share/locale
 rm -rf %{buildroot}/usr/share/icons/
 rm -rf %{buildroot}/usr/share/applications/
-%{__install} -D -m 644 %{SOURCE1} %{buildroot}%{_libdir}/xen/bin/qemu_trad_image.py
 
 # QMP scripts
 %{__install} -d -m 755 %{buildroot}%{python3_sitelib}/
@@ -106,6 +104,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Fri Jan 19 2024 Fei Su <fei.su@cloud.com> - 4.2.1-5.2.6
+- CP-45970 remove qemu_trad_image.py
+
 * Fri Jan 05 2024 Stephen Cheng <stephen.cheng@cloud.com> - 4.2.1-5.2.5
 - CP-46162: Backport patches for building qemu with rawhide(xs9) toolchain
   - Do not ignore malloc value
@@ -293,4 +294,3 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 
 * Tue Apr 8 2014 Frediano Ziglio <frediano.ziglio@citrix.com>
 - First packaging
-
