@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.6}
+%{!?xsrel: %global xsrel 5.2.7}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -104,6 +104,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Wed Jan 31 2024 Andrew Cooper <andrew.cooper3@citrix.com> - 4.2.1-5.2.7
+- Rebuild against Xen 4.17
+
 * Fri Jan 19 2024 Fei Su <fei.su@cloud.com> - 4.2.1-5.2.6
 - CP-45970 remove qemu_trad_image.py
 
