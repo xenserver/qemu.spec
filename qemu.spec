@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.7}
+%{!?xsrel: %global xsrel 5.2.8}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -104,6 +104,10 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Mon Feb 12 2024 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.8
+- Disable capstone and fdt explicitly
+- CP-42792: Backport a patch to avoid unncessary buffered ioreq polling
+
 * Wed Jan 31 2024 Andrew Cooper <andrew.cooper3@citrix.com> - 4.2.1-5.2.7
 - Rebuild against Xen 4.17
 
