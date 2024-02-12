@@ -81,6 +81,8 @@
 0001-build-no-pie-is-no-functional-linker-flag.patch
 # d7696ff884e35c6dacf83a7cbe3355e3b0a90125 (6.1.0-rc0)
 0001-input-Add-lang1-and-lang2-to-QKeyCode.patch
+# 9288e803e61e8d56d1c6c6aa8beb58596fb84ed9 (7.0.0-rc1)
+0001-xen-hvm-Allow-disabling-buffer_io_timer.patch
 # a021a2dd8b790437d27db95774969349632f856a (v7.0.0)
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
 # 79854b95446396c8e7f397800c5d86c3d9a7540d (v7.0.0)
