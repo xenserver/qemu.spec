@@ -39,6 +39,8 @@
 0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
 # N/A (6.0.0)
 0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
+# 9288e803e61e8d56d1c6c6aa8beb58596fb84ed9 (7.0.0-rc1)
+0001-xen-hvm-Allow-disabling-buffer_io_timer.patch
 # a021a2dd8b790437d27db95774969349632f856a
 0001-xen-mapcache-Avoid-entry-lock-overflow.patch
 
