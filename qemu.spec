@@ -68,7 +68,7 @@ extra_configure_argument+=('--enable-jemalloc')
     --disable-replication --disable-qom-cast-debug --disable-slirp \
     --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration \
     --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
-    --disable-parallels --disable-sheepdog \
+    --disable-parallels --disable-sheepdog --disable-capstone --disable-fdt \
     --without-default-devices \
     --enable-seccomp "${extra_configure_argument[@]}"
 
