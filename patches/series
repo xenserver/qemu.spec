@@ -71,6 +71,7 @@ remove-ioapic.patch
 ignore-rtc-century-changes.patch
 0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
 token-bucket-event-throttling.patch
+xen-hvm-Avoid-livelock-while-handling-buffered-ioreq.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
