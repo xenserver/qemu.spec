@@ -137,6 +137,7 @@ tpm_emulator-Avoid-double-initialization-during-migr.patch
 # https://lore.kernel.org/qemu-devel/20220826143841.1515326-1-ross.lagerwall@citrix.com/
 tpm_crb-Avoid-backend-startup-just-before-shutdown-u.patch
 token-bucket-event-throttling.patch
+xen-hvm-Avoid-livelock-while-handling-buffered-ioreq.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
