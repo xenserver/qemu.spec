@@ -70,6 +70,7 @@ dont-init-cpus-on-xen.patch
 remove-ioapic.patch
 ignore-rtc-century-changes.patch
 0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
+token-bucket-event-throttling.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
@@ -130,7 +131,6 @@ revert_hw-i386__remove_deprecated_machines_pc-0.10_and_pc-0.11.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
-rtc-no-ratelimit.patch
 
 # Intel GVT-g support
 gvt-g.patch
