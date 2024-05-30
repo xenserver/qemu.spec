@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 4.6.3}
+%{!?xsrel: %global xsrel 4.6.4}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -106,6 +106,11 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Thu May 30 2024 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-4.6.4
+- CP-42792: Backport a patch to avoid unncessary buffered ioreq polling
+- CA-391031: Reinstate rate limiting of RTC_CHANGE events
+- CA-391069: Avoid livelock due to buffered ioreqs
+
 * Thu Apr 20 2023 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-4.6.3
 - Convert to Koji-based build
 - CA-374355: Fix use of Lang1/Lang2 keys
