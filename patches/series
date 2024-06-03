@@ -243,5 +243,6 @@ build-configuration.patch
 
 # Allow PCI passthrough using kernel lockdown more
 81ef3d06c970c6b7ae4971ad552b2287af376f43.patch
+msix_pba_log.patch
 
 # Debug patches
