@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.10}
+%{!?xsrel: %global xsrel 5.2.11}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -104,6 +104,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Fri Aug 02 2024 Stephen Cheng <stephen.cheng@cloud.com> - 4.2.1-5.2.11
+- CP-46112: Rebuild with new version of jemalloc
+
 * Tue Jun 04 2024 Frediano Ziglio <frediano.ziglio@cloud.com> - 4.2.1-5.2.10
 - CP-46254: Make PCI passthrough work in lockdown mode
 
