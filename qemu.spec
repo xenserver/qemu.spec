@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.13}
+%{!?xsrel: %global xsrel 5.3.1}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -10,7 +10,7 @@
 
 Summary: qemu-dm device model
 Name: qemu
-Epoch: 2
+Epoch: 0
 Version: 4.2.1
 Release: %{?xsrel}%{?dist}
 License: GPL
@@ -103,7 +103,8 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
-* Tue Dec 03 2024 Lin Liu <Lin.Liu01@cloud.com> - 4.2.1-5.2.13
+* Tue Jan 14 2025 AshwinH <ashwin.h@cloud.com> - 4.2.1-5.3.1
+- CP-49883: Set epoch to 0 for XS9
 - CP-42926: Drop GVT-g support
 
 * Fri Aug 02 2024 Stephen Cheng <stephen.cheng@cloud.com> - 4.2.1-5.2.12
