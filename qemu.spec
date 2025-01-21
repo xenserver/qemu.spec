@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.3.1}
+%{!?xsrel: %global xsrel 5.3.2}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -22,7 +22,7 @@ Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}
 Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycodemapdb/archive?at=%{keycodemapdb_cset}&format=tar.gz&prefix=%{keycodemapdb_path}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz
 BuildRequires: python3-devel
 BuildRequires: libaio-devel glib2-devel
-BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
+BuildRequires: libjpeg-devel libpng-devel pixman-devel
 BuildRequires: xen-dom0-libs-devel xen-libs-devel libusbx-devel
 BuildRequires: libseccomp-devel
 %if %{with_asan} == 0
@@ -103,6 +103,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Wed Jan 22 2025 Alex Brett <alex.brett@cloud.com> - 4.2.1-5.3.2
+- CP-53238: Drop unused build requirement on libdrm
+
 * Tue Jan 14 2025 AshwinH <ashwin.h@cloud.com> - 4.2.1-5.3.1
 - CP-49883: Set epoch to 0 for XS9
 - CP-42926: Drop GVT-g support
