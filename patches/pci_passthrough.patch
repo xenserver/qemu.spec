@@ -1,0 +1,137 @@
+diff --git a/hw/xen/xen-host-pci-device.c b/hw/xen/xen-host-pci-device.c
+index 1b44dcafaf..3703fc1aff 100644
+--- a/hw/xen/xen-host-pci-device.c
++++ b/hw/xen/xen-host-pci-device.c
+@@ -10,6 +10,7 @@
+ #include "qapi/error.h"
+ #include "qemu/cutils.h"
+ #include "xen-host-pci-device.h"
++#include "hw/xen/xen_common.h"
+ 
+ #define XEN_HOST_PCI_MAX_EXT_CAP \
+     ((PCIE_CONFIG_SPACE_SIZE - PCI_CONFIG_SPACE_SIZE) / (PCI_CAP_SIZEOF + 4))
+@@ -198,10 +199,33 @@ static bool xen_host_pci_dev_is_virtfn(XenHostPCIDevice *d)
+     return !stat(path, &buf);
+ }
+ 
++static bool lockdown_mode_enabled(void)
++{
++    bool res = false;
++    char line[256];
++    FILE *f;
++
++    f = fopen("/sys/kernel/security/lockdown", "r");
++    if (!f)
++        /* assume not lockdown if file is not present */
++        return res;
++
++    if (fgets(line, sizeof(line), f))
++        res = (strstr(line, "[none]") == NULL);
++
++    fclose(f);
++    return res;
++}
++
+ static void xen_host_pci_config_open(XenHostPCIDevice *d, Error **errp)
+ {
+     char path[PATH_MAX];
+ 
++    if (lockdown_mode_enabled()) {
++        d->config_fd = -2;
++        return;
++    }
++
+     xen_host_pci_sysfs_path(d, "config", path, sizeof(path));
+ 
+     d->config_fd = open(path, O_RDWR);
+@@ -214,12 +238,23 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
+                                     int pos, void *buf, int len)
+ {
+     int rc;
++    uint64_t data;
++
++    if (d->config_fd != -2) {
++        do {
++            rc = pread(d->config_fd, buf, len, pos);
++        } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
++        if (rc != len) {
++            return -errno;
++        }
++        return 0;
++    }
+ 
+-    do {
+-        rc = pread(d->config_fd, buf, len, pos);
+-    } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
+-    if (rc != len) {
+-        return -errno;
++    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
++                                   len, XEN_DMOP_pci_read, pos, &data);
++    if ( rc >= 0 ) {
++        /* Note: this works because we use little endian */
++        memcpy(buf, &data, len);
+     }
+     return 0;
+ }
+@@ -229,13 +264,21 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+ {
+     int rc;
+ 
+-    do {
+-        rc = pwrite(d->config_fd, buf, len, pos);
+-    } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
+-    if (rc != len) {
+-        return -errno;
++    if (d->config_fd != -2) {
++        do {
++            rc = pwrite(d->config_fd, buf, len, pos);
++        } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
++        if (rc != len) {
++            return -errno;
++        }
++        return 0;
+     }
+-    return 0;
++
++    /* Note: this works because we use little endian and we assume a small
++     * read overflow on buf is fine */
++    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
++                                   len, XEN_DMOP_pci_write, pos, (void *) buf);
++    return rc;
+ }
+ 
+ 
+@@ -385,8 +428,8 @@ error:
+ 
+     if (d->config_fd >= 0) {
+         close(d->config_fd);
+-        d->config_fd = -1;
+     }
++    d->config_fd = -1;
+ }
+ 
+ bool xen_host_pci_device_closed(XenHostPCIDevice *d)
+@@ -398,6 +441,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
+ {
+     if (d->config_fd >= 0) {
+         close(d->config_fd);
+-        d->config_fd = -1;
+     }
++    d->config_fd = -1;
+ }
+diff --git a/hw/xen/xen-host-pci-device.h b/hw/xen/xen-host-pci-device.h
+index 4d8d34ecb0..91451e3867 100644
+--- a/hw/xen/xen-host-pci-device.h
++++ b/hw/xen/xen-host-pci-device.h
+@@ -33,6 +33,11 @@ typedef struct XenHostPCIDevice {
+ 
+     bool is_virtfn;
+ 
++    /*
++     * File descriptor if opened and using sysfs.
++     * -1 if closed.
++     * -2 if opened and using Xen interface.
++     */
+     int config_fd;
+ } XenHostPCIDevice;
+ 
