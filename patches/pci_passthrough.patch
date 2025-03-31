@@ -1,5 +1,5 @@
 diff --git a/hw/xen/xen-host-pci-device.c b/hw/xen/xen-host-pci-device.c
-index 1b44dcafaf..3703fc1aff 100644
+index 1b44dcafaf..fefe675aa5 100644
 --- a/hw/xen/xen-host-pci-device.c
 +++ b/hw/xen/xen-host-pci-device.c
 @@ -10,6 +10,7 @@
@@ -44,12 +44,19 @@ index 1b44dcafaf..3703fc1aff 100644
      xen_host_pci_sysfs_path(d, "config", path, sizeof(path));
  
      d->config_fd = open(path, O_RDWR);
-@@ -214,12 +238,23 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
+@@ -214,14 +238,31 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
                                      int pos, void *buf, int len)
  {
      int rc;
++#ifdef XEN_DMOP_pci_read
 +    uint64_t data;
-+
++#endif
+ 
+-    do {
+-        rc = pread(d->config_fd, buf, len, pos);
+-    } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
+-    if (rc != len) {
+-        return -errno;
 +    if (d->config_fd != -2) {
 +        do {
 +            rc = pread(d->config_fd, buf, len, pos);
@@ -59,12 +66,8 @@ index 1b44dcafaf..3703fc1aff 100644
 +        }
 +        return 0;
 +    }
- 
--    do {
--        rc = pread(d->config_fd, buf, len, pos);
--    } while (rc < 0 && (errno == EINTR || errno == EAGAIN));
--    if (rc != len) {
--        return -errno;
++
++#ifdef XEN_DMOP_pci_read
 +    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
 +                                   len, XEN_DMOP_pci_read, pos, &data);
 +    if ( rc >= 0 ) {
@@ -72,8 +75,13 @@ index 1b44dcafaf..3703fc1aff 100644
 +        memcpy(buf, &data, len);
      }
      return 0;
++#else
++    return -EPERM;
++#endif
  }
-@@ -229,13 +264,21 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+ 
+ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+@@ -229,13 +270,25 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
  {
      int rc;
  
@@ -93,15 +101,19 @@ index 1b44dcafaf..3703fc1aff 100644
      }
 -    return 0;
 +
++#ifdef XEN_DMOP_pci_write
 +    /* Note: this works because we use little endian and we assume a small
 +     * read overflow on buf is fine */
 +    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
 +                                   len, XEN_DMOP_pci_write, pos, (void *) buf);
 +    return rc;
++#else
++    return -EPERM;
++#endif
  }
  
  
-@@ -385,8 +428,8 @@ error:
+@@ -385,8 +438,8 @@ error:
  
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -111,7 +123,7 @@ index 1b44dcafaf..3703fc1aff 100644
  }
  
  bool xen_host_pci_device_closed(XenHostPCIDevice *d)
-@@ -398,6 +441,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
+@@ -398,6 +451,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
  {
      if (d->config_fd >= 0) {
          close(d->config_fd);
