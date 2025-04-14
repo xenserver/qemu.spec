@@ -1,5 +1,5 @@
 diff --git a/hw/xen/xen-host-pci-device.c b/hw/xen/xen-host-pci-device.c
-index 1b44dcafaf..fefe675aa5 100644
+index 1b44dcafaf44..29f130eeb348 100644
 --- a/hw/xen/xen-host-pci-device.c
 +++ b/hw/xen/xen-host-pci-device.c
 @@ -10,6 +10,7 @@
@@ -48,7 +48,7 @@ index 1b44dcafaf..fefe675aa5 100644
                                      int pos, void *buf, int len)
  {
      int rc;
-+#ifdef XEN_DMOP_pci_read
++#ifdef XEN_DOMCTL_pci_read
 +    uint64_t data;
 +#endif
  
@@ -67,9 +67,9 @@ index 1b44dcafaf..fefe675aa5 100644
 +        return 0;
 +    }
 +
-+#ifdef XEN_DMOP_pci_read
-+    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
-+                                   len, XEN_DMOP_pci_read, pos, &data);
++#ifdef XEN_DOMCTL_pci_read
++    rc = xc_domain_pci_access(xen_xc, xen_domid, d->domain, d->bus, d->dev,
++                              d->func, len, XEN_DOMCTL_pci_read, pos, &data);
 +    if ( rc >= 0 ) {
 +        /* Note: this works because we use little endian */
 +        memcpy(buf, &data, len);
@@ -81,7 +81,7 @@ index 1b44dcafaf..fefe675aa5 100644
  }
  
  static int xen_host_pci_config_write(XenHostPCIDevice *d,
-@@ -229,13 +270,25 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+@@ -229,13 +270,26 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
  {
      int rc;
  
@@ -101,11 +101,12 @@ index 1b44dcafaf..fefe675aa5 100644
      }
 -    return 0;
 +
-+#ifdef XEN_DMOP_pci_write
++#ifdef XEN_DOMCTL_pci_write
 +    /* Note: this works because we use little endian and we assume a small
 +     * read overflow on buf is fine */
-+    rc = xendevicemodel_pci_access(xen_dmod, xen_domid, d->domain, d->bus, d->dev, d->func,
-+                                   len, XEN_DMOP_pci_write, pos, (void *) buf);
++    rc = xc_domain_pci_access(xen_xc, xen_domid, d->domain, d->bus, d->dev,
++                              d->func, len, XEN_DOMCTL_pci_write, pos,
++                              (void *) buf);
 +    return rc;
 +#else
 +    return -EPERM;
@@ -113,7 +114,7 @@ index 1b44dcafaf..fefe675aa5 100644
  }
  
  
-@@ -385,8 +438,8 @@ error:
+@@ -385,8 +439,8 @@ error:
  
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -123,7 +124,7 @@ index 1b44dcafaf..fefe675aa5 100644
  }
  
  bool xen_host_pci_device_closed(XenHostPCIDevice *d)
-@@ -398,6 +451,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
+@@ -398,6 +452,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
  {
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -132,7 +133,7 @@ index 1b44dcafaf..fefe675aa5 100644
 +    d->config_fd = -1;
  }
 diff --git a/hw/xen/xen-host-pci-device.h b/hw/xen/xen-host-pci-device.h
-index 4d8d34ecb0..91451e3867 100644
+index 4d8d34ecb024..91451e3867a9 100644
 --- a/hw/xen/xen-host-pci-device.h
 +++ b/hw/xen/xen-host-pci-device.h
 @@ -33,6 +33,11 @@ typedef struct XenHostPCIDevice {
