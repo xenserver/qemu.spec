@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.3.3}
+%{!?xsrel: %global xsrel 5.3.4}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -103,6 +103,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Thu Apr 17 2025 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.3.4
+- CP-53474: Change QEMU to use new PCI config read/write domctl
+
 * Wed Jan 22 2025 Alex Brett <alex.brett@cloud.com> - 4.2.1-5.3.3
 - CP-53363: Update dependency for libjpeg-turbo
 
