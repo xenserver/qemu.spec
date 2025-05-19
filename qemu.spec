@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.3.4}
+%{!?xsrel: %global xsrel 5.3.5}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -103,6 +103,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Mon May 19 2025 Frediano Ziglio <frediano.ziglio@cloud.com> - 4.2.1-5.3.5
+- CP-54031: Rebuild to pick up changes in Xen
+
 * Thu Apr 17 2025 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.3.4
 - CP-53474: Change QEMU to use new PCI config read/write domctl
 
