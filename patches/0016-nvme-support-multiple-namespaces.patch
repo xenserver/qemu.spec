@@ -20,7 +20,7 @@ A maximum of 256 namespaces can be configured.
 
 Signed-off-by: Klaus Birkelund Jensen <klaus.jensen@cnexlabs.com>
 diff --git a/hw/block/Makefile.objs b/hw/block/Makefile.objs
-index 28c2495a00..45f463462f 100644
+index 28c2495a00dc..45f463462f1e 100644
 --- a/hw/block/Makefile.objs
 +++ b/hw/block/Makefile.objs
 @@ -7,7 +7,7 @@ common-obj-$(CONFIG_PFLASH_CFI02) += pflash_cfi02.o
@@ -34,7 +34,7 @@ index 28c2495a00..45f463462f 100644
  obj-$(CONFIG_SH4) += tc58128.o
 diff --git a/hw/block/nvme-ns.c b/hw/block/nvme-ns.c
 new file mode 100644
-index 0000000000..0e10382b03
+index 000000000000..64afc9d723c4
 --- /dev/null
 +++ b/hw/block/nvme-ns.c
 @@ -0,0 +1,139 @@
@@ -76,7 +76,7 @@ index 0000000000..0e10382b03
 +    return 0;
 +}
 +
-+static int nvme_ns_init_blk(NvmeNamespace *ns, NvmeIdCtrl *id, Error **errp)
++static int nvme_ns_init_blk(NvmeCtrl *n, NvmeNamespace *ns, Error **errp)
 +{
 +    blkconf_blocksizes(&ns->conf);
 +
@@ -91,8 +91,8 @@ index 0000000000..0e10382b03
 +        return 1;
 +    }
 +
-+    if (!blk_enable_write_cache(ns->conf.blk)) {
-+        id->vwc = 0;
++    if (blk_enable_write_cache(ns->conf.blk)) {
++        n->features.vwc = 0x1;
 +    }
 +
 +    return 0;
@@ -122,7 +122,7 @@ index 0000000000..0e10382b03
 +        return;
 +    }
 +
-+    if (nvme_ns_init_blk(ns, &n->id_ctrl, &local_err)) {
++    if (nvme_ns_init_blk(n, ns, &local_err)) {
 +        error_propagate_prepend(errp, local_err, "nvme_ns_init_blk: ");
 +        return;
 +    }
@@ -179,7 +179,7 @@ index 0000000000..0e10382b03
 +type_init(nvme_ns_register_types)
 diff --git a/hw/block/nvme-ns.h b/hw/block/nvme-ns.h
 new file mode 100644
-index 0000000000..f563bb14ec
+index 000000000000..f563bb14eceb
 --- /dev/null
 +++ b/hw/block/nvme-ns.h
 @@ -0,0 +1,35 @@
@@ -219,7 +219,7 @@ index 0000000000..f563bb14ec
 +
 +#endif /* NVME_NS_H */
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 990812829b..167b1c2611 100644
+index 990812829bf3..badeea66db3e 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -17,7 +17,8 @@
@@ -380,43 +380,50 @@ index 990812829b..167b1c2611 100644
  
      return nvme_dma_read(n, (uint8_t *) &ns->id_ns, sizeof(ns->id_ns), cmd,
          req);
-@@ -1450,6 +1458,8 @@ static uint16_t nvme_get_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
- 
- static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
- {
-+    NvmeNamespace *ns = req->ns;
-+
-     uint32_t dw10 = le32_to_cpu(cmd->cdw10);
-     uint32_t dw11 = le32_to_cpu(cmd->cdw11);
-     uint32_t result;
-@@ -1470,7 +1480,7 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1470,7 +1478,7 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          result = cpu_to_le32(n->features.err_rec);
          break;
      case NVME_VOLATILE_WRITE_CACHE:
 -        result = blk_enable_write_cache(n->conf.blk);
-+        result = blk_enable_write_cache(ns->conf.blk);
++        result = cpu_to_le32(n->features.vwc);
          trace_nvme_getfeat_vwcache(result ? "enabled" : "disabled");
          break;
      case NVME_NUMBER_OF_QUEUES:
-@@ -1524,6 +1534,8 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
+@@ -1524,6 +1532,8 @@ static uint16_t nvme_set_feature_timestamp(NvmeCtrl *n, NvmeCmd *cmd,
  
  static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
  {
-+    NvmeNamespace *ns = req->ns;
++    NvmeNamespace *ns;
 +
      uint32_t dw10 = le32_to_cpu(cmd->cdw10);
      uint32_t dw11 = le32_to_cpu(cmd->cdw11);
  
-@@ -1538,7 +1550,7 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
+@@ -1538,8 +1548,23 @@ static uint16_t nvme_set_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
          }
          break;
      case NVME_VOLATILE_WRITE_CACHE:
 -        blk_set_enable_write_cache(n->conf.blk, dw11 & 1);
-+        blk_set_enable_write_cache(ns->conf.blk, dw11 & 1);
++        n->features.vwc = dw11 & 0x1;
++
++        for (int i = 0; i < n->num_namespaces; i++) {
++            ns = n->namespaces[i];
++            if (!ns) {
++                continue;
++            }
++
++            if (!(dw11 & 0x1) && blk_enable_write_cache(ns->conf.blk)) {
++                blk_flush(ns->conf.blk);
++            }
++
++            blk_set_enable_write_cache(ns->conf.blk, dw11 & 1);
++        }
++
          break;
++
      case NVME_NUMBER_OF_QUEUES:
          if (n->qs_created > 2) {
-@@ -1841,7 +1853,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+             return NVME_CMD_SEQ_ERROR | NVME_DNR;
+@@ -1841,7 +1866,9 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
      NvmeAsyncEvent *event;
      int i;
  
@@ -427,7 +434,7 @@ index 990812829b..167b1c2611 100644
  
      for (i = 0; i < n->params.num_queues; i++) {
          if (n->sq[i] != NULL) {
-@@ -1864,7 +1878,10 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
+@@ -1864,7 +1891,10 @@ static void nvme_clear_ctrl(NvmeCtrl *n)
          g_free(event);
      }
  
@@ -439,7 +446,7 @@ index 990812829b..167b1c2611 100644
      n->bar.cc = 0;
      n->outstanding_aers = 0;
  }
-@@ -2286,8 +2303,8 @@ static int nvme_check_constraints(NvmeCtrl *n, Error **errp)
+@@ -2286,8 +2316,8 @@ static int nvme_check_constraints(NvmeCtrl *n, Error **errp)
  {
      NvmeParams *params = &n->params;
  
@@ -450,7 +457,7 @@ index 990812829b..167b1c2611 100644
          return 1;
      }
  
-@@ -2304,21 +2321,11 @@ static int nvme_check_constraints(NvmeCtrl *n, Error **errp)
+@@ -2304,21 +2334,11 @@ static int nvme_check_constraints(NvmeCtrl *n, Error **errp)
      return 0;
  }
  
@@ -473,7 +480,7 @@ index 990812829b..167b1c2611 100644
      n->reg_size = pow2ceil(0x1004 + 2 * (n->params.num_queues + 1) * 4);
      n->starttime_ms = qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL);
      n->sq = g_new0(NvmeSQueue *, n->params.num_queues);
-@@ -2411,11 +2418,7 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -2411,11 +2431,7 @@ static void nvme_init_ctrl(NvmeCtrl *n)
      id->cqes = (0x4 << 4) | 0x4;
      id->nn = cpu_to_le32(n->num_namespaces);
      id->oncs = cpu_to_le16(NVME_ONCS_WRITE_ZEROS | NVME_ONCS_TIMESTAMP);
@@ -486,7 +493,7 @@ index 990812829b..167b1c2611 100644
      id->sgls = cpu_to_le32(0x1);
  
      strcpy((char *) id->subnqn, "nqn.2014-08.org.nvmexpress:uuid:");
-@@ -2437,52 +2440,26 @@ static void nvme_init_ctrl(NvmeCtrl *n)
+@@ -2437,52 +2453,26 @@ static void nvme_init_ctrl(NvmeCtrl *n)
      n->bar.intmc = n->bar.intms = 0;
  }
  
@@ -495,7 +502,8 @@ index 990812829b..167b1c2611 100644
  {
 -    return n->ns_size / nvme_ns_lbads_bytes(ns);
 -}
--
++    uint32_t nsid = ns->params.nsid;
+ 
 -static void nvme_ns_init_identify(NvmeCtrl *n, NvmeIdNs *id_ns)
 -{
 -    id_ns->lbaf[0].ds = BDRV_SECTOR_BITS;
@@ -503,8 +511,7 @@ index 990812829b..167b1c2611 100644
 -        cpu_to_le64(n->ns_size >>
 -            id_ns->lbaf[NVME_ID_NS_FLBAS_INDEX(id_ns->flbas)].ds);
 -}
-+    uint32_t nsid = ns->params.nsid;
- 
+-
 -static int nvme_init_namespace(NvmeCtrl *n, NvmeNamespace *ns, Error **errp)
 -{
 -    uint64_t ns_blks;
@@ -551,7 +558,7 @@ index 990812829b..167b1c2611 100644
      return 0;
  }
  
-@@ -2496,19 +2473,10 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
+@@ -2496,19 +2486,10 @@ static void nvme_realize(PCIDevice *pci_dev, Error **errp)
          return;
      }
  
@@ -574,7 +581,7 @@ index 990812829b..167b1c2611 100644
      nvme_init_pci(n, pci_dev);
      nvme_init_ctrl(n);
  }
-@@ -2531,7 +2499,6 @@ static void nvme_exit(PCIDevice *pci_dev)
+@@ -2531,7 +2512,6 @@ static void nvme_exit(PCIDevice *pci_dev)
  }
  
  static Property nvme_props[] = {
@@ -582,7 +589,7 @@ index 990812829b..167b1c2611 100644
      DEFINE_NVME_PROPERTIES(NvmeCtrl, params),
      DEFINE_PROP_END_OF_LIST(),
  };
-@@ -2559,30 +2526,27 @@ static void nvme_class_init(ObjectClass *oc, void *data)
+@@ -2559,30 +2539,27 @@ static void nvme_class_init(ObjectClass *oc, void *data)
      dc->vmsd = &nvme_vmstate;
  }
  
@@ -621,7 +628,7 @@ index 990812829b..167b1c2611 100644
  
  type_init(nvme_register_types)
 diff --git a/hw/block/nvme.h b/hw/block/nvme.h
-index 7704c39010..6d2f7a4fe3 100644
+index 7704c3901005..6d2f7a4fe362 100644
 --- a/hw/block/nvme.h
 +++ b/hw/block/nvme.h
 @@ -2,6 +2,10 @@
@@ -702,7 +709,7 @@ index 7704c39010..6d2f7a4fe3 100644
  
  #endif /* HW_NVME_H */
 diff --git a/hw/block/trace-events b/hw/block/trace-events
-index 41c5d0b0bc..89ef171840 100644
+index 41c5d0b0bc64..89ef171840e5 100644
 --- a/hw/block/trace-events
 +++ b/hw/block/trace-events
 @@ -29,6 +29,7 @@ hd_geometry_guess(void *blk, uint32_t cyls, uint32_t heads, uint32_t secs, int t
@@ -713,3 +720,16 @@ index 41c5d0b0bc..89ef171840 100644
  nvme_irq_msix(uint32_t vector) "raising MSI-X IRQ vector %u"
  nvme_irq_pin(void) "pulsing IRQ pin"
  nvme_irq_masked(void) "IRQ is masked"
+diff --git a/include/block/nvme.h b/include/block/nvme.h
+index d76b601bb5ba..7d2c39d92b57 100644
+--- a/include/block/nvme.h
++++ b/include/block/nvme.h
+@@ -684,7 +684,7 @@ typedef struct NvmeFeatureVal {
+     uint32_t    power_mgmt;
+     uint32_t    temp_thresh;
+     uint32_t    err_rec;
+-    uint32_t    volatile_wc;
++    uint32_t    vwc;
+     uint32_t    num_queues;
+     uint32_t    int_coalescing;
+     uint32_t    *int_vector_config;
