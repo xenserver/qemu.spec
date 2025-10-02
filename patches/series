@@ -168,9 +168,12 @@ query-migratable.patch
 0014-nvme-support-multiple-block-requests-per-request.patch
 0015-nvme-support-scatter-gather-lists.patch
 0016-nvme-support-multiple-namespaces.patch
-nvme-ns-fix-null.patch
 nvme-ns-allow-inactive.patch
 nvme-close-backend.patch
+# aa5e55e3b07ede87a8fd7aa3e67583dfc464dd52 (6.0.0-rc1)
+0001-hw-block-nvme-open-code-for-volatile-write-cache.patch
+# 2132cfe52bd87f191887c1728190bf56e8d5275f (6.0.0-rc1)
+0001-hw-block-nvme-Fix-a-build-error-in-nvme_get_feature.patch
 
 # Key handling
 # https://lore.kernel.org/qemu-devel/20230301125211.278808-1-williamvdvelde@gmail.com/
