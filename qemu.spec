@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 5.2.13}
+%{!?xsrel: %global xsrel 5.2.14}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -104,6 +104,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Wed Oct 15 2025 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.14
+- CA-418876: Fix NVMe namespace indexing
+
 * Thu Oct 02 2025 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-5.2.13
 - CA-417654: Fix NVME bug which causes WS2025 install failures
 

@@ -219,7 +219,7 @@ index 000000000000..f563bb14eceb
 +
 +#endif /* NVME_NS_H */
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index 990812829bf3..cb424c597fa1 100644
+index 990812829bf3..badeea66db3e 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -17,7 +17,8 @@
@@ -405,7 +405,7 @@ index 990812829bf3..cb424c597fa1 100644
 -        blk_set_enable_write_cache(n->conf.blk, dw11 & 1);
 +        n->features.vwc = dw11 & 0x1;
 +
-+        for (int i = 1; i <= n->num_namespaces; i++) {
++        for (int i = 0; i < n->num_namespaces; i++) {
 +            ns = n->namespaces[i];
 +            if (!ns) {
 +                continue;

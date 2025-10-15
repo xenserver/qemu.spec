@@ -23,7 +23,7 @@ Fixes: Coverity CID 1446371
 Signed-off-by: Bin Meng <bin.meng@windriver.com>
 Signed-off-by: Klaus Jensen <k.jensen@samsung.com>
 diff --git a/hw/block/nvme.c b/hw/block/nvme.c
-index f4123b5459c9..11338a053732 100644
+index d696187f595a..02c7212f9c56 100644
 --- a/hw/block/nvme.c
 +++ b/hw/block/nvme.c
 @@ -1486,6 +1486,7 @@ static uint16_t nvme_get_feature(NvmeCtrl *n, NvmeCmd *cmd, NvmeRequest *req)
@@ -31,6 +31,6 @@ index f4123b5459c9..11338a053732 100644
          break;
      case NVME_VOLATILE_WRITE_CACHE:
 +        result = 0;
-         for (i = 1; i <= n->num_namespaces; i++) {
+         for (i = 0; i < n->num_namespaces; i++) {
              ns = n->namespaces[i];
              if (!ns) {
