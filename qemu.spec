@@ -1,9 +1,9 @@
-%global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 10}
+%global package_srccommit v10.1.0
+%{!?xsrel: %global xsrel 1}
 
-# submodule ui/keycodemapdb
-%define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
-%define keycodemapdb_path ui%2fkeycodemapdb
+# submodule subprojects/keycodemapdb
+%define keycodemapdb_cset f5772a62ec52591ff6870b7e8ef32482371f22c6
+%define keycodemapdb_path subprojects%2fkeycodemapdb
 
 # Control whether we build with the address sanitizer.
 %define with_asan 0
@@ -11,7 +11,7 @@
 Summary: qemu-dm device model
 Name: qemu
 Epoch: 0
-Version: 4.2.1
+Version: 10.1.0
 Release: %{?xsrel}%{?dist}
 License: GPL
 Requires: xs-clipboardd
@@ -25,6 +25,7 @@ BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-turbo-devel libpng-devel pixman-devel
 BuildRequires: xen-dom0-libs-devel xen-libs-devel libusbx-devel
 BuildRequires: libseccomp-devel
+BuildRequires: ninja-build
 %if %{with_asan} == 0
 BuildRequires: jemalloc-devel
 %else
@@ -50,25 +51,23 @@ extra_configure_argument+=('--enable-debug')
 extra_configure_argument+=('--extra-cflags=-fno-omit-frame-pointer')
 # avoid: "WARNING: ASan doesn't fully support makecontext/swapcontext functions and may produce false positives in some cases!"
 # extra_configure_argument+=('--with-coroutine=sigaltstack')
-
-%else
-extra_configure_argument+=('--enable-jemalloc')
 %endif
 
 ./configure --cc=gcc --cxx=/dev/null --enable-xen --target-list=i386-softmmu \
     --prefix=%{_prefix} --bindir=%{_libdir}/xen/bin --datadir=%{_datarootdir} \
     --localstatedir=%{_localstatedir} --libexecdir=%{_libexecdir} --sysconfdir=%{_sysconfdir} \
-    --enable-werror --enable-libusb --enable-trace-backend=log \
+    --enable-werror --enable-libusb --enable-trace-backends=log \
     --disable-kvm --disable-docs --disable-guest-agent --disable-sdl \
     --disable-curses --disable-curl --disable-gtk --disable-bzip2 \
     --disable-strip --disable-gnutls --disable-nettle --disable-gcrypt \
-    --disable-vhost-net --disable-vhost-scsi --disable-vhost-vsock --disable-vhost-user \
+    --disable-vhost-net --disable-vhost-user \
     --disable-lzo --disable-virtfs --disable-tcg --disable-tcg-interpreter \
     --disable-replication --disable-qom-cast-debug --disable-slirp \
-    --audio-drv-list= --disable-coroutine-pool --disable-live-block-migration \
+    --audio-drv-list= --disable-coroutine-pool \
     --disable-bochs --disable-cloop --disable-dmg --disable-vvfat --disable-qed \
-    --disable-parallels --disable-sheepdog --disable-capstone --disable-fdt \
+    --disable-parallels --disable-capstone --disable-fdt \
     --without-default-devices \
+    --disable-download \
     --enable-seccomp "${extra_configure_argument[@]}"
 
 %if %{with_asan}

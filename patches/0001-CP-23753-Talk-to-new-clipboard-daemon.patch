@@ -5,28 +5,28 @@ Subject: [PATCH] CP-23753: Talk to new clipboard daemon
 
 Signed-off-by: Liang Dai <liang.dai1@citrix.com>
 diff --git a/include/ui/console.h b/include/ui/console.h
-index f981696848..c9b5635d53 100644
+index 98feaa58bdd1..91f490a41867 100644
 --- a/include/ui/console.h
 +++ b/include/ui/console.h
-@@ -445,9 +445,11 @@ void qemu_display_init(DisplayState *ds, DisplayOptions *opts);
+@@ -457,9 +457,11 @@ void qemu_display_help(void);
  void vnc_display_init(const char *id, Error **errp);
  void vnc_display_open(const char *id, Error **errp);
  void vnc_display_add_client(const char *id, int csock, bool skipauth);
 +void vnc_clipboard_init(Error **errp);
  int vnc_display_password(const char *id, const char *password);
  int vnc_display_pw_expire(const char *id, time_t expires);
- QemuOpts *vnc_parse(const char *str, Error **errp);
+ void vnc_parse(const char *str);
 +bool vnc_clipboard_parse(const char *str);
  int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp);
- 
- /* input.c */
+ bool vnc_display_reload_certs(const char *id,  Error **errp);
+ bool vnc_display_update(DisplayUpdateOptionsVNC *arg, Error **errp);
 diff --git a/qemu-options.hx b/qemu-options.hx
-index 9621e934c0..7d5f141604 100644
+index ab23f14d2178..7c7fa670fcd8 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -1991,6 +1991,9 @@ STEXI
- @table @option
- ETEXI
+@@ -2653,6 +2653,9 @@ ARCHHEADING(, QEMU_ARCH_I386)
+ 
+ ARCHHEADING(i386 target only:, QEMU_ARCH_I386)
  
 +DEF("vnc-clipboard-socket-fd", HAS_ARG, QEMU_OPTION_vnc_clipboard_socket_fd,
 +    "-vnc-clipboard-socket-fd fd   specify the vnc clipboard socket fd\n", QEMU_ARCH_ALL)
@@ -34,11 +34,28 @@ index 9621e934c0..7d5f141604 100644
  DEF("win2k-hack", 0, QEMU_OPTION_win2k_hack,
      "-win2k-hack     use it when installing Windows 2000 to avoid a disk full bug\n",
      QEMU_ARCH_I386)
+diff --git a/system/vl.c b/system/vl.c
+index 3b7057e6c669..e829f1c03204 100644
+--- a/system/vl.c
++++ b/system/vl.c
+@@ -3464,6 +3464,12 @@ void qemu_init(int argc, char **argv)
+                 vnc_parse(optarg);
+                 display_remote++;
+                 break;
++            case QEMU_OPTION_vnc_clipboard_socket_fd:
++                if (!vnc_clipboard_parse(optarg)) {
++                    error_report("invalid argument");
++                    exit(1);
++                }
++                break;
+ #endif
+             case QEMU_OPTION_no_reboot:
+                 olist = qemu_find_opts("action");
 diff --git a/ui/vnc.c b/ui/vnc.c
-index 38f92bfca3..7eb47712fd 100644
+index 68ca4a68e7a2..044afa437249 100644
 --- a/ui/vnc.c
 +++ b/ui/vnc.c
-@@ -58,6 +58,9 @@ static const struct timeval VNC_REFRESH_LOSSY = { 2, 0 };
+@@ -65,6 +65,9 @@ static const struct timeval VNC_REFRESH_LOSSY = { 2, 0 };
  #include "vnc_keysym.h"
  #include "crypto/cipher.h"
  
@@ -48,10 +65,12 @@ index 38f92bfca3..7eb47712fd 100644
  static QTAILQ_HEAD(, VncDisplay) vnc_displays =
      QTAILQ_HEAD_INITIALIZER(vnc_displays);
  
-@@ -1707,6 +1710,49 @@ uint32_t read_u32(uint8_t *data, size_t offset)
+@@ -1760,6 +1763,53 @@ uint32_t read_u32(uint8_t *data, size_t offset)
+             (data[offset + 2] << 8) | data[offset + 3]);
+ }
  
- static void client_cut_text(VncState *vs, size_t len, uint8_t *text)
- {
++static void client_cut_text(VncState *vs, size_t len, uint8_t *text)
++{
 +    Error *err = NULL;
 +
 +    if (vnc_clipboard_state && vnc_clipboard_state->ioc) {
@@ -95,11 +114,40 @@ index 38f92bfca3..7eb47712fd 100644
 +            vnc_set_clipboard(vs, buf, len);
 +        }
 +    }
- }
- 
++}
++
  static void check_pointer_type_change(Notifier *notifier, void *data)
-@@ -4090,6 +4136,129 @@ QemuOpts *vnc_parse(const char *str, Error **errp)
-     return opts;
+ {
+     VncState *vs = container_of(notifier, VncState, mouse_mode_notifier);
+@@ -2488,25 +2538,8 @@ static int protocol_client_msg(VncState *vs, uint8_t *data, size_t len)
+             }
+         }
+ 
+-        if (read_s32(data, 4) < 0) {
+-            if (!vnc_has_feature(vs, VNC_FEATURE_CLIPBOARD_EXT)) {
+-                error_report("vnc: extended clipboard message while disabled");
+-                vnc_client_error(vs);
+-                break;
+-            }
+-            if (dlen < 4) {
+-                error_report("vnc: malformed payload (header less than 4 bytes)"
+-                             " in extended clipboard pseudo-encoding.");
+-                vnc_client_error(vs);
+-                break;
+-            }
+-            trace_vnc_msg_client_cut_text_ext(vs, vs->ioc,
+-                                              dlen, read_u32(data, 8));
+-            vnc_client_cut_text_ext(vs, dlen, read_u32(data, 8), data + 12);
+-            break;
+-        }
+         trace_vnc_msg_client_cut_text(vs, vs->ioc, read_u32(data, 4));
+-        vnc_client_cut_text(vs, read_u32(data, 4), data + 8);
++        client_cut_text(vs, read_u32(data, 4), data + 8);
+         break;
+     case VNC_MSG_CLIENT_XVP:
+         if (!vnc_has_feature(vs, VNC_FEATURE_XVP)) {
+@@ -4339,6 +4372,129 @@ void vnc_parse(const char *str)
+     }
  }
  
 +bool vnc_clipboard_parse(const char *str)
@@ -228,7 +276,7 @@ index 38f92bfca3..7eb47712fd 100644
  int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
  {
      Error *local_err = NULL;
-@@ -4106,6 +4275,13 @@ int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
+@@ -4355,6 +4511,13 @@ int vnc_init_func(void *opaque, QemuOpts *opts, Error **errp)
          error_propagate(errp, local_err);
          return -1;
      }
@@ -243,7 +291,7 @@ index 38f92bfca3..7eb47712fd 100644
  }
  
 diff --git a/ui/vnc.h b/ui/vnc.h
-index 2f84db3142..4295a4dd45 100644
+index f2dab2f4d96d..ae6d63dbd977 100644
 --- a/ui/vnc.h
 +++ b/ui/vnc.h
 @@ -64,6 +64,7 @@ typedef struct VncState VncState;
@@ -273,7 +321,7 @@ index 2f84db3142..4295a4dd45 100644
  typedef struct VncDisplay VncDisplay;
  
  #include "vnc-auth-vencrypt.h"
-@@ -348,6 +354,14 @@ struct VncState
+@@ -351,6 +357,15 @@ struct VncState
      QTAILQ_ENTRY(VncState) next;
  };
  
@@ -285,10 +333,11 @@ index 2f84db3142..4295a4dd45 100644
 +    size_t read_handler_expect;
 +    Buffer input;
 +};
++
+ typedef struct VncWorker {
+     uint8_t lossy_rect[VNC_STAT_ROWS][VNC_STAT_COLS];
  
- /*****************************************************************************
-  *
-@@ -540,6 +554,12 @@ void vnc_read_when(VncState *vs, VncReadEvent *func, size_t expecting);
+@@ -573,6 +588,12 @@ void vnc_read_when(VncState *vs, VncReadEvent *func, size_t expecting);
  void vnc_disconnect_finish(VncState *vs);
  void vnc_start_protocol(VncState *vs);
  
@@ -301,27 +350,12 @@ index 2f84db3142..4295a4dd45 100644
  
  /* Buffer I/O functions */
  uint32_t read_u32(uint8_t *data, size_t offset);
-@@ -597,4 +617,6 @@ int vnc_zrle_send_framebuffer_update(VncState *vs, int x, int y, int w, int h);
- int vnc_zywrle_send_framebuffer_update(VncState *vs, int x, int y, int w, int h);
- void vnc_zrle_clear(VncState *vs);
+@@ -640,6 +661,8 @@ int vnc_zywrle_send_framebuffer_update(VncState *vs, VncWorker *worker,
+                                        int x, int y, int w, int h);
+ void vnc_zrle_clear(VncWorker *worker);
  
 +void vnc_dpy_set_clipboard(const uint8_t *buf, unsigned int len);
 +
- #endif /* QEMU_VNC_H */
-diff --git a/vl.c b/vl.c
-index b426b32134..5150b9aa55 100644
---- a/vl.c
-+++ b/vl.c
-@@ -3569,6 +3569,12 @@ int main(int argc, char **argv, char **envp)
-             case QEMU_OPTION_vnc:
-                 vnc_parse(optarg, &error_fatal);
-                 break;
-+            case QEMU_OPTION_vnc_clipboard_socket_fd:
-+                if (!vnc_clipboard_parse(optarg)) {
-+                    error_report("invalid argument");
-+                    exit(1);
-+                }
-+                break;
-             case QEMU_OPTION_no_acpi:
-                 acpi_enabled = 0;
-                 break;
+ /* vnc-clipboard.c */
+ void vnc_server_cut_text_caps(VncState *vs);
+ void vnc_client_cut_text(VncState *vs, size_t len, uint8_t *text);

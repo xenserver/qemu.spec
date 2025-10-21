@@ -1,108 +1,6 @@
 #
 # Backports from upstream
 #
-# b946434f2659a182afc17e155be6791ebfb302eb
-0001-usb-fix-setup_len-init-CVE-2020-14364.patch
-# bc7f3b0b0d33fb58272a98c862dc9a1fa913fcd3 (5.0.0-rc1)
-0001-scripts-checkpatch.pl-Only-allow-Python-3-interprete.patch
-# 3d004a371e88a7454eb8ab8c19e6b0bd067b34cd (5.0.0-rc1)
-0002-scripts-Explicit-usage-of-Python-3-scripts-with-__ma.patch
-# b92e7dae2b2626c0afc8ac980660b2ffc3e35bf0 (5.0.0-rc1)
-0003-scripts-minikconf-Explicit-usage-of-Python-3.patch
-# 91aef87a2b8afb333934b02ce2d0d64a3fe11874 (5.0.0-rc1)
-0004-scripts-tracetool-Remove-shebang-header.patch
-# d2cdbd54db6e5976d02d7a2c48cb49915d34086d (5.0.0-rc1)
-0005-scripts-Explicit-usage-of-Python-3-scripts-without-_.patch
-# b38c2458d4ccbabbfdf1beb9df483b609a9513f8 (5.0.0-rc1)
-0006-scripts-signrom-remove-Python-2-support-add-shebang.patch
-# 15b015690b62c7c463fa6f5cdb2bc669749eefc3 (5.0.0-rc1)
-0001-tests-qemu-iotests-check-Allow-use-of-python3-interp.patch
-# 903cb1bf398666014180d00711e2c1a9ffdadd5a (5.0.0-rc1)
-0001-tests-qemu-iotests-Explicit-usage-of-Python-3-script.patch
-# 7c4775260807f1428484a5cebc7bc360c46a872d (5.0.0-rc1)
-0002-tests-qemu-iotests-Explicit-usage-of-Python3-scripts.patch
-# 6dd360ce3fd599ec373fa1206e850ee106a8e710 (5.0.0-rc1)
-0007-make-all-Python-scripts-executable.patch
-# 423edd9a31b3c78007bb5d9c9a9b3c0c618a10a8 (5.0.0-rc1)
-0002-drop-from-__future__-import-print_function.patch
-# ff29ed3a331d0cd26bcd30f7cd6c0c96c7d44eed (5.0.0-rc1)
-0001-aio-posix-fix-use-after-leaving-scope-in-aio_poll.patch
-# 06d4c71f4869386abf97f45f61c21e9dc449943f (5.1.0-rc1)
-0003-scripts-qmp-Use-Python-3-interpreter.patch
-# c7b942d7f84ef54f266921bf7668d43f1f2c7c79 (5.1.0-rc1)
-0001-scripts-qmp-Fix-shebang-and-imports.patch
-# 045b1d4dbb44da67f1f86efa75b02843c0e951ef (5.2.0-rc1)
-0001-xen-rework-pci_piix3_xen_ide_unplug.patch
-# dd8525472a17bc7f21aa6024aaa19ad53d28750a
-0001-hw-ehci-destroy-sglist-in-error-path.patch
-# 2fdb42d840400d58f2e706ecca82c142b97bcbd6
-0002-hw-ehci-check-return-value-of-usb_packet_map.patch
-# ccee80c68db14b3e965582a19393992b5c2b97f4
-0003-usb-hcd-ehci-Fix-error-handling-on-missing-device-fo.patch
-# f7d6a635fa3b7797f9d072e280f065bf3cfcd24d (5.1.0-rc1)
-0001-pci-assert-configuration-access-is-within-bounds.patch
-# e6cada9231af022ffc2e351c70dfaea8530496e1 (5.1.0-rc1)
-0006-block-Avoid-stale-pointer-dereference-in-blk_get_aio.patch
-# f2dfe54c74f768a5bf78c9e5918918727f9d9459 (v5.1.0)
-0001-configure-Do-not-ignore-malloc-value.patch
-# 813212288970c39b1800f63e83ac6e96588095c6 (5.2.0-rc4)
-0001-ide-atapi-assert-that-the-buffer-pointer-is-in-range.patch
-# c4583c8c394ee49ce7d5271f572abd3b000fa9e4 (v5.2.0)
-0001-xen-bus-reduce-scope-of-backend-watch.patch
-# b8d7f1bc59276fec85e4d09f1567613a3e14d31e
-0001-ide-atapi-check-logical-block-address-and-read-size-.patch
-# f4d87ce47c60935e639c76f8973623fd7616cef4 (6.0.0-rc0)
-0001-ui-update-keycodemapdb-submodule-commit.patch
-# 3de46e6fc489c52c9431a8a832ad8170a7569bd8 (6.0.0-rc1)
-0001-e1000-fail-early-for-evil-descriptor.patch
-# 705df5466c98f3efdd2b68d3b31dad86858acad7 (6.0.0-rc1)
-0001-net-introduce-qemu_receive_packet.patch
-# 1caff0340f49c93d535c6558a5138d20d475315c (6.0.0-rc1)
-0002-e1000-switch-to-use-qemu_receive_packet-for-loopback.patch
-# 5311fb805a4403bba024e83886fa0e7572265de4 (6.0.0-rc1)
-0003-rtl8139-switch-to-use-qemu_receive_packet-for-loopba.patch
-# N/A (6.0.0)
-0001-xen-mapcache-avoid-a-race-on-memory-map-while-using-.patch
-# b565b44ec202fbe52a017273319db83f067fe574 (v6.0.0)
-0001-net-eth-Use-correct-in6_address-offset-in-_eth_get_r.patch
-# 38462440ca22a8ead2ec1e98ef3c45e264fa6f60 (v6.0.0)
-0002-net-eth-Simplify-_eth_get_rss_ex_dst_addr.patch
-# dbd8d3f959e5ba9b1804a5c99c7f8af42d96809b (v6.0.0)
-0003-net-eth-Better-describe-_eth_get_rss_ex_dst_addr-s-o.patch
-# 6f10f77dcdbc151217d19229d9aeeb93c9c1c408 (v6.0.0)
-0004-net-eth-Check-size-earlier-in-_eth_get_rss_ex_dst_ad.patch
-# ef763586c943815eb0836c54c207ce8572e176a7 (v6.0.0)
-0005-net-eth-Check-iovec-has-enough-data-earlier.patch
-# 7d6a4f123e00c9dbd40867ae1a650a4fd0bc4a3d (v6.0.0)
-0006-net-eth-Read-ip6_ext_hdr_routing-buffer-before-acces.patch
-# c7274b5ef43614dd133daec1e2018f71d8744088 (v6.0.0)
-0007-net-eth-Add-an-assert-and-invert-if-statement-to-sim.patch
-# bbd2d5a8120771ec59b86a80a1f51884e0a26e53 (v6.0.0)
-0001-build-no-pie-is-no-functional-linker-flag.patch
-# d7696ff884e35c6dacf83a7cbe3355e3b0a90125 (6.1.0-rc0)
-0001-input-Add-lang1-and-lang2-to-QKeyCode.patch
-# 9288e803e61e8d56d1c6c6aa8beb58596fb84ed9 (7.0.0-rc1)
-0001-xen-hvm-Allow-disabling-buffer_io_timer.patch
-# a021a2dd8b790437d27db95774969349632f856a (v7.0.0)
-0001-xen-mapcache-Avoid-entry-lock-overflow.patch
-# 79854b95446396c8e7f397800c5d86c3d9a7540d (v7.0.0)
-0001-block-qdict-Fix-Werror-maybe-uninitialized.patch
-# 236d15222e06750d6b889030ed04c849b1dc279e (v7.1.0)
-0001-pc-bios-optionrom-compile-with-Wno-array-bounds.patch
-
-#
-# CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
-#
-# be9c61da9fc57eb7d293f380d0805ca6f46c2657 (7.1.0-rc1)
-0001-xen-pass-through-merge-emulated-bits-correctly.patch
-# c0e86b7624cb9d6db03e0d48cf82659e5b89a6a6 (7.1.0-rc1)
-0001-xen-pass-through-don-t-create-needless-register-grou.patch
-# fb36fb9344c284a58f3f3ec5be6408fc51eaf3f1 (7.2.0-rc1)
-0001-hw-xen-set-pci-Atomic-Ops-requests-for-passthrough-d.patch
-# 3856734d80fbf46683e4080117ed961f5ab1300b (8.0.0-rc1)
-0001-hw-xen-xen_pt-fix-uninitialized-variable.patch
-# Reviewed by maintainer: https://lists.xenproject.org/archives/html/xen-devel/2023-11/msg00198.html
-xen_pt-Emulate-multifunction-bit-in-header-type.patch
 
 # f74ce602264d05f3b17de6d431f887fa0f0d5932 (11.0.0 dev window)
 0001-hw-xen-pass-PCI-domain-to-xc_physdev_map_pirq_msi.patch
@@ -133,16 +31,10 @@ dont-init-cpus-on-xen.patch
 remove-ioapic.patch
 ignore-rtc-century-changes.patch
 0001-CP-33348-Allow-media-replace-qmp-command-to-take-a-n.patch
-# https://lore.kernel.org/qemu-devel/20220411144749.47185-1-anthony.perard@citrix.com/
-tpm_crb-mark-command-buffer-as-dirty-on-request-comp.patch
-# https://lore.kernel.org/qemu-devel/20220801142725.815399-1-ross.lagerwall@citrix.com/
-tpm_emulator-Avoid-double-initialization-during-migr.patch
-# https://lore.kernel.org/qemu-devel/20220826143841.1515326-1-ross.lagerwall@citrix.com/
-tpm_crb-Avoid-backend-startup-just-before-shutdown-u.patch
 token-bucket-event-throttling.patch
-xen-hvm-Avoid-livelock-while-handling-buffered-ioreq.patch
 handle-framebuffer-relocation.patch
 qmp-Fix-race-causing-events-to-be-sent-during-negotiation.patch
+disable-pcspk.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
@@ -156,35 +48,7 @@ check-unmigratable-devices-when-saving.patch
 query-migratable.patch
 
 # NVME namespace support
-# https://www.mail-archive.com/qemu-devel@nongnu.org/msg629246.html
-0001-nvme-simplify-namespace-code.patch
-0002-nvme-move-device-parameters-to-separate-struct.patch
-0003-nvme-fix-lpa-field.patch
-0004-nvme-add-missing-fields-in-identify-controller.patch
-0005-nvme-populate-the-mandatory-subnqn-and-ver-fields.patch
-0006-nvme-support-completion-queue-in-cmb.patch
-0007-nvme-support-Abort-command.patch
-0008-nvme-refactor-device-realization.patch
-0009-nvme-support-Asynchronous-Event-Request-command.patch
-0010-nvme-support-Get-Log-Page-command.patch
-0011-nvme-add-missing-mandatory-Features.patch
-0012-nvme-bump-supported-NVMe-revision-to-1.3d.patch
-0013-nvme-simplify-dma-cmb-mappings.patch
-0014-nvme-support-multiple-block-requests-per-request.patch
-0015-nvme-support-scatter-gather-lists.patch
-0016-nvme-support-multiple-namespaces.patch
-nvme-ns-allow-inactive.patch
 nvme-close-backend.patch
-# aa5e55e3b07ede87a8fd7aa3e67583dfc464dd52 (6.0.0-rc1)
-0001-hw-block-nvme-open-code-for-volatile-write-cache.patch
-# 2132cfe52bd87f191887c1728190bf56e8d5275f (6.0.0-rc1)
-0001-hw-block-nvme-Fix-a-build-error-in-nvme_get_feature.patch
-
-# Key handling
-# https://lore.kernel.org/qemu-devel/20230301125211.278808-1-williamvdvelde@gmail.com/
-0001-Add-qemu-qcode-support-for-keys-F13-to-F24.patch
-# https://lore.kernel.org/qemu-devel/20230227173308.3944546-1-ross.lagerwall@citrix.com/
-0001-ps2-Don-t-send-key-release-event-for-Lang1-Lang2-key.patch
 
 #
 # Binary compatability with qemu trad (must be behind an option)
@@ -202,18 +66,21 @@ match-xen-pvdevice-location.patch
 #
 # General compatibility with qemu trad (no need for an option)
 #
+0001-Revert-target-i386-kvm-Remove-x86_cpu_change_kvm_def.patch
+0001-Revert-hw-i386-pc-Unexport-PC_CPU_MODEL_IDS-macro.patch
 revert_hw-i386__remove_deprecated_machines_pc-0.10_and_pc-0.11.patch
-0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
+#0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
+0001-Revert-hw-cxl-Make-the-CXL-fixed-memory-windows-devi.patch
 
 #
 # Technical debt to unblock further development.  Needs removing
 #
-allocate-guest-ram-reserved.patch
+#allocate-guest-ram-reserved.patch
 
 # Remove once PV frontends unplug NVME devices
-unplug-nvme-devices.patch
+#unplug-nvme-devices.patch
 
 #
 # qemu-dp patches
@@ -222,7 +89,7 @@ unplug-nvme-devices.patch
 # at TP stage and should not interfere with qemu emulation part
 # at all.
 #
-do_not_register_xen_backend_for_qdisk.patch
+#do_not_register_xen_backend_for_qdisk.patch
 
 #
 # Performance improvements
@@ -230,25 +97,26 @@ do_not_register_xen_backend_for_qdisk.patch
 # Small change to qemu emulation part which adds an IDE
 # read cache to improve performance of sequential short reads
 # (e.g. windows boot)
-add-an-ide-read-cache.patch
+#add-an-ide-read-cache.patch
 #
 # Disable dirty VRAM tracking as it's CPU consuming and doesn't
 # reduce VNC updates a significantly. Still keep it enabled during
 # live migration to avoid downtime increase.
 #
-disable-dirty-vram-tracking.patch
+#disable-dirty-vram-tracking.patch
 
 # Build configuration
-build-configuration.patch
+temp-build-configs.patch
+#build-configuration.patch TODO investigate with reducing attack surface & memory size
 
 #
 # Compile and build fixes when upgrading to XenServer 9 with higher version of GCC/glibc
 #
-0001-CP-46162-Resolve-the-Null-pointer-error-in-configure.patch
+#0001-CP-46162-Resolve-the-Null-pointer-error-in-configure.patch
 
 # Allow PCI passthrough using kernel lockdown more
-81ef3d06c970c6b7ae4971ad552b2287af376f43.patch
-msix_pba_log.patch
-pci_passthrough.patch
+#81ef3d06c970c6b7ae4971ad552b2287af376f43.patch
+#msix_pba_log.patch
+#pci_passthrough.patch
 
 # Debug patches

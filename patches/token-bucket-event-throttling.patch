@@ -11,7 +11,7 @@ quick succession while still limiting the overall rate to something sensible.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 diff --git a/monitor/monitor.c b/monitor/monitor.c
-index 12898b6448f2..23b556df4edf 100644
+index c5a5d308774b..986956896da5 100644
 --- a/monitor/monitor.c
 +++ b/monitor/monitor.c
 @@ -44,10 +44,13 @@ typedef struct MonitorQAPIEventState {
@@ -29,26 +29,32 @@ index 12898b6448f2..23b556df4edf 100644
  } MonitorQAPIEventConf;
  
  /* Shared monitor I/O thread */
-@@ -227,12 +230,12 @@ int error_vprintf_unless_qmp(const char *fmt, va_list ap)
+@@ -307,15 +310,15 @@ int error_printf_unless_qmp(const char *fmt, ...)
  
  static MonitorQAPIEventConf monitor_qapi_event_conf[QAPI_EVENT__MAX] = {
      /* Limit guest-triggerable events to 1 per second */
 -    [QAPI_EVENT_RTC_CHANGE]        = { 1000 * SCALE_MS },
+-    [QAPI_EVENT_BLOCK_IO_ERROR]    = { 1000 * SCALE_MS },
 -    [QAPI_EVENT_WATCHDOG]          = { 1000 * SCALE_MS },
 -    [QAPI_EVENT_BALLOON_CHANGE]    = { 1000 * SCALE_MS },
 -    [QAPI_EVENT_QUORUM_REPORT_BAD] = { 1000 * SCALE_MS },
 -    [QAPI_EVENT_QUORUM_FAILURE]    = { 1000 * SCALE_MS },
 -    [QAPI_EVENT_VSERPORT_CHANGE]   = { 1000 * SCALE_MS },
+-    [QAPI_EVENT_MEMORY_DEVICE_SIZE_CHANGE] = { 1000 * SCALE_MS },
+-    [QAPI_EVENT_HV_BALLOON_STATUS_REPORT] = { 1000 * SCALE_MS },
 +    [QAPI_EVENT_RTC_CHANGE]        = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 12 },
-+    [QAPI_EVENT_WATCHDOG]          = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1 },
-+    [QAPI_EVENT_BALLOON_CHANGE]    = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1 },
-+    [QAPI_EVENT_QUORUM_REPORT_BAD] = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1 },
-+    [QAPI_EVENT_QUORUM_FAILURE]    = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1 },
-+    [QAPI_EVENT_VSERPORT_CHANGE]   = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1 },
++    [QAPI_EVENT_BLOCK_IO_ERROR]    = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_WATCHDOG]          = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_BALLOON_CHANGE]    = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_QUORUM_REPORT_BAD] = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_QUORUM_FAILURE]    = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_VSERPORT_CHANGE]   = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_MEMORY_DEVICE_SIZE_CHANGE] = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
++    [QAPI_EVENT_HV_BALLOON_STATUS_REPORT] = { .ns_per_token = 1000 * SCALE_MS, .max_tokens = 1},
  };
  
  /*
-@@ -271,6 +274,21 @@ static void monitor_qapi_event_emit(QAPIEvent event, QDict *qdict)
+@@ -354,6 +357,21 @@ static void monitor_qapi_event_emit(QAPIEvent event, QDict *qdict)
  
  static void monitor_qapi_event_handler(void *opaque);
  
@@ -70,21 +76,21 @@ index 12898b6448f2..23b556df4edf 100644
  /*
   * Queue a new event for emission to Monitor instances,
   * applying any rate limiting if required.
-@@ -283,11 +301,11 @@ monitor_qapi_event_queue_no_reenter(QAPIEvent event, QDict *qdict)
+@@ -366,11 +384,11 @@ monitor_qapi_event_queue_no_reenter(QAPIEvent event, QDict *qdict)
  
      assert(event < QAPI_EVENT__MAX);
      evconf = &monitor_qapi_event_conf[event];
 -    trace_monitor_protocol_event_queue(event, qdict, evconf->rate);
 +    trace_monitor_protocol_event_queue(event, qdict, evconf->ns_per_token, evconf->max_tokens);
  
-     qemu_mutex_lock(&monitor_lock);
+     QEMU_LOCK_GUARD(&monitor_lock);
  
 -    if (!evconf->rate) {
 +    if (!evconf->ns_per_token) {
          /* Unthrottled event */
          monitor_qapi_event_emit(event, qdict);
      } else {
-@@ -295,36 +313,44 @@ monitor_qapi_event_queue_no_reenter(QAPIEvent event, QDict *qdict)
+@@ -378,36 +396,44 @@ monitor_qapi_event_queue_no_reenter(QAPIEvent event, QDict *qdict)
          MonitorQAPIEventState key = { .event = event, .data = data };
  
          evstate = g_hash_table_lookup(monitor_qapi_event_state, &key);
@@ -152,10 +158,19 @@ index 12898b6448f2..23b556df4edf 100644
 +            }
          }
      }
+ }
+@@ -454,7 +480,7 @@ void qapi_event_emit(QAPIEvent event, QDict *qdict)
+ }
  
-@@ -385,19 +411,14 @@ static void monitor_qapi_event_handler(void *opaque)
+ /*
+- * This function runs evconf->rate ns after sending a throttled
++ * This function runs evconf->ns_per_token ns after sending a throttled
+  * event.
+  * If another event has since been stored, send it.
+  */
+@@ -466,19 +492,14 @@ static void monitor_qapi_event_handler(void *opaque)
      trace_monitor_protocol_event_handler(evstate->event, evstate->qdict);
-     qemu_mutex_lock(&monitor_lock);
+     QEMU_LOCK_GUARD(&monitor_lock);
  
 -    if (evstate->qdict) {
 -        int64_t now = qemu_clock_get_ns(monitor_get_event_clock());
@@ -177,11 +192,11 @@ index 12898b6448f2..23b556df4edf 100644
 +    qobject_unref(evstate->qdict);
 +    timer_free(evstate->timer);
 +    evstate->timer = NULL;
- 
-     qemu_mutex_unlock(&monitor_lock);
  }
+ 
+ static unsigned int qapi_event_throttle_hash(const void *key)
 diff --git a/monitor/trace-events b/monitor/trace-events
-index 0365ac4d9942..efd4a1d00c66 100644
+index 032d1220e146..61a98ef8d709 100644
 --- a/monitor/trace-events
 +++ b/monitor/trace-events
 @@ -6,7 +6,7 @@ handle_hmp_command(void *mon, const char *cmdline) "mon %p cmdline: %s"

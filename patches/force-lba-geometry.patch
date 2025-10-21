@@ -1,8 +1,8 @@
 diff --git a/hw/block/hd-geometry.c b/hw/block/hd-geometry.c
-index 79384a2b0a..69d0da4dd1 100644
+index db221901cf4b..e7b4231005fa 100644
 --- a/hw/block/hd-geometry.c
 +++ b/hw/block/hd-geometry.c
-@@ -133,7 +133,8 @@ void hd_geometry_guess(BlockBackend *blk,
+@@ -127,7 +127,8 @@ void hd_geometry_guess(BlockBackend *blk,
          *psecs = geo.sectors;
          *pheads = geo.heads;
          translation = BIOS_ATA_TRANSLATION_NONE;
@@ -13,12 +13,12 @@ index 79384a2b0a..69d0da4dd1 100644
          guess_chs_for_size(blk, pcyls, pheads, psecs);
          translation = hd_bios_chs_auto_trans(*pcyls, *pheads, *psecs);
 diff --git a/qapi/block.json b/qapi/block.json
-index 145c268bb6..3976ca41c6 100644
+index 46955bbb3e34..d0ee3da91ec9 100644
 --- a/qapi/block.json
 +++ b/qapi/block.json
-@@ -39,10 +39,13 @@
- #         15-head, by proportionally scaling up the number of
- #         cylinders/head.
+@@ -43,10 +43,13 @@
+ #     15-head, by proportionally scaling up the number of
+ #     cylinders/head.
  #
 +# @forcelba: Force lba geometry, sectors = 63, heads = 16,
 +#            cylinders is set based on the disk size with a max of 16383.

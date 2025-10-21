@@ -6,7 +6,7 @@ migrating after hot(un)plugging NICs. Assume there's only one PV
 device and match it regardless of its location. This matches
 qemu-trad's behavior.
 diff --git a/migration/savevm.c b/migration/savevm.c
-index 2b27954..fa31168 100644
+index d5ce9028cc5b..93c22a8c297d 100644
 --- a/migration/savevm.c
 +++ b/migration/savevm.c
 @@ -28,6 +28,7 @@
@@ -14,10 +14,10 @@ index 2b27954..fa31168 100644
  #include "qemu/osdep.h"
  #include "hw/boards.h"
 +#include "hw/i386/pc.h"
- #include "hw/xen/xen.h"
  #include "net/net.h"
  #include "migration.h"
-@@ -1323,6 +1324,21 @@ static SaveStateEntry *find_se(const char *idstr, int instance_id)
+ #include "migration/snapshot.h"
+@@ -1890,6 +1891,21 @@ static SaveStateEntry *find_se(const char *idstr, uint32_t instance_id)
                   instance_id == se->alias_id))
                  return se;
          }

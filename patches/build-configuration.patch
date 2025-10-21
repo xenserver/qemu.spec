@@ -8,68 +8,75 @@ This is made up of:
   --without-default-devices can be used.
 
 
-diff --git a/backends/Makefile.objs b/backends/Makefile.objs
-index f0691116e8..f51224cc84 100644
---- a/backends/Makefile.objs
-+++ b/backends/Makefile.objs
-@@ -6,8 +6,8 @@ common-obj-$(CONFIG_TPM) += tpm.o
- common-obj-y += hostmem.o hostmem-ram.o
- common-obj-$(CONFIG_POSIX) += hostmem-file.o
+diff --git a/backends/meson.build b/backends/meson.build
+index 60021f45d124..ac7c34118242 100644
+--- a/backends/meson.build
++++ b/backends/meson.build
+@@ -1,7 +1,4 @@
+ system_ss.add([files(
+-  'cryptodev-builtin.c',
+-  'cryptodev-hmp-cmds.c',
+-  'cryptodev.c',
+   'hostmem-ram.c',
+   'hostmem.c',
+   'rng-builtin.c',
+@@ -10,6 +7,14 @@ system_ss.add([files(
+   'confidential-guest-support.c',
+ ), numa])
  
--common-obj-y += cryptodev.o
--common-obj-y += cryptodev-builtin.o
-+common-obj-$(call lnot,$(CONFIG_XEN)) += cryptodev.o
-+common-obj-$(call lnot,$(CONFIG_XEN)) += cryptodev-builtin.o
- 
- ifeq ($(CONFIG_VIRTIO_CRYPTO),y)
- common-obj-y += cryptodev-vhost.o
-diff --git a/block/Makefile.objs b/block/Makefile.objs
-index e394fe0b6c..27981e6e2f 100644
---- a/block/Makefile.objs
-+++ b/block/Makefile.objs
-@@ -1,4 +1,5 @@
--block-obj-y += raw-format.o vmdk.o vpc.o
-+block-obj-y += raw-format.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += vmdk.o vpc.o
- block-obj-$(CONFIG_QCOW1) += qcow.o
- block-obj-$(CONFIG_VDI) += vdi.o
- block-obj-$(CONFIG_CLOOP) += cloop.o
-@@ -9,7 +10,7 @@ block-obj-$(CONFIG_DMG) += dmg.o
- block-obj-y += qcow2.o qcow2-refcount.o qcow2-cluster.o qcow2-snapshot.o qcow2-cache.o qcow2-bitmap.o qcow2-threads.o
- block-obj-$(CONFIG_QED) += qed.o qed-l2-cache.o qed-table.o qed-cluster.o
- block-obj-$(CONFIG_QED) += qed-check.o
--block-obj-y += vhdx.o vhdx-endian.o vhdx-log.o
-+block-obj-$(call lnot,$(CONFIG_XEN)) += vhdx.o vhdx-endian.o vhdx-log.o
- block-obj-y += quorum.o
- block-obj-y += blkdebug.o blkverify.o blkreplay.o
- block-obj-$(CONFIG_PARALLELS) += parallels.o
-diff --git a/crypto/Makefile.objs b/crypto/Makefile.objs
-index cdb01f9de9..cb1d85c367 100644
---- a/crypto/Makefile.objs
-+++ b/crypto/Makefile.objs
-@@ -40,3 +40,7 @@ crypto-obj-y += block-luks.o
- crypto-user-obj-y = aes.o $(crypto-rng-obj-y) init.o
- 
- stub-obj-y += pbkdf-stub.o
++if not xen.found()
++  system_ss.add(files(
++    'cryptodev-builtin.c',
++    'cryptodev-hmp-cmds.c',
++    'cryptodev.c'
++  ))
++endif
 +
-+# Override the previous crypto-obj-y value to avoid building most crypto
-+crypto-obj-y = hash.o
-+crypto-obj-$(if $(CONFIG_NETTLE),n,$(if $(CONFIG_GCRYPT),n,y)) += hash-glib.o
-diff --git a/default-configs/i386-softmmu.mak b/default-configs/i386-softmmu.mak
-index 4cc64dafa2..098f64b681 100644
---- a/default-configs/i386-softmmu.mak
-+++ b/default-configs/i386-softmmu.mak
-@@ -25,7 +25,32 @@
+ if host_os != 'windows'
+   system_ss.add(files('rng-random.c'))
+   if host_os != 'emscripten'
+diff --git a/block/meson.build b/block/meson.build
+index 34b1b2a30630..6c0eb34f3834 100644
+--- a/block/meson.build
++++ b/block/meson.build
+@@ -50,17 +50,17 @@ endif
+ if get_option('vdi').allowed()
+   block_ss.add(files('vdi.c'))
+ endif
+-if get_option('vhdx').allowed()
++if get_option('vhdx').allowed() and not xen.found()
+   block_ss.add(files(
+     'vhdx-endian.c',
+     'vhdx-log.c',
+     'vhdx.c'
+   ))
+ endif
+-if get_option('vmdk').allowed()
++if get_option('vmdk').allowed() and not xen.found()
+   block_ss.add(files('vmdk.c'))
+ endif
+-if get_option('vpc').allowed()
++if get_option('vpc').allowed() and not xen.found()
+   block_ss.add(files('vpc.c'))
+ endif
+ if get_option('cloop').allowed()
+diff --git a/configs/devices/i386-softmmu/default.mak b/configs/devices/i386-softmmu/default.mak
+index bc0479a7e0a3..e2e41475c9ec 100644
+--- a/configs/devices/i386-softmmu/default.mak
++++ b/configs/devices/i386-softmmu/default.mak
+@@ -26,8 +26,33 @@
+ #CONFIG_SGX=n
  
- # Boards:
- #
--CONFIG_ISAPC=y
+ # Boards are selected by default, uncomment to keep out of the build.
+-# CONFIG_ISAPC=n
+-# CONFIG_I440FX=n
+-# CONFIG_Q35=n
+-# CONFIG_MICROVM=n
 +CONFIG_ISAPC=n
- CONFIG_I440FX=y
--CONFIG_Q35=y
--CONFIG_MICROVM=y
++CONFIG_I440FX=y
 +CONFIG_Q35=n
 +CONFIG_MICROVM=n
+ # CONFIG_NITRO_ENCLAVE=n
 +
 +# Wanted devices:
 +CONFIG_AHCI=y
@@ -95,24 +102,26 @@ index 4cc64dafa2..098f64b681 100644
 +CONFIG_USB_UHCI=y
 +CONFIG_VGA_CIRRUS=y
 +CONFIG_VGA_PCI=y
-diff --git a/hw/Makefile.objs b/hw/Makefile.objs
-index 66eef20561..efc8663d75 100644
---- a/hw/Makefile.objs
-+++ b/hw/Makefile.objs
-@@ -33,7 +33,7 @@ devices-dirs-y += ssi/
- devices-dirs-y += timer/
- devices-dirs-$(CONFIG_TPM) += tpm/
- devices-dirs-y += usb/
--devices-dirs-$(CONFIG_VFIO) += vfio/
-+devices-dirs-$(call land,$(CONFIG_VFIO),$(call lnot,$(CONFIG_XEN))) += vfio/
- devices-dirs-y += virtio/
- devices-dirs-y += watchdog/
- devices-dirs-y += xen/
+diff --git a/crypto/meson.build b/crypto/meson.build
+index 735635de1f32..0e831f2b2f40 100644
+--- a/crypto/meson.build
++++ b/crypto/meson.build
+@@ -73,3 +73,10 @@ else
+   util_ss.add(files('random-platform.c'))
+ endif
+ 
++# Override the previous crypto_ss to avoid building most crypto
++crypto_ss = ss.source_set()
++crypto_ss.add(files('hash.c'))
++if nettle.found() or gcrypt.found()
++  crypto_ss.add(files('hash-glib.c'))
++endif
++
 diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
-index 5a494342ea..9a107153af 100644
+index 3a0e2b8ebbb6..aeb8ca6b10ad 100644
 --- a/hw/i386/Kconfig
 +++ b/hw/i386/Kconfig
-@@ -27,7 +27,7 @@ config PC
+@@ -42,7 +42,7 @@ config PC
      select I8259
      select I8254
      select PCKBD
@@ -121,24 +130,29 @@ index 5a494342ea..9a107153af 100644
      select I8257
      select MC146818RTC
      # For ACPI builder:
-diff --git a/stubs/Makefile.objs b/stubs/Makefile.objs
-index 4a50e95ec3..335c06cb05 100644
---- a/stubs/Makefile.objs
-+++ b/stubs/Makefile.objs
-@@ -4,6 +4,7 @@ stub-obj-y += blockdev-close-all-bdrv-states.o
- stub-obj-y += clock-warp.o
- stub-obj-y += cpu-get-clock.o
- stub-obj-y += cpu-get-icount.o
-+stub-obj-y += crypto.o
- stub-obj-y += dump.o
- stub-obj-y += error-printf.o
- stub-obj-y += fdset.o
+diff --git a/hw/meson.build b/hw/meson.build
+index 791ce21ab42a..993a407ee543 100644
+--- a/hw/meson.build
++++ b/hw/meson.build
+@@ -38,7 +38,11 @@ subdir('tpm')
+ subdir('uefi')
+ subdir('ufs')
+ subdir('usb')
+-subdir('vfio')
++
++if not xen.found()
++  subdir('vfio')
++endif
++
+ subdir('vfio-user')
+ subdir('virtio')
+ subdir('vmapple')
 diff --git a/stubs/crypto.c b/stubs/crypto.c
 new file mode 100644
-index 0000000000..7ad970aa85
+index 000000000000..13d839e325c5
 --- /dev/null
 +++ b/stubs/crypto.c
-@@ -0,0 +1,202 @@
+@@ -0,0 +1,199 @@
 +#include "qemu/osdep.h"
 +#include "qapi/error.h"
 +#include "crypto/block.h"
@@ -153,7 +167,6 @@ index 0000000000..7ad970aa85
 +                                 QCryptoBlockReadFunc readfunc,
 +                                 void *opaque,
 +                                 unsigned int flags,
-+                                 size_t n_threads,
 +                                 Error **errp)
 +{
 +    error_setg_errno(errp, ENOSYS, "No crypto");
@@ -165,6 +178,7 @@ index 0000000000..7ad970aa85
 +                                   QCryptoBlockInitFunc initfunc,
 +                                   QCryptoBlockWriteFunc writefunc,
 +                                   void *opaque,
++                                   unsigned int flags,
 +                                   Error **errp)
 +{
 +    error_setg_errno(errp, ENOSYS, "No crypto");
@@ -238,22 +252,19 @@ index 0000000000..7ad970aa85
 +
 +ssize_t qcrypto_tls_session_read(QCryptoTLSSession *sess,
 +                                 char *buf,
-+                                 size_t len)
++                                 size_t len,
++                                 bool gracefulTermination,
++                                 Error **errp)
 +{
 +    return -1;
 +}
 +
 +ssize_t qcrypto_tls_session_write(QCryptoTLSSession *sess,
 +                                  const char *buf,
-+                                  size_t len)
++                                  size_t len,
++                                  Error **errp)
 +{
 +    return -1;
-+}
-+
-+QCryptoTLSSessionHandshakeStatus
-+qcrypto_tls_session_get_handshake_status(QCryptoTLSSession *sess)
-+{
-+    return 0;
 +}
 +
 +void qcrypto_tls_session_set_callbacks(QCryptoTLSSession *sess,
@@ -286,7 +297,7 @@ index 0000000000..7ad970aa85
 +    return -1;
 +}
 +
-+QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgorithm alg,
++QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
 +                                  QCryptoCipherMode mode,
 +                                  const uint8_t *key, size_t nkey,
 +                                  Error **errp)
@@ -309,7 +320,7 @@ index 0000000000..7ad970aa85
 +    return -1;
 +}
 +
-+bool qcrypto_cipher_supports(QCryptoCipherAlgorithm alg,
++bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
 +                             QCryptoCipherMode mode)
 +{
 +    return false;
@@ -341,3 +352,15 @@ index 0000000000..7ad970aa85
 +    error_setg_errno(errp, ENOSYS, "No crypto");
 +    return NULL;
 +}
+diff --git a/stubs/meson.build b/stubs/meson.build
+index cef046e6854d..4c3db11176c3 100644
+--- a/stubs/meson.build
++++ b/stubs/meson.build
+@@ -10,6 +10,7 @@ stub_ss.add(files('is-daemonized.c'))
+ stub_ss.add(files('monitor-core.c'))
+ stub_ss.add(files('replay-mode.c'))
+ stub_ss.add(files('trace-control.c'))
++stub_ss.add(files('crypto.c'))
+ 
+ if have_block
+   stub_ss.add(files('bdrv-next-monitor-owned.c'))

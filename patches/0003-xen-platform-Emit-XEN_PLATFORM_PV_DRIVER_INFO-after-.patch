@@ -9,7 +9,7 @@ XEN_PLATFORM_PV_DRIVER_INFO event.
 
 Signed-off-by: Anoob Soman <anoob.soman@citrix.com>
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index bb0b560128..4eab0723e7 100644
+index 835c570bb8e7..78b824f39b56 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
 @@ -26,6 +26,7 @@
@@ -17,10 +17,10 @@ index bb0b560128..4eab0723e7 100644
  #include "qapi/error.h"
  #include "qapi/qapi-commands-misc.h"
 +#include "qapi/qapi-events-misc.h"
- #include "hw/ide.h"
+ #include "hw/ide/pci.h"
  #include "hw/pci/pci.h"
  #include "hw/qdev-properties.h"
-@@ -247,6 +248,9 @@ static void platform_fixed_ioport_writel(void *opaque, uint32_t addr,
+@@ -334,6 +335,9 @@ static void platform_fixed_ioport_writel(void *opaque, uint32_t addr,
      case 0:
          /* PV driver version */
          s->driver_build_number = val;
@@ -31,12 +31,12 @@ index bb0b560128..4eab0723e7 100644
      }
  }
 diff --git a/qapi/misc.json b/qapi/misc.json
-index 7af0d0abb8..33caa722de 100644
+index bd2c10e96278..c58f0e0d7276 100644
 --- a/qapi/misc.json
 +++ b/qapi/misc.json
-@@ -1772,6 +1772,27 @@
+@@ -338,6 +338,27 @@
  ##
- { 'struct': 'GuidInfo', 'data': {'guid': 'str'} }
+ { 'command': 'query-xen-platform-pv-driver-info', 'returns': 'XenPvDriverInfo' }
  
 +##
 +# @XEN_PLATFORM_PV_DRIVER_INFO:
@@ -50,7 +50,7 @@ index 7af0d0abb8..33caa722de 100644
 +#
 +# Since: X.Y
 +#
-+# Example:
++# .. qmp-example::
 +#
 +# <- { "event": "XEN_PLATFORM_PV_DRIVER_INFO",
 +#      "data": { "product-num": 3, "build-num": 1},
@@ -60,5 +60,5 @@ index 7af0d0abb8..33caa722de 100644
 +  'data': { 'product-num': 'int', 'build-num': 'int' } }
 +
  ##
- # @query-vm-generation-id:
+ # @AddfdInfo:
  #

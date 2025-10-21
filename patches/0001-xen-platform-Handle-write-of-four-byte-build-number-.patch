@@ -9,18 +9,18 @@ PCIXenPlatformState
 
 Signed-off-by: Anoob Soman <anoob.soman@citrix.com>
 diff --git a/hw/i386/xen/xen_platform.c b/hw/i386/xen/xen_platform.c
-index 2e1e543..1d303e2 100644
+index be9827ee685d..432b4cddedf0 100644
 --- a/hw/i386/xen/xen_platform.c
 +++ b/hw/i386/xen/xen_platform.c
-@@ -62,6 +62,7 @@ typedef struct PCIXenPlatformState {
+@@ -66,6 +66,7 @@ struct PCIXenPlatformState {
+     MemoryRegion mmio_bar;
      uint8_t flags; /* used only for version_id == 2 */
-     int drivers_blacklisted;
      uint16_t driver_product_version;
 +    uint32_t driver_build_number;
  
      /* Log from guest drivers */
      char log_buffer[4096];
-@@ -169,9 +170,12 @@ static void platform_fixed_ioport_writew(void *opaque, uint32_t addr, uint32_t v
+@@ -306,9 +307,12 @@ static void platform_fixed_ioport_writew(void *opaque, uint32_t addr, uint32_t v
  static void platform_fixed_ioport_writel(void *opaque, uint32_t addr,
                                           uint32_t val)
  {

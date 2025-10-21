@@ -11,11 +11,11 @@ parameter from XAPI later.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/i386/pc.c b/hw/i386/pc.c
-index 4717d4b960..e843dd8281 100644
+index 6e6d9d534f31..accec5999bfd 100644
 --- a/hw/i386/pc.c
 +++ b/hw/i386/pc.c
-@@ -2115,6 +2115,20 @@ static void pc_machine_set_pit(Object *obj, bool value, Error **errp)
-     pcms->pit_enabled = value;
+@@ -1658,6 +1658,19 @@ static void pc_machine_set_max_fw_size(Object *obj, Visitor *v,
+     pcms->max_fw_size = value;
  }
  
 +static bool pc_machine_get_trad_compat(Object *obj, Error **errp)
@@ -31,45 +31,44 @@ index 4717d4b960..e843dd8281 100644
 +
 +    pcms->is_trad_compat = value;
 +}
-+
+ 
  static void pc_machine_initfn(Object *obj)
  {
-     PCMachineState *pcms = PC_MACHINE(obj);
-@@ -2130,6 +2144,7 @@ static void pc_machine_initfn(Object *obj)
-     pcms->smbus_enabled = true;
-     pcms->sata_enabled = true;
-     pcms->pit_enabled = true;
+@@ -1684,6 +1697,7 @@ static void pc_machine_initfn(Object *obj)
+ #endif
+     pcms->fd_bootchk = true;
+     pcms->default_bus_bypass_iommu = false;
 +    pcms->is_trad_compat = false;
  
      pc_system_flash_create(pcms);
- }
-@@ -2246,6 +2261,9 @@ static void pc_machine_class_init(ObjectClass *oc, void *data)
  
-     object_class_property_add_bool(oc, PC_MACHINE_PIT,
-         pc_machine_get_pit, pc_machine_set_pit, &error_abort);
-+
+@@ -1846,7 +1860,8 @@ static void pc_machine_class_init(ObjectClass *oc, const void *data)
+                                           "Set IGVM configuration");
+ #endif
+ 
+-
 +    object_class_property_add_bool(oc, PC_MACHINE_TRAD_COMPAT,
-+        pc_machine_get_trad_compat, pc_machine_set_trad_compat, &error_abort);
++        pc_machine_get_trad_compat, pc_machine_set_trad_compat);
  }
  
  static const TypeInfo pc_machine_info = {
 diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
-index 1f86eba3f9..f8641b32a5 100644
+index 79b72c54dd3f..7e0936122b8b 100644
 --- a/include/hw/i386/pc.h
 +++ b/include/hw/i386/pc.h
-@@ -56,6 +56,8 @@ struct PCMachineState {
+@@ -58,6 +58,8 @@ typedef struct PCMachineState {
  
-     /* ACPI Memory hotplug IO base address */
-     hwaddr memhp_io_base;
+     SGXEPCState sgx_epc;
+     CXLState cxl_devices_state;
 +
 +    bool is_trad_compat;
- };
+ } PCMachineState;
  
  #define PC_MACHINE_ACPI_DEVICE_PROP "acpi-device"
-@@ -65,6 +67,7 @@ struct PCMachineState {
- #define PC_MACHINE_SMBUS            "smbus"
- #define PC_MACHINE_SATA             "sata"
- #define PC_MACHINE_PIT              "pit"
+@@ -68,6 +70,7 @@ typedef struct PCMachineState {
+ #define PC_MACHINE_I8042            "i8042"
+ #define PC_MACHINE_MAX_FW_SIZE      "max-fw-size"
+ #define PC_MACHINE_SMBIOS_EP        "smbios-entry-point-type"
 +#define PC_MACHINE_TRAD_COMPAT      "trad-compat"
  
  /**
