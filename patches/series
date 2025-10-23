@@ -104,6 +104,9 @@
 # Reviewed by maintainer: https://lists.xenproject.org/archives/html/xen-devel/2023-11/msg00198.html
 xen_pt-Emulate-multifunction-bit-in-header-type.patch
 
+# f74ce602264d05f3b17de6d431f887fa0f0d5932 (11.0.0 dev window)
+0001-hw-xen-pass-PCI-domain-to-xc_physdev_map_pirq_msi.patch
+
 # CVE-2020-25743
 hw-ide__check_null_block_before__cancel_dma_sync.patch
 
