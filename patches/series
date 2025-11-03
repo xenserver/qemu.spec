@@ -141,6 +141,7 @@ tpm_emulator-Avoid-double-initialization-during-migr.patch
 tpm_crb-Avoid-backend-startup-just-before-shutdown-u.patch
 token-bucket-event-throttling.patch
 xen-hvm-Avoid-livelock-while-handling-buffered-ioreq.patch
+handle-framebuffer-relocation.patch
 
 # vCPU hotplug
 0001-pc-Do-not-expect-to-have-a-fw_cfg-device.patch
