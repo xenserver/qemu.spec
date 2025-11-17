@@ -3,7 +3,7 @@
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
-%define keycodemapdb_path ui/keycodemapdb
+%define keycodemapdb_path ui%2fkeycodemapdb
 
 # Control whether we build with the address sanitizer.
 %define with_asan 0
@@ -19,8 +19,8 @@ Requires: xengt-userspace
 ## We broke an interface used by xenopsd-xc without version signalling
 ## so we have to carry a conflicts line to say we broke it.
 Conflicts: xenopsd-xc < 0.123.0
-Source0: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/%{name}/archive?at=%{package_srccommit}&format=tar.gz&prefix=%{name}-%{version}#/%{name}-%{version}.tar.gz
-Source2: https://code.citrite.net/rest/archive/latest/projects/XSU/repos/keycodemapdb/archive?at=%{keycodemapdb_cset}&format=tar.gz&prefix=%{keycodemapdb_path}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz
+Source0: https://api.github.com/repos/csg-xenserver-oss/%{name}/tarball/%{package_srccommit}#/%{name}-%{version}.tar.gz
+Source2: https://api.github.com/repos/csg-xenserver-oss/keycodemapdb/tarball/%{keycodemapdb_cset}#/keycodemapdb-%{keycodemapdb_cset}.tar.gz?prefix=%{keycodemapdb_path}
 BuildRequires: python3-devel
 BuildRequires: libaio-devel glib2-devel
 BuildRequires: libjpeg-devel libpng-devel pixman-devel xenserver-libdrm-devel
