@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 8}
+%{!?xsrel: %global xsrel 9}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -103,6 +103,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Tue Nov 18 2025 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-9
+- CA-420202: xen-hvm: Handle framebuffer relocation
+
 * Thu Oct 23 2025 Roger Pau Monné <roger.pau@citrix.com> - 4.2.1-8
 - Allow passthrough of devices from a PCI segment different than 0.
 
