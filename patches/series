@@ -106,6 +106,7 @@ usb-batch-frames.patch
 #disable-dirty-vram-tracking.patch
 
 # Build configuration
+hw-nvme-guard-spdm.patch
 temp-build-configs.patch
 #build-configuration.patch TODO investigate with reducing attack surface & memory size
 

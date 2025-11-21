@@ -24,10 +24,10 @@ index 34b1b2a30630..6c0eb34f3834 100644
  endif
  if get_option('cloop').allowed()
 diff --git a/configs/devices/i386-softmmu/default.mak b/configs/devices/i386-softmmu/default.mak
-index bc0479a7e0a3..9ff00082f9c1 100644
+index bc0479a7e0a3..6cd4e06e5bd8 100644
 --- a/configs/devices/i386-softmmu/default.mak
 +++ b/configs/devices/i386-softmmu/default.mak
-@@ -26,8 +26,37 @@
+@@ -26,8 +26,34 @@
  #CONFIG_SGX=n
  
  # Boards are selected by default, uncomment to keep out of the build.
@@ -67,9 +67,6 @@ index bc0479a7e0a3..9ff00082f9c1 100644
 +CONFIG_USB_HID=y
 +CONFIG_VGA_CIRRUS=y
 +CONFIG_VGA_PCI=y
-+
-+# Extra devices to get build working (investigate if these are needed)
-+CONFIG_SPDM_SOCKET=y
 diff --git a/hw/meson.build b/hw/meson.build
 index 791ce21ab42a..993a407ee543 100644
 --- a/hw/meson.build
