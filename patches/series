@@ -107,6 +107,7 @@ usb-batch-frames.patch
 
 # Build configuration
 hw-nvme-guard-spdm.patch
+crypto-stubs.patch
 temp-build-configs.patch
 #build-configuration.patch TODO investigate with reducing attack surface & memory size
 
