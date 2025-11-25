@@ -1,0 +1,68 @@
+From 3e52ce4407c861f1a67697bdc0ee8d5be60e4ea6 Mon Sep 17 00:00:00 2001
+Message-ID: <3e52ce4407c861f1a67697bdc0ee8d5be60e4ea6.1764154288.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+References: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 10:51:09 +0000
+Subject: [PATCH 12/12] Revert "x86: cleanup unused compat_apic_id_mode"
+
+This reverts commit e6895f04c83e898873fa04c6ed87b094542d1a6d.
+---
+ hw/i386/x86.c         | 16 +++++++++++++++-
+ include/hw/i386/x86.h |  2 ++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i386/x86.c b/hw/i386/x86.c
+index e2d04092992d..f94240acfcdd 100644
+--- a/hw/i386/x86.c
++++ b/hw/i386/x86.c
+@@ -67,11 +67,24 @@ void init_topo_info(X86CPUTopoInfo *topo_info,
+ uint32_t x86_cpu_apic_id_from_index(X86MachineState *x86ms,
+                                     unsigned int cpu_index)
+ {
++    X86MachineClass *x86mc = X86_MACHINE_GET_CLASS(x86ms);
+     X86CPUTopoInfo topo_info;
++    uint32_t correct_id;
++    static bool warned;
+ 
+     init_topo_info(&topo_info, x86ms);
+ 
+-    return x86_apicid_from_cpu_idx(&topo_info, cpu_index);
++    correct_id = x86_apicid_from_cpu_idx(&topo_info, cpu_index);
++    if (x86mc->compat_apic_id_mode) {
++        if (cpu_index != correct_id && !warned && !qtest_enabled()) {
++            error_report("APIC IDs set in compatibility mode, "
++                         "CPU topology won't match the configuration");
++            warned = true;
++        }
++        return cpu_index;
++    } else {
++        return correct_id;
++    }
+ }
+ 
+ static CpuInstanceProperties
+@@ -382,6 +395,7 @@ static void x86_machine_class_init(ObjectClass *oc, const void *data)
+     mc->get_default_cpu_node_id = x86_get_default_cpu_node_id;
+     mc->possible_cpu_arch_ids = x86_possible_cpu_arch_ids;
+     mc->kvm_type = x86_kvm_type;
++    x86mc->compat_apic_id_mode = false;
+     x86mc->save_tsc_khz = true;
+     x86mc->fwcfg_dma_enabled = true;
+     nc->nmi_monitor_handler = x86_nmi;
+diff --git a/include/hw/i386/x86.h b/include/hw/i386/x86.h
+index a56ac190d301..52ced29020ff 100644
+--- a/include/hw/i386/x86.h
++++ b/include/hw/i386/x86.h
+@@ -35,6 +35,8 @@ struct X86MachineClass {
+ 
+     /* TSC rate migration: */
+     bool save_tsc_khz;
++    /* Enables contiguous-apic-ID mode */
++    bool compat_apic_id_mode;
+     /* use DMA capable linuxboot option rom */
+     bool fwcfg_dma_enabled;
+     /* CPU and apic information: */
+-- 
+2.47.3
+

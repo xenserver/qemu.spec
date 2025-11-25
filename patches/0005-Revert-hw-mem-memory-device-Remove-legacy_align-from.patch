@@ -1,0 +1,105 @@
+From a8543537ab2ec67ce67b8a6380e0414b3cce5c39 Mon Sep 17 00:00:00 2001
+Message-ID: <a8543537ab2ec67ce67b8a6380e0414b3cce5c39.1764154288.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+References: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 10:49:42 +0000
+Subject: [PATCH 05/12] Revert "hw/mem/memory-device: Remove legacy_align from
+ memory_device_pre_plug()"
+
+This reverts commit 0e0bf77d28c573d4b8c8166829ba55664347a499.
+---
+ hw/i386/pc.c                   |  3 ++-
+ hw/mem/memory-device.c         | 12 ++++++++----
+ hw/mem/pc-dimm.c               |  2 +-
+ hw/virtio/virtio-md-pci.c      |  2 +-
+ include/hw/mem/memory-device.h |  2 +-
+ 5 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index 826ba66b18a1..c7e3fff5fc3b 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -1371,7 +1371,8 @@ static void pc_hv_balloon_pre_plug(HotplugHandler *hotplug_dev,
+ {
+     /* The vmbus handler has no hotplug handler; we should never end up here. */
+     g_assert(!dev->hotplugged);
+-    memory_device_pre_plug(MEMORY_DEVICE(dev), MACHINE(hotplug_dev), errp);
++    memory_device_pre_plug(MEMORY_DEVICE(dev), MACHINE(hotplug_dev), NULL,
++                           errp);
+ }
+ 
+ static void pc_hv_balloon_plug(HotplugHandler *hotplug_dev,
+diff --git a/hw/mem/memory-device.c b/hw/mem/memory-device.c
+index 1a432e9bd224..847be17e0f26 100644
+--- a/hw/mem/memory-device.c
++++ b/hw/mem/memory-device.c
+@@ -345,7 +345,7 @@ uint64_t get_plugged_memory_size(void)
+ }
+ 
+ void memory_device_pre_plug(MemoryDeviceState *md, MachineState *ms,
+-                            Error **errp)
++                            const uint64_t *legacy_align, Error **errp)
+ {
+     const MemoryDeviceClass *mdc = MEMORY_DEVICE_GET_CLASS(md);
+     Error *local_err = NULL;
+@@ -388,10 +388,14 @@ void memory_device_pre_plug(MemoryDeviceState *md, MachineState *ms,
+         return;
+     }
+ 
+-    if (mdc->get_min_alignment) {
+-        align = mdc->get_min_alignment(md);
++    if (legacy_align) {
++        align = *legacy_align;
++    } else {
++        if (mdc->get_min_alignment) {
++            align = mdc->get_min_alignment(md);
++        }
++        align = MAX(align, memory_region_get_alignment(mr));
+     }
+-    align = MAX(align, memory_region_get_alignment(mr));
+     addr = mdc->get_addr(md);
+     addr = memory_device_get_free_addr(ms, !addr ? NULL : &addr, align,
+                                        memory_region_size(mr), &local_err);
+diff --git a/hw/mem/pc-dimm.c b/hw/mem/pc-dimm.c
+index f701d5b5f9b3..8272cf4c02e0 100644
+--- a/hw/mem/pc-dimm.c
++++ b/hw/mem/pc-dimm.c
+@@ -69,7 +69,7 @@ void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine, Error **errp)
+                             &error_abort);
+     trace_mhp_pc_dimm_assigned_slot(slot);
+ 
+-    memory_device_pre_plug(MEMORY_DEVICE(dimm), machine, errp);
++    memory_device_pre_plug(MEMORY_DEVICE(dimm), machine, NULL, errp);
+ }
+ 
+ void pc_dimm_plug(PCDIMMDevice *dimm, MachineState *machine)
+diff --git a/hw/virtio/virtio-md-pci.c b/hw/virtio/virtio-md-pci.c
+index 9278b32cf849..19e9ee545ec6 100644
+--- a/hw/virtio/virtio-md-pci.c
++++ b/hw/virtio/virtio-md-pci.c
+@@ -37,7 +37,7 @@ void virtio_md_pci_pre_plug(VirtIOMDPCI *vmd, MachineState *ms, Error **errp)
+      * First, see if we can plug this memory device at all. If that
+      * succeeds, branch of to the actual hotplug handler.
+      */
+-    memory_device_pre_plug(md, ms, &local_err);
++    memory_device_pre_plug(md, ms, NULL, &local_err);
+     if (!local_err && bus_handler) {
+         hotplug_handler_pre_plug(bus_handler, dev, &local_err);
+     }
+diff --git a/include/hw/mem/memory-device.h b/include/hw/mem/memory-device.h
+index c0a58087ccc1..e0571c8a3199 100644
+--- a/include/hw/mem/memory-device.h
++++ b/include/hw/mem/memory-device.h
+@@ -169,7 +169,7 @@ uint64_t get_plugged_memory_size(void);
+ unsigned int memory_devices_get_reserved_memslots(void);
+ bool memory_devices_memslot_auto_decision_active(void);
+ void memory_device_pre_plug(MemoryDeviceState *md, MachineState *ms,
+-                            Error **errp);
++                            const uint64_t *legacy_align, Error **errp);
+ void memory_device_plug(MemoryDeviceState *md, MachineState *ms);
+ void memory_device_unplug(MemoryDeviceState *md, MachineState *ms);
+ uint64_t memory_device_get_region_size(const MemoryDeviceState *md,
+-- 
+2.47.3
+

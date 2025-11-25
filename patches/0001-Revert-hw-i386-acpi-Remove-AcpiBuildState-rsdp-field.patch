@@ -1,0 +1,39 @@
+From c0eb033f89a6ba157e5ca5c7bcb9d559711d790a Mon Sep 17 00:00:00 2001
+Message-ID: <c0eb033f89a6ba157e5ca5c7bcb9d559711d790a.1764157063.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 11:37:39 +0000
+Subject: [PATCH] Revert "hw/i386/acpi: Remove AcpiBuildState::rsdp field"
+
+This reverts commit e00cb9a7c2cf7e3941198f133c5d35b0f255e9ec.
+---
+ hw/i386/acpi-build.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i386/acpi-build.c b/hw/i386/acpi-build.c
+index 9ceee08eb601..fdab953862d6 100644
+--- a/hw/i386/acpi-build.c
++++ b/hw/i386/acpi-build.c
+@@ -1885,6 +1885,7 @@ struct AcpiBuildState {
+     MemoryRegion *table_mr;
+     /* Is table patched? */
+     uint8_t patched;
++    void *rsdp;
+     MemoryRegion *rsdp_mr;
+     MemoryRegion *linker_mr;
+ } AcpiBuildState;
+@@ -2206,7 +2207,11 @@ static void acpi_build_update(void *build_opaque)
+ 
+     acpi_ram_update(build_state->table_mr, tables.table_data);
+ 
+-    acpi_ram_update(build_state->rsdp_mr, tables.rsdp);
++    if (build_state->rsdp) {
++        memcpy(build_state->rsdp, tables.rsdp->data, acpi_data_len(tables.rsdp));
++    } else {
++        acpi_ram_update(build_state->rsdp_mr, tables.rsdp);
++    }
+ 
+     acpi_ram_update(build_state->linker_mr, tables.linker->cmd_blob);
+     acpi_build_tables_cleanup(&tables, true);
+-- 
+2.47.3
+

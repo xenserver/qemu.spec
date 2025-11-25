@@ -1,0 +1,116 @@
+From 3e0ffaa1bd0ee119718eed5fc7467ba64faab7e9 Mon Sep 17 00:00:00 2001
+Message-ID: <3e0ffaa1bd0ee119718eed5fc7467ba64faab7e9.1764154288.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+References: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 10:49:54 +0000
+Subject: [PATCH 07/12] Revert "hw/i386/pc: Remove
+ PCMachineClass::enforce_aligned_dimm"
+
+This reverts commit 516871f0023858c73772ac9705a42d1b2906c8cc.
+---
+ hw/i386/pc.c                            | 14 +++++++++++---
+ include/hw/i386/pc.h                    |  3 +++
+ tests/functional/test_mem_addr_space.py |  9 +++++----
+ 3 files changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index 82feb64b185d..ab6aacf6c9b1 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -694,6 +694,7 @@ static void pc_get_device_memory_range(PCMachineState *pcms,
+                                        hwaddr *base,
+                                        ram_addr_t *device_mem_size)
+ {
++    PCMachineClass *pcmc = PC_MACHINE_GET_CLASS(pcms);
+     MachineState *machine = MACHINE(pcms);
+     ram_addr_t size;
+     hwaddr addr;
+@@ -701,8 +702,10 @@ static void pc_get_device_memory_range(PCMachineState *pcms,
+     size = machine->maxram_size - machine->ram_size;
+     addr = ROUND_UP(pc_above_4g_end(pcms), 1 * GiB);
+ 
+-    /* size device region assuming 1G page max alignment per slot */
+-    size += (1 * GiB) * machine->ram_slots;
++    if (pcmc->enforce_aligned_dimm) {
++        /* size device region assuming 1G page max alignment per slot */
++        size += (1 * GiB) * machine->ram_slots;
++    }
+ 
+     *base = addr;
+     *device_mem_size = size;
+@@ -1276,9 +1279,12 @@ void pc_i8259_create(ISABus *isa_bus, qemu_irq *i8259_irqs)
+ static void pc_memory_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+                                Error **errp)
+ {
++    const PCMachineState *pcms = PC_MACHINE(hotplug_dev);
+     const X86MachineState *x86ms = X86_MACHINE(hotplug_dev);
++    const PCMachineClass *pcmc = PC_MACHINE_GET_CLASS(pcms);
+     const MachineState *ms = MACHINE(hotplug_dev);
+     const bool is_nvdimm = object_dynamic_cast(OBJECT(dev), TYPE_NVDIMM);
++    const uint64_t legacy_align = TARGET_PAGE_SIZE;
+     Error *local_err = NULL;
+ 
+     /*
+@@ -1303,7 +1309,8 @@ static void pc_memory_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+         return;
+     }
+ 
+-    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), NULL, errp);
++    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev),
++                     pcmc->enforce_aligned_dimm ? NULL : &legacy_align, errp);
+ }
+ 
+ static void pc_memory_plug(HotplugHandler *hotplug_dev,
+@@ -1797,6 +1804,7 @@ static void pc_machine_class_init(ObjectClass *oc, const void *data)
+     pcmc->smbios_defaults = true;
+     pcmc->gigabyte_align = true;
+     pcmc->has_reserved_memory = true;
++    pcmc->enforce_aligned_dimm = true;
+     pcmc->enforce_amd_1tb_hole = true;
+     pcmc->isa_bios_alias = true;
+     /* BIOS ACPI tables: 128K. Other BIOS datastructures: less than 4K reported
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index 4afd2b686313..10a72bbd9c4a 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -79,6 +79,8 @@ typedef struct PCMachineState {
+  *
+  * Compat fields:
+  *
++ * @enforce_aligned_dimm: check that DIMM's address/size is aligned by
++ *                        backend's alignment value if provided
+  * @acpi_data_size: Size of the chunk of memory at the top of RAM
+  *                  for the BIOS ACPI tables and other BIOS
+  *                  datastructures.
+@@ -116,6 +118,7 @@ struct PCMachineClass {
+     /* RAM / address space compat: */
+     bool gigabyte_align;
+     bool has_reserved_memory;
++    bool enforce_aligned_dimm;
+     bool broken_reserved_end;
+     bool enforce_amd_1tb_hole;
+     bool isa_bios_alias;
+diff --git a/tests/functional/test_mem_addr_space.py b/tests/functional/test_mem_addr_space.py
+index 61b4a190b411..1d2b9444e8b3 100755
+--- a/tests/functional/test_mem_addr_space.py
++++ b/tests/functional/test_mem_addr_space.py
+@@ -48,10 +48,11 @@ def test_phybits_low_pse36(self):
+         at 4 GiB boundary when "above_4g_mem_size" is 0 (this would be true when
+         we have 0.5 GiB of VM memory, see pc_q35_init()). This means total
+         hotpluggable memory size is 60 GiB. Per slot, we reserve 1 GiB of memory
+-        for dimm alignment for all machines. That leaves total hotpluggable
+-        actual memory size of 59 GiB. If the VM is started with 0.5 GiB of
+-        memory, maxmem should be set to a maximum value of 59.5 GiB to ensure
+-        that the processor can address all memory directly.
++        for dimm alignment for all newer machines (see enforce_aligned_dimm
++        property for pc machines and pc_get_device_memory_range()). That leaves
++        total hotpluggable actual memory size of 59 GiB. If the VM is started
++        with 0.5 GiB of memory, maxmem should be set to a maximum value of
++        59.5 GiB to ensure that the processor can address all memory directly.
+         Note that 64-bit pci hole size is 0 in this case. If maxmem is set to
+         59.6G, QEMU should fail to start with a message "phy-bits are too low".
+         If maxmem is set to 59.5G with all other QEMU parameters identical, QEMU
+-- 
+2.47.3
+

@@ -1,0 +1,112 @@
+From c1b00ffc5585c40754ac2f0356df028280e58272 Mon Sep 17 00:00:00 2001
+Message-ID: <c1b00ffc5585c40754ac2f0356df028280e58272.1764154288.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+References: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 10:49:48 +0000
+Subject: [PATCH 06/12] Revert "hw/mem/pc-dimm: Remove legacy_align argument
+ from pc_dimm_pre_plug()"
+
+This reverts commit d4fdb05b0e640c8ce47ec2dd224e8838ca3f7958.
+---
+ hw/arm/virt.c            | 2 +-
+ hw/i386/pc.c             | 2 +-
+ hw/loongarch/virt.c      | 2 +-
+ hw/mem/pc-dimm.c         | 6 ++++--
+ hw/ppc/spapr.c           | 2 +-
+ include/hw/mem/pc-dimm.h | 3 ++-
+ 6 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/hw/arm/virt.c b/hw/arm/virt.c
+index ef6be3660f5f..f6bb74760f9c 100644
+--- a/hw/arm/virt.c
++++ b/hw/arm/virt.c
+@@ -2933,7 +2933,7 @@ static void virt_memory_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+         return;
+     }
+ 
+-    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), errp);
++    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), NULL, errp);
+ }
+ 
+ static void virt_memory_plug(HotplugHandler *hotplug_dev,
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index c7e3fff5fc3b..82feb64b185d 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -1303,7 +1303,7 @@ static void pc_memory_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+         return;
+     }
+ 
+-    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), errp);
++    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), NULL, errp);
+ }
+ 
+ static void pc_memory_plug(HotplugHandler *hotplug_dev,
+diff --git a/hw/loongarch/virt.c b/hw/loongarch/virt.c
+index b15ada20787b..db390717a6d0 100644
+--- a/hw/loongarch/virt.c
++++ b/hw/loongarch/virt.c
+@@ -1051,7 +1051,7 @@ static bool memhp_type_supported(DeviceState *dev)
+ static void virt_mem_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+                                  Error **errp)
+ {
+-    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), errp);
++    pc_dimm_pre_plug(PC_DIMM(dev), MACHINE(hotplug_dev), NULL, errp);
+ }
+ 
+ static void virt_device_pre_plug(HotplugHandler *hotplug_dev,
+diff --git a/hw/mem/pc-dimm.c b/hw/mem/pc-dimm.c
+index 8272cf4c02e0..1f1c66c59a3d 100644
+--- a/hw/mem/pc-dimm.c
++++ b/hw/mem/pc-dimm.c
+@@ -44,7 +44,8 @@ static MemoryRegion *pc_dimm_get_memory_region(PCDIMMDevice *dimm, Error **errp)
+     return host_memory_backend_get_memory(dimm->hostmem);
+ }
+ 
+-void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine, Error **errp)
++void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine,
++                      const uint64_t *legacy_align, Error **errp)
+ {
+     Error *local_err = NULL;
+     int slot;
+@@ -69,7 +70,8 @@ void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine, Error **errp)
+                             &error_abort);
+     trace_mhp_pc_dimm_assigned_slot(slot);
+ 
+-    memory_device_pre_plug(MEMORY_DEVICE(dimm), machine, NULL, errp);
++    memory_device_pre_plug(MEMORY_DEVICE(dimm), machine, legacy_align,
++                           errp);
+ }
+ 
+ void pc_dimm_plug(PCDIMMDevice *dimm, MachineState *machine)
+diff --git a/hw/ppc/spapr.c b/hw/ppc/spapr.c
+index 1855a3cd8d03..c9129f34674d 100644
+--- a/hw/ppc/spapr.c
++++ b/hw/ppc/spapr.c
+@@ -3649,7 +3649,7 @@ static void spapr_memory_pre_plug(HotplugHandler *hotplug_dev, DeviceState *dev,
+         return;
+     }
+ 
+-    pc_dimm_pre_plug(dimm, MACHINE(hotplug_dev), errp);
++    pc_dimm_pre_plug(dimm, MACHINE(hotplug_dev), NULL, errp);
+ }
+ 
+ struct SpaprDimmState {
+diff --git a/include/hw/mem/pc-dimm.h b/include/hw/mem/pc-dimm.h
+index e0dbdd43dca2..b25842206d6a 100644
+--- a/include/hw/mem/pc-dimm.h
++++ b/include/hw/mem/pc-dimm.h
+@@ -66,7 +66,8 @@ struct PCDIMMDeviceClass {
+     void (*unrealize)(PCDIMMDevice *dimm);
+ };
+ 
+-void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine, Error **errp);
++void pc_dimm_pre_plug(PCDIMMDevice *dimm, MachineState *machine,
++                      const uint64_t *legacy_align, Error **errp);
+ void pc_dimm_plug(PCDIMMDevice *dimm, MachineState *machine);
+ void pc_dimm_unplug(PCDIMMDevice *dimm, MachineState *machine);
+ #endif
+-- 
+2.47.3
+

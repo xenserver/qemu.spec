@@ -1,0 +1,57 @@
+From eb351b97c39990bee551223d6debadf452e615c6 Mon Sep 17 00:00:00 2001
+Message-ID: <eb351b97c39990bee551223d6debadf452e615c6.1764155841.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <29de28fd125b6423253ef99c8c897a41ae92cbab.1764155841.git.gerald.elder-vass@citrix.com>
+References: <29de28fd125b6423253ef99c8c897a41ae92cbab.1764155841.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 11:17:15 +0000
+Subject: [PATCH 2/2] Revert "hw/i386/pc: Remove
+ PCMachineClass::smbios_uuid_encoded"
+
+This reverts commit 05814d9663a0bf995286c822696b406330f8f602.
+---
+ hw/i386/fw_cfg.c     | 3 ++-
+ hw/i386/pc.c         | 1 +
+ include/hw/i386/pc.h | 1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i386/fw_cfg.c b/hw/i386/fw_cfg.c
+index 7709dc80a5b3..f601800f81bc 100644
+--- a/hw/i386/fw_cfg.c
++++ b/hw/i386/fw_cfg.c
+@@ -75,7 +75,8 @@ void fw_cfg_build_smbios(PCMachineState *pcms, FWCfgState *fw_cfg,
+ 
+     if (pcmc->smbios_defaults) {
+         /* These values are guest ABI, do not change */
+-        smbios_set_defaults("QEMU", mc->desc, mc->name, true);
++        smbios_set_defaults("QEMU", mc->desc, mc->name,
++                            pcmc->smbios_uuid_encoded);
+     }
+ 
+     /* tell smbios about cpuid version and features */
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index 7603031b9b3c..d1c4814ba649 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -1803,6 +1803,7 @@ static void pc_machine_class_init(ObjectClass *oc, const void *data)
+     pcmc->has_acpi_build = true;
+     pcmc->rsdp_in_ram = true;
+     pcmc->smbios_defaults = true;
++    pcmc->smbios_uuid_encoded = true;
+     pcmc->gigabyte_align = true;
+     pcmc->has_reserved_memory = true;
+     pcmc->enforce_aligned_dimm = true;
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index d319c45412b7..f37396feb320 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -115,6 +115,7 @@ struct PCMachineClass {
+     /* SMBIOS compat: */
+     bool smbios_defaults;
+     bool smbios_legacy_mode;
++    bool smbios_uuid_encoded;
+     SmbiosEntryPointType default_smbios_ep_type;
+ 
+     /* RAM / address space compat: */
+-- 
+2.47.3
+

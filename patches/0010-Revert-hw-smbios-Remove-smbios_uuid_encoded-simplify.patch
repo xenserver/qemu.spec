@@ -1,0 +1,44 @@
+From 7fbc044dc6c3f5a57d0418eccfb701214c308f4a Mon Sep 17 00:00:00 2001
+Message-ID: <7fbc044dc6c3f5a57d0418eccfb701214c308f4a.1764154288.git.gerald.elder-vass@citrix.com>
+In-Reply-To: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+References: <61995ad32249580db2c1e899b495a41abfe44d3e.1764154288.git.gerald.elder-vass@citrix.com>
+From: Gerald Elder-Vass <gerald.elder-vass@citrix.com>
+Date: Wed, 26 Nov 2025 10:50:34 +0000
+Subject: [PATCH 10/12] Revert "hw/smbios: Remove 'smbios_uuid_encoded',
+ simplify smbios_encode_uuid()"
+
+This reverts commit 9adf35f04b5d4c4c3074e1b0018eabff5c0cc741.
+---
+ hw/smbios/smbios.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/hw/smbios/smbios.c b/hw/smbios/smbios.c
+index 1ac063cfb4ba..6c270d283c31 100644
+--- a/hw/smbios/smbios.c
++++ b/hw/smbios/smbios.c
+@@ -31,6 +31,7 @@
+ #include "hw/pci/pci_device.h"
+ #include "smbios_build.h"
+ 
++static const bool smbios_uuid_encoded = true;
+ /*
+  * SMBIOS tables provided by user with '-smbios file=<foo>' option
+  */
+@@ -600,9 +601,11 @@ static void smbios_build_type_0_table(void)
+ static void smbios_encode_uuid(struct smbios_uuid *uuid, QemuUUID *in)
+ {
+     memcpy(uuid, in, 16);
+-    uuid->time_low = bswap32(uuid->time_low);
+-    uuid->time_mid = bswap16(uuid->time_mid);
+-    uuid->time_hi_and_version = bswap16(uuid->time_hi_and_version);
++    if (smbios_uuid_encoded) {
++        uuid->time_low = bswap32(uuid->time_low);
++        uuid->time_mid = bswap16(uuid->time_mid);
++        uuid->time_hi_and_version = bswap16(uuid->time_hi_and_version);
++    }
+ }
+ 
+ static void smbios_build_type_1_table(void)
+-- 
+2.47.3
+
