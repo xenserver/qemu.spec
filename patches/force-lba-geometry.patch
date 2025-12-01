@@ -1,5 +1,5 @@
 diff --git a/hw/block/hd-geometry.c b/hw/block/hd-geometry.c
-index db221901cf4b..e7b4231005fa 100644
+index db221901cf4b..d9642f541dd5 100644
 --- a/hw/block/hd-geometry.c
 +++ b/hw/block/hd-geometry.c
 @@ -127,7 +127,8 @@ void hd_geometry_guess(BlockBackend *blk,
@@ -12,6 +12,16 @@ index db221901cf4b..e7b4231005fa 100644
          /* no LCHS guess: use a standard physical disk geometry  */
          guess_chs_for_size(blk, pcyls, pheads, psecs);
          translation = hd_bios_chs_auto_trans(*pcyls, *pheads, *psecs);
+@@ -149,7 +150,8 @@ void hd_geometry_guess(BlockBackend *blk,
+         translation = BIOS_ATA_TRANSLATION_NONE;
+     }
+     if (ptrans) {
+-        if (*ptrans == BIOS_ATA_TRANSLATION_AUTO) {
++        if (*ptrans == BIOS_ATA_TRANSLATION_AUTO ||
++                *ptrans == BIOS_ATA_TRANSLATION_FORCELBA) {
+             *ptrans = translation;
+         } else {
+             /* Defer to the translation specified by the user.  */
 diff --git a/qapi/block.json b/qapi/block.json
 index 46955bbb3e34..d0ee3da91ec9 100644
 --- a/qapi/block.json
