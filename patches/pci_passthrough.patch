@@ -1,16 +1,8 @@
 diff --git a/hw/xen/xen-host-pci-device.c b/hw/xen/xen-host-pci-device.c
-index 1b44dcafaf44..29f130eeb348 100644
+index eaf32f27107b..af5d86d3cf81 100644
 --- a/hw/xen/xen-host-pci-device.c
 +++ b/hw/xen/xen-host-pci-device.c
-@@ -10,6 +10,7 @@
- #include "qapi/error.h"
- #include "qemu/cutils.h"
- #include "xen-host-pci-device.h"
-+#include "hw/xen/xen_common.h"
- 
- #define XEN_HOST_PCI_MAX_EXT_CAP \
-     ((PCIE_CONFIG_SPACE_SIZE - PCI_CONFIG_SPACE_SIZE) / (PCI_CAP_SIZEOF + 4))
-@@ -198,10 +199,33 @@ static bool xen_host_pci_dev_is_virtfn(XenHostPCIDevice *d)
+@@ -260,10 +260,33 @@ static bool xen_host_pci_dev_is_virtfn(XenHostPCIDevice *d)
      return !stat(path, &buf);
  }
  
@@ -44,7 +36,7 @@ index 1b44dcafaf44..29f130eeb348 100644
      xen_host_pci_sysfs_path(d, "config", path, sizeof(path));
  
      d->config_fd = open(path, O_RDWR);
-@@ -214,14 +238,31 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
+@@ -276,14 +299,31 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
                                      int pos, void *buf, int len)
  {
      int rc;
@@ -81,7 +73,7 @@ index 1b44dcafaf44..29f130eeb348 100644
  }
  
  static int xen_host_pci_config_write(XenHostPCIDevice *d,
-@@ -229,13 +270,26 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+@@ -291,13 +331,26 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
  {
      int rc;
  
@@ -114,7 +106,7 @@ index 1b44dcafaf44..29f130eeb348 100644
  }
  
  
-@@ -385,8 +439,8 @@ error:
+@@ -458,8 +511,8 @@ error:
  
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -124,7 +116,7 @@ index 1b44dcafaf44..29f130eeb348 100644
  }
  
  bool xen_host_pci_device_closed(XenHostPCIDevice *d)
-@@ -398,6 +452,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
+@@ -471,6 +524,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
  {
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -133,10 +125,10 @@ index 1b44dcafaf44..29f130eeb348 100644
 +    d->config_fd = -1;
  }
 diff --git a/hw/xen/xen-host-pci-device.h b/hw/xen/xen-host-pci-device.h
-index 4d8d34ecb024..91451e3867a9 100644
+index 270dcb27f7b3..00bbbc8aa406 100644
 --- a/hw/xen/xen-host-pci-device.h
 +++ b/hw/xen/xen-host-pci-device.h
-@@ -33,6 +33,11 @@ typedef struct XenHostPCIDevice {
+@@ -39,6 +39,11 @@ typedef struct XenHostPCIDevice {
  
      bool is_virtfn;
  

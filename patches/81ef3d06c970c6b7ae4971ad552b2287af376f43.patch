@@ -30,29 +30,22 @@ when dom0 kernel runs in lockdown mode (where /dev/mem is unavailable at
 all).
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
----
-Changes in v2:
-- Make change conditional on new Xen version (tested via
-  XENFEAT_dm_msix_all_writes)
----
- hw/xen/xen_pt_msi.c | 89 ++++++++++++++++++++++++++-------------------
- 1 file changed, 52 insertions(+), 37 deletions(-)
-
 diff --git a/hw/xen/xen_pt_msi.c b/hw/xen/xen_pt_msi.c
-index fb4b887b92..37f8040c81 100644
+index 2d6ac47bfea5..bb733994a837 100644
 --- a/hw/xen/xen_pt_msi.c
 +++ b/hw/xen/xen_pt_msi.c
-@@ -15,6 +15,9 @@
+@@ -15,6 +15,10 @@
  #include "xen_pt.h"
- #include "hw/i386/apic-msidef.h"
+ #include "hw/xen/xen-legacy-backend.h"
  
 +#ifndef XENFEAT_dm_msix_all_writes
 +#define XENFEAT_dm_msix_all_writes 20
 +#endif
++
  
  #define XEN_PT_AUTO_ASSIGN -1
  
-@@ -460,15 +463,19 @@ static void pci_msix_write(void *opaque, hwaddr addr,
+@@ -461,15 +465,19 @@ static void pci_msix_write(void *opaque, hwaddr addr,
          entry->updated = true;
      } else if (msix->enabled && entry->updated &&
                 !(val & PCI_MSIX_ENTRY_CTRL_MASKBIT)) {
@@ -81,7 +74,7 @@ index fb4b887b92..37f8040c81 100644
      }
  
      set_entry_value(entry, offset, val);
-@@ -493,7 +500,11 @@ static uint64_t pci_msix_read(void *opaque, hwaddr addr,
+@@ -494,7 +502,11 @@ static uint64_t pci_msix_read(void *opaque, hwaddr addr,
          return get_entry_value(&msix->msix_entry[entry_nr], offset);
      } else {
          /* Pending Bit Array (PBA) */
@@ -94,7 +87,7 @@ index fb4b887b92..37f8040c81 100644
      }
  }
  
-@@ -528,8 +539,8 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
+@@ -529,8 +541,8 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
      uint32_t table_off = 0;
      int i, total_entries, bar_index;
      XenHostPCIDevice *hd = &s->real_device;
@@ -104,7 +97,7 @@ index fb4b887b92..37f8040c81 100644
      XenPTMSIX *msix = NULL;
      int rc = 0;
  
-@@ -543,6 +554,9 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
+@@ -544,6 +556,9 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
          return -1;
      }
  
@@ -114,7 +107,7 @@ index fb4b887b92..37f8040c81 100644
      rc = xen_host_pci_get_word(hd, base + PCI_MSIX_FLAGS, &control);
      if (rc) {
          XEN_PT_ERR(d, "Failed to read PCI_MSIX_FLAGS field\n");
-@@ -576,33 +590,37 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
+@@ -577,33 +592,37 @@ int xen_pt_msix_init(XenPCIPassthroughState *s, uint32_t base)
      msix->table_base = s->real_device.io_regions[bar_index].base_addr;
      XEN_PT_LOG(d, "get MSI-X table BAR base 0x%"PRIx64"\n", msix->table_base);
  
@@ -124,7 +117,7 @@ index fb4b887b92..37f8040c81 100644
 -        XEN_PT_ERR(d, "Can't open /dev/mem: %s\n", strerror(errno));
 -        goto error_out;
 -    }
--    XEN_PT_LOG(d, "table_off = %#x, total_entries = %d\n",
+-    XEN_PT_LOG(d, "table_off = 0x%x, total_entries = %d\n",
 -               table_off, total_entries);
 -    msix->table_offset_adjust = table_off & 0x0fff;
 -    msix->phys_iomem_base =
@@ -153,7 +146,7 @@ index fb4b887b92..37f8040c81 100644
 +            XEN_PT_ERR(d, "Can't open /dev/mem: %s\n", strerror(errno));
 +            goto error_out;
 +        }
-+        XEN_PT_LOG(d, "table_off = %#x, total_entries = %d\n",
++        XEN_PT_LOG(d, "table_off = 0x%x, total_entries = %d\n",
 +                   table_off, total_entries);
 +        msix->table_offset_adjust = table_off & 0x0fff;
 +        msix->phys_iomem_base =
