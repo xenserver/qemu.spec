@@ -4,30 +4,34 @@ Date: Thu, 18 May 2017 21:16:35 +0100
 Subject: [PATCH] CP-17697 Initial port of NVIDIA VGPU support from QEMU-trad
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
-diff --git a/hw/display/Makefile.objs b/hw/display/Makefile.objs
-index f2182e3bef..b3772f3962 100644
---- a/hw/display/Makefile.objs
-+++ b/hw/display/Makefile.objs
-@@ -58,4 +58,6 @@ virtio-gpu-3d.o-libs += $(VIRGL_LIBS)
- common-obj-$(CONFIG_DPCD) += dpcd.o
- common-obj-$(CONFIG_XLNX_ZYNQMP_ARM) += xlnx_dp.o
+diff --git a/hw/display/meson.build b/hw/display/meson.build
+index 90e6c041bdbc..eb5f3b935e5c 100644
+--- a/hw/display/meson.build
++++ b/hw/display/meson.build
+@@ -59,6 +59,8 @@ system_ss.add(when: 'CONFIG_XLNX_DISPLAYPORT', if_true: files('xlnx_dp.c'))
  
-+obj-y += vgpu_fb.o
+ system_ss.add(when: 'CONFIG_ARTIST', if_true: files('artist.c'))
+ 
++system_ss.add(files('vgpu_fb.c'))
 +
- common-obj-$(CONFIG_ATI_VGA) += ati.o ati_2d.o ati_dbg.o
+ system_ss.add(when: 'CONFIG_ATI_VGA', if_true: [files('ati.c', 'ati_2d.c', 'ati_dbg.c'), pixman])
+ 
+ system_ss.add(when: [pvg, 'CONFIG_MAC_PVG_PCI'],     if_true: [files('apple-gfx.m', 'apple-gfx-pci.m')])
 diff --git a/hw/display/vgpu_fb.c b/hw/display/vgpu_fb.c
 new file mode 100644
-index 0000000000..28d7ff131b
+index 000000000000..7da1c6bf625a
 --- /dev/null
 +++ b/hw/display/vgpu_fb.c
-@@ -0,0 +1,315 @@
+@@ -0,0 +1,317 @@
 +#include "qemu/osdep.h"
-+#include "cpu.h"
++#include "qemu/error-report.h"
 +#include "hw/hw.h"
++#include "hw/core/cpu.h"
 +#include "hw/sysbus.h"
 +#include "hw/display/vgpu.h"
-+#include "hw/xen/xen_common.h"
++#include "hw/xen/xen_native.h"
 +#include "ui/console.h"
++#include "exec/target_page.h"
 +
 +#include <sys/socket.h>
 +#include <netinet/in.h>
@@ -278,9 +282,9 @@ index 0000000000..28d7ff131b
 +{
 +    VGPUState *s = VGPU(dev);
 +    const int n = SURFACE_RESERVED_SIZE >> TARGET_PAGE_BITS;
-+    xen_pfn_t pfn[n];
 +    int fifo_fd, i, rc;
 +    uint64_t address;
++    xen_pfn_t *pfn = g_new(xen_pfn_t, n);
 +
 +    s->con = graphic_console_init(dev, 0, &vgpu_ops, s);
 +
@@ -310,15 +314,15 @@ index 0000000000..28d7ff131b
 +    }
 +
 +    s->surface_fd = fifo_fd;
++
++    g_free(pfn);
 +}
 +
-+static void vgpu_class_init(ObjectClass *klass, void *data)
++static void vgpu_class_init(ObjectClass *klass, const void *data)
 +{
 +    DeviceClass *dc = DEVICE_CLASS(klass);
 +
 +    dc->realize = vgpu_fb_realize;
-+    /* we might want to have some properties here later */
-+    dc->props = NULL;
 +    dc->user_creatable = true;
 +    dc->hotpluggable = false;
 +}
@@ -337,28 +341,28 @@ index 0000000000..28d7ff131b
 +
 +type_init(vgpu_register_types)
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index abe6fb38f9..9c324a66cf 100644
+index 4247e7c31f84..221edec1daa8 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
-@@ -33,6 +33,7 @@
- #include "hw/pci-host/i440fx.h"
+@@ -36,6 +36,7 @@
+ #include "hw/rtc/mc146818rtc.h"
  #include "hw/southbridge/piix.h"
  #include "hw/display/ramfb.h"
 +#include "hw/display/vgpu.h"
- #include "hw/firmware/smbios.h"
  #include "hw/pci/pci.h"
  #include "hw/pci/pci_ids.h"
-@@ -423,6 +424,7 @@ static void pc_i440fx_machine_options(MachineClass *m)
-     m->default_machine_opts = "firmware=bios-256k.bin";
-     m->default_display = "std";
+ #include "hw/usb.h"
+@@ -496,6 +497,7 @@ static void pc_i440fx_machine_options(MachineClass *m)
      machine_class_allow_dynamic_sysbus_dev(m, TYPE_RAMFB_DEVICE);
+     machine_class_allow_dynamic_sysbus_dev(m, TYPE_VMBUS_BRIDGE);
+     machine_class_allow_dynamic_sysbus_dev(m, TYPE_UEFI_VARS_X64);
 +    machine_class_allow_dynamic_sysbus_dev(m, TYPE_VGPU);
  
-     hc->unplug_request = NULL;
- }
+     object_class_property_add_enum(oc, "x-south-bridge", "PCSouthBridgeOption",
+                                    &PCSouthBridgeOption_lookup,
 diff --git a/include/hw/display/vgpu.h b/include/hw/display/vgpu.h
 new file mode 100644
-index 0000000000..f0bbfef7e9
+index 000000000000..f0bbfef7e9b5
 --- /dev/null
 +++ b/include/hw/display/vgpu.h
 @@ -0,0 +1,6 @@
