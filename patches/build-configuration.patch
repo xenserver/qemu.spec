@@ -7,34 +7,6 @@ This is made up of:
 * List of devices needed so ./configure option
   --without-default-devices can be used.
 
-
-diff --git a/backends/meson.build b/backends/meson.build
-index 60021f45d124..ac7c34118242 100644
---- a/backends/meson.build
-+++ b/backends/meson.build
-@@ -1,7 +1,4 @@
- system_ss.add([files(
--  'cryptodev-builtin.c',
--  'cryptodev-hmp-cmds.c',
--  'cryptodev.c',
-   'hostmem-ram.c',
-   'hostmem.c',
-   'rng-builtin.c',
-@@ -10,6 +7,14 @@ system_ss.add([files(
-   'confidential-guest-support.c',
- ), numa])
- 
-+if not xen.found()
-+  system_ss.add(files(
-+    'cryptodev-builtin.c',
-+    'cryptodev-hmp-cmds.c',
-+    'cryptodev.c'
-+  ))
-+endif
-+
- if host_os != 'windows'
-   system_ss.add(files('rng-random.c'))
-   if host_os != 'emscripten'
 diff --git a/block/meson.build b/block/meson.build
 index 34b1b2a30630..6c0eb34f3834 100644
 --- a/block/meson.build
@@ -61,10 +33,10 @@ index 34b1b2a30630..6c0eb34f3834 100644
  endif
  if get_option('cloop').allowed()
 diff --git a/configs/devices/i386-softmmu/default.mak b/configs/devices/i386-softmmu/default.mak
-index bc0479a7e0a3..e2e41475c9ec 100644
+index bc0479a7e0a3..6cd4e06e5bd8 100644
 --- a/configs/devices/i386-softmmu/default.mak
 +++ b/configs/devices/i386-softmmu/default.mak
-@@ -26,8 +26,33 @@
+@@ -26,8 +26,34 @@
  #CONFIG_SGX=n
  
  # Boards are selected by default, uncomment to keep out of the build.
@@ -72,11 +44,12 @@ index bc0479a7e0a3..e2e41475c9ec 100644
 -# CONFIG_I440FX=n
 -# CONFIG_Q35=n
 -# CONFIG_MICROVM=n
+-# CONFIG_NITRO_ENCLAVE=n
 +CONFIG_ISAPC=n
 +CONFIG_I440FX=y
 +CONFIG_Q35=n
 +CONFIG_MICROVM=n
- # CONFIG_NITRO_ENCLAVE=n
++CONFIG_NITRO_ENCLAVE=n
 +
 +# Wanted devices:
 +CONFIG_AHCI=y
@@ -100,36 +73,9 @@ index bc0479a7e0a3..e2e41475c9ec 100644
 +CONFIG_USB_OHCI_PCI=y
 +CONFIG_USB_TABLET_WACOM=y
 +CONFIG_USB_UHCI=y
++CONFIG_USB_HID=y
 +CONFIG_VGA_CIRRUS=y
 +CONFIG_VGA_PCI=y
-diff --git a/crypto/meson.build b/crypto/meson.build
-index 735635de1f32..0e831f2b2f40 100644
---- a/crypto/meson.build
-+++ b/crypto/meson.build
-@@ -73,3 +73,10 @@ else
-   util_ss.add(files('random-platform.c'))
- endif
- 
-+# Override the previous crypto_ss to avoid building most crypto
-+crypto_ss = ss.source_set()
-+crypto_ss.add(files('hash.c'))
-+if nettle.found() or gcrypt.found()
-+  crypto_ss.add(files('hash-glib.c'))
-+endif
-+
-diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
-index 3a0e2b8ebbb6..aeb8ca6b10ad 100644
---- a/hw/i386/Kconfig
-+++ b/hw/i386/Kconfig
-@@ -42,7 +42,7 @@ config PC
-     select I8259
-     select I8254
-     select PCKBD
--    select PCSPK
-+    # select PCSPK
-     select I8257
-     select MC146818RTC
-     # For ACPI builder:
 diff --git a/hw/meson.build b/hw/meson.build
 index 791ce21ab42a..993a407ee543 100644
 --- a/hw/meson.build
@@ -147,220 +93,18 @@ index 791ce21ab42a..993a407ee543 100644
  subdir('vfio-user')
  subdir('virtio')
  subdir('vmapple')
-diff --git a/stubs/crypto.c b/stubs/crypto.c
-new file mode 100644
-index 000000000000..13d839e325c5
---- /dev/null
-+++ b/stubs/crypto.c
-@@ -0,0 +1,199 @@
-+#include "qemu/osdep.h"
-+#include "qapi/error.h"
-+#include "crypto/block.h"
-+#include "crypto/cipher.h"
-+#include "crypto/init.h"
-+#include "crypto/random.h"
-+#include "crypto/secret.h"
-+#include "crypto/tlssession.h"
-+
-+QCryptoBlock *qcrypto_block_open(QCryptoBlockOpenOptions *options,
-+                                 const char *optprefix,
-+                                 QCryptoBlockReadFunc readfunc,
-+                                 void *opaque,
-+                                 unsigned int flags,
-+                                 Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+QCryptoBlock *qcrypto_block_create(QCryptoBlockCreateOptions *options,
-+                                   const char *optprefix,
-+                                   QCryptoBlockInitFunc initfunc,
-+                                   QCryptoBlockWriteFunc writefunc,
-+                                   void *opaque,
-+                                   unsigned int flags,
-+                                   Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+int qcrypto_block_decrypt(QCryptoBlock *block,
-+                          uint64_t startsector,
-+                          uint8_t *buf,
-+                          size_t len,
-+                          Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+int qcrypto_block_encrypt(QCryptoBlock *block,
-+                          uint64_t startsector,
-+                          uint8_t *buf,
-+                          size_t len,
-+                          Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+void qcrypto_block_free(QCryptoBlock *block)
-+{
-+}
-+
-+uint64_t qcrypto_block_get_payload_offset(QCryptoBlock *block)
-+{
-+    return 0;
-+}
-+
-+bool qcrypto_block_has_format(QCryptoBlockFormat format,
-+                              const uint8_t *buf,
-+                              size_t buflen)
-+{
-+    return false;
-+}
-+
-+QCryptoBlockInfo *qcrypto_block_get_info(QCryptoBlock *block,
-+                                         Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+uint64_t qcrypto_block_get_sector_size(QCryptoBlock *block)
-+{
-+    return 0;
-+}
-+
-+QCryptoTLSSession *qcrypto_tls_session_new(QCryptoTLSCreds *creds,
-+                                           const char *hostname,
-+                                           const char *aclname,
-+                                           QCryptoTLSCredsEndpoint endpoint,
-+                                           Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+int qcrypto_tls_session_handshake(QCryptoTLSSession *sess,
-+                                  Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+ssize_t qcrypto_tls_session_read(QCryptoTLSSession *sess,
-+                                 char *buf,
-+                                 size_t len,
-+                                 bool gracefulTermination,
-+                                 Error **errp)
-+{
-+    return -1;
-+}
-+
-+ssize_t qcrypto_tls_session_write(QCryptoTLSSession *sess,
-+                                  const char *buf,
-+                                  size_t len,
-+                                  Error **errp)
-+{
-+    return -1;
-+}
-+
-+void qcrypto_tls_session_set_callbacks(QCryptoTLSSession *sess,
-+                                       QCryptoTLSSessionWriteFunc writeFunc,
-+                                       QCryptoTLSSessionReadFunc readFunc,
-+                                       void *opaque)
-+{
-+}
-+
-+int qcrypto_tls_session_get_key_size(QCryptoTLSSession *session,
-+                                     Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+char *qcrypto_tls_session_get_peer_name(QCryptoTLSSession *sess)
-+{
-+    return NULL;
-+}
-+
-+void qcrypto_tls_session_free(QCryptoTLSSession *sess)
-+{
-+}
-+
-+int qcrypto_tls_session_check_credentials(QCryptoTLSSession *sess,
-+                                          Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+QCryptoCipher *qcrypto_cipher_new(QCryptoCipherAlgo alg,
-+                                  QCryptoCipherMode mode,
-+                                  const uint8_t *key, size_t nkey,
-+                                  Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+void qcrypto_cipher_free(QCryptoCipher *cipher)
-+{
-+}
-+
-+int qcrypto_cipher_encrypt(QCryptoCipher *cipher,
-+                           const void *in,
-+                           void *out,
-+                           size_t len,
-+                           Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+bool qcrypto_cipher_supports(QCryptoCipherAlgo alg,
-+                             QCryptoCipherMode mode)
-+{
-+    return false;
-+}
-+
-+int qcrypto_init(Error **errp)
-+{
-+    return 0;
-+}
-+
-+int qcrypto_random_bytes(void *buf,
-+                         size_t buflen,
-+                         Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return -1;
-+}
-+
-+char *qcrypto_secret_lookup_as_utf8(const char *secretid,
-+                                    Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-+
-+char *qcrypto_secret_lookup_as_base64(const char *secretid,
-+                                      Error **errp)
-+{
-+    error_setg_errno(errp, ENOSYS, "No crypto");
-+    return NULL;
-+}
-diff --git a/stubs/meson.build b/stubs/meson.build
-index cef046e6854d..4c3db11176c3 100644
---- a/stubs/meson.build
-+++ b/stubs/meson.build
-@@ -10,6 +10,7 @@ stub_ss.add(files('is-daemonized.c'))
- stub_ss.add(files('monitor-core.c'))
- stub_ss.add(files('replay-mode.c'))
- stub_ss.add(files('trace-control.c'))
-+stub_ss.add(files('crypto.c'))
+diff --git a/include/hw/boards.h b/include/hw/boards.h
+index f94713e6e29a..2984d0aba4dc 100644
+--- a/include/hw/boards.h
++++ b/include/hw/boards.h
+@@ -642,8 +642,8 @@ struct MachineState {
+  * and ver_machine_deletion_version logic in docs/conf.py and
+  * the text in docs/about/deprecated.rst
+  */
+-#define MACHINE_VER_DELETION_MAJOR 6
+-#define MACHINE_VER_DEPRECATION_MAJOR 3
++#define MACHINE_VER_DELETION_MAJOR 10
++#define MACHINE_VER_DEPRECATION_MAJOR 10
  
- if have_block
-   stub_ss.add(files('bdrv-next-monitor-owned.c'))
+ /*
+  * Expands to a static string containing a deprecation

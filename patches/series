@@ -35,6 +35,7 @@ token-bucket-event-throttling.patch
 handle-framebuffer-relocation.patch
 qmp-Fix-race-causing-events-to-be-sent-during-negotiation.patch
 disable-pcspk.patch
+protect-migration-vfio.patch
 ide-srst-compat.patch
 
 # vCPU hotplug
@@ -115,8 +116,7 @@ disable-dirty-vram-tracking.patch
 # Build configuration
 hw-nvme-guard-spdm.patch
 crypto-stubs.patch
-temp-build-configs.patch
-#build-configuration.patch TODO investigate with reducing attack surface & memory size
+build-configuration.patch
 
 #
 # Compile and build fixes when upgrading to XenServer 9 with higher version of GCC/glibc
