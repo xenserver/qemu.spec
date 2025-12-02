@@ -118,11 +118,6 @@ hw-nvme-guard-spdm.patch
 crypto-stubs.patch
 build-configuration.patch
 
-#
-# Compile and build fixes when upgrading to XenServer 9 with higher version of GCC/glibc
-#
-#0001-CP-46162-Resolve-the-Null-pointer-error-in-configure.patch
-
 # Allow PCI passthrough using kernel lockdown more
 #81ef3d06c970c6b7ae4971ad552b2287af376f43.patch
 #msix_pba_log.patch
