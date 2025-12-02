@@ -84,7 +84,7 @@ usb-batch-frames.patch
 #
 # Technical debt to unblock further development.  Needs removing
 #
-#allocate-guest-ram-reserved.patch
+allocate-guest-ram-reserved.patch
 
 # Remove once PV frontends unplug NVME devices
 #unplug-nvme-devices.patch
