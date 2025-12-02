@@ -9,10 +9,10 @@ call xen_track_dirty_vram during migration to avoid any increase in
 downtime.
 
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index bd46734c67..6c82379260 100644
+index 0a0cd5243df1..f1f9a2430603 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -651,6 +651,11 @@ static void xen_sync_dirty_bitmap(XenIOState *state,
+@@ -407,6 +407,11 @@ static void xen_sync_dirty_bitmap(XenIOState *state,
          return;
      }
  
@@ -21,6 +21,6 @@ index bd46734c67..6c82379260 100644
 +        return;
 +    }
 +
-     rc = xen_track_dirty_vram(xen_domid, start_addr >> TARGET_PAGE_BITS,
-                               npages, state->dirty_bitmap);
+     rc = xen_track_dirty_vram(xen_domid, start_addr >> target_page_bits,
+                               npages, dirty_bitmap);
      if (rc < 0) {

@@ -110,7 +110,7 @@ do_not_register_xen_backend_for_qdisk.patch
 # reduce VNC updates a significantly. Still keep it enabled during
 # live migration to avoid downtime increase.
 #
-#disable-dirty-vram-tracking.patch
+disable-dirty-vram-tracking.patch
 
 # Build configuration
 hw-nvme-guard-spdm.patch
