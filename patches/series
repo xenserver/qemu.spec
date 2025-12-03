@@ -88,7 +88,7 @@ revert_hw-i386__remove_deprecated_machines_pc-0.10_and_pc-0.11.patch
 0003-Revert-hw-usb-bus-Remove-the-full-path-property.patch
 0004-Revert-target-i386-Remove-X86CPU-kvm_no_smi_migratio.patch
 0005-Revert-pc-remove-short_root_bus-property.patch
-support_machines_pc-0.10_and_pc-0.11.patch
+support_machines_pc-0.10.patch
 #0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
