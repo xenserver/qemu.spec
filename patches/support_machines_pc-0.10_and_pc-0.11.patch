@@ -1,5 +1,5 @@
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 05111e890764..36ef8882a87f 100644
+index 05111e890764..f4b11c153e67 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -70,6 +70,7 @@
@@ -10,7 +10,7 @@ index 05111e890764..36ef8882a87f 100644
  
  #define XEN_IOAPIC_NUM_PIRQS 128ULL
  
-@@ -889,6 +890,214 @@ static void pc_compat_0_13(MachineState *machine)
+@@ -889,6 +890,210 @@ static void pc_compat_0_13(MachineState *machine)
      } \
      DEFINE_PC_MACHINE(suffix, name, pc_init_##suffix, optionfn)
  
@@ -43,7 +43,6 @@ index 05111e890764..36ef8882a87f 100644
 +        { "Opteron_G5" "-" TYPE_X86_CPU, "rdtscp", "on", },
 +
 +        { "virtio-blk-device", "scsi", "true", .optional = true },
-+        { "e1000", "extra_mac_registers", "off" },
 +        { "virtio-pci", "x-disable-pcie", "on" },
 +        { "virtio-pci", "migrate-extra", "off" },
 +        { "fw_cfg_mem", "dma_enabled", "off" },
@@ -133,7 +132,6 @@ index 05111e890764..36ef8882a87f 100644
 +        { "hpet", HPET_INTCAP, "4" },
 +
 +        PC_CPU_MODEL_IDS("1.6.0")
-+        { "e1000", "mitigation", "off" },
 +        { "qemu64-" TYPE_X86_CPU, "model", "2" },
 +        { "qemu32-" TYPE_X86_CPU, "model", "3" },
 +
@@ -160,7 +158,6 @@ index 05111e890764..36ef8882a87f 100644
 +        /* DEV_NVECTORS_UNSPECIFIED as a uint32_t string: */
 +        { "virtio-serial-pci", "vectors", "0xFFFFFFFF" },
 +        { "virtio-net-pci", "ctrl_guest_offloads", "off" },
-+        { "e1000", "romfile", "pxe-e1000.rom" },
 +        { "ne2k_pci", "romfile", "pxe-ne2k_pci.rom" },
 +        { "pcnet", "romfile", "pxe-pcnet.rom" },
 +        { "rtl8139", "romfile", "pxe-rtl8139.rom" },
@@ -173,7 +170,6 @@ index 05111e890764..36ef8882a87f 100644
 +        { "usb-tablet", "usb_version", "1" },
 +        { "virtio-net-pci", "ctrl_mac_addr", "off" },
 +        { "virtio-net-pci", "mq", "off" },
-+        { "e1000", "autonegotiation", "off" },
 +
 +        PC_CPU_MODEL_IDS("1.2.0")
 +        { "nec-usb-xhci", "msi", "off" },
@@ -225,7 +221,7 @@ index 05111e890764..36ef8882a87f 100644
  static void pc_i440fx_0_11_machine_options(MachineClass *m)
  {
      static GlobalProperty compat[] = {
-@@ -912,9 +1121,8 @@ static void pc_i440fx_0_11_machine_options(MachineClass *m)
+@@ -912,9 +1117,8 @@ static void pc_i440fx_0_11_machine_options(MachineClass *m)
          },
      };
  
