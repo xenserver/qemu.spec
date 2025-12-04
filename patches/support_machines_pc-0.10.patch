@@ -1,5 +1,5 @@
 diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
-index 05111e890764..b2231a40e4c6 100644
+index 05111e890764..4247e7c31f84 100644
 --- a/hw/i386/pc_piix.c
 +++ b/hw/i386/pc_piix.c
 @@ -70,6 +70,7 @@
@@ -10,7 +10,7 @@ index 05111e890764..b2231a40e4c6 100644
  
  #define XEN_IOAPIC_NUM_PIRQS 128ULL
  
-@@ -889,9 +890,190 @@ static void pc_compat_0_13(MachineState *machine)
+@@ -889,15 +890,80 @@ static void pc_compat_0_13(MachineState *machine)
      } \
      DEFINE_PC_MACHINE(suffix, name, pc_init_##suffix, optionfn)
  
@@ -27,110 +27,28 @@ index 05111e890764..b2231a40e4c6 100644
 +
      static GlobalProperty compat[] = {
 +        { "isa-fdc", "fallback", "144" },
-+        { "pvscsi", "x-old-pci-configuration", "on" },
-+        { "pvscsi", "x-disable-pcie", "on" },
-+        { "vmxnet3", "x-old-msi-offsets", "on" },
-+        { "vmxnet3", "x-disable-pcie", "on" },
 +
 +        PC_CPU_MODEL_IDS("2.4.0")
-+        { "Haswell-" TYPE_X86_CPU, "abm", "off" },
-+        { "Haswell-noTSX-" TYPE_X86_CPU, "abm", "off" },
-+        { "Broadwell-" TYPE_X86_CPU, "abm", "off" },
-+        { "Broadwell-noTSX-" TYPE_X86_CPU, "abm", "off" },
 +        { "host" "-" TYPE_X86_CPU, "host-cache-info", "on" },
-+        { TYPE_X86_CPU, "check", "off" },
-+        { "qemu64" "-" TYPE_X86_CPU, "sse4a", "on" },
-+        { "qemu64" "-" TYPE_X86_CPU, "abm", "on" },
-+        { "qemu64" "-" TYPE_X86_CPU, "popcnt", "on" },
-+        { "qemu32" "-" TYPE_X86_CPU, "popcnt", "on" },
-+        { "Opteron_G2" "-" TYPE_X86_CPU, "rdtscp", "on" },
-+        { "Opteron_G3" "-" TYPE_X86_CPU, "rdtscp", "on" },
-+        { "Opteron_G4" "-" TYPE_X86_CPU, "rdtscp", "on" },
-+        { "Opteron_G5" "-" TYPE_X86_CPU, "rdtscp", "on", },
-+
-+        { "virtio-blk-device", "scsi", "true", .optional = true },
-+        { "virtio-pci", "x-disable-pcie", "on" },
-+        { "virtio-pci", "migrate-extra", "off" },
-+        { "fw_cfg_mem", "dma_enabled", "off" },
-+        { "fw_cfg_io", "dma_enabled", "off" },
 +
 +        PC_CPU_MODEL_IDS("2.3.0")
-+        { TYPE_X86_CPU, "arat", "off" },
-+        { "qemu64" "-" TYPE_X86_CPU, "min-level", "4" },
-+        { "kvm64" "-" TYPE_X86_CPU, "min-level", "5" },
-+        { "pentium3" "-" TYPE_X86_CPU, "min-level", "2" },
-+        { "n270" "-" TYPE_X86_CPU, "min-level", "5" },
-+        { "Conroe" "-" TYPE_X86_CPU, "min-level", "4" },
-+        { "Penryn" "-" TYPE_X86_CPU, "min-level", "4" },
-+        { "Nehalem" "-" TYPE_X86_CPU, "min-level", "4" },
-+        { "n270" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Penryn" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Conroe" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Nehalem" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Westmere" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "SandyBridge" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "IvyBridge" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Haswell" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Haswell-noTSX" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Broadwell" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { "Broadwell-noTSX" "-" TYPE_X86_CPU, "min-xlevel", "0x8000000a" },
-+        { TYPE_X86_CPU, "kvm-no-smi-migration", "on" },
-+
-+        { "virtio-blk-pci", "any_layout", "off" },
-+        { "virtio-balloon-pci", "any_layout", "off" },
-+        { "virtio-serial-pci", "any_layout", "off" },
-+        { "virtio-9p-pci", "any_layout", "off" },
-+        { "virtio-rng-pci", "any_layout", "off" },
-+        { TYPE_PCI_DEVICE, "x-pcie-lnksta-dllla", "off" },
 +        { "migration", "send-configuration", "off" },
 +        { "migration", "send-section-footer", "off" },
 +        { "migration", "store-global-state", "off" },
 +
 +        PC_CPU_MODEL_IDS("2.2.0")
-+        { "kvm64" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "kvm32" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Conroe" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Penryn" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Nehalem" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Westmere" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "SandyBridge" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Haswell" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Broadwell" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Opteron_G1" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Opteron_G2" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Opteron_G3" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Opteron_G4" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Opteron_G5" "-" TYPE_X86_CPU, "vme", "off" },
-+        { "Haswell" "-" TYPE_X86_CPU, "f16c", "off" },
-+        { "Haswell" "-" TYPE_X86_CPU, "rdrand", "off" },
-+        { "Broadwell" "-" TYPE_X86_CPU, "f16c", "off" },
-+        { "Broadwell" "-" TYPE_X86_CPU, "rdrand", "off" },
 +
 +        PC_CPU_MODEL_IDS("2.1.0")
-+        { "coreduo" "-" TYPE_X86_CPU, "vmx", "on" },
-+        { "core2duo" "-" TYPE_X86_CPU, "vmx", "on" },
-+
 +        { "intel-hda", "old_msi_addr", "on" },
 +        { "VGA", "qemu-extended-regs", "off" },
 +        { "secondary-vga", "qemu-extended-regs", "off" },
-+        { "virtio-scsi-pci", "any_layout", "off" },
 +        { "usb-mouse", "usb_version", "1" },
 +        { "usb-kbd", "usb_version", "1" },
-+        { "virtio-pci", "virtio-pci-bus-master-bug-migration", "on" },
 +
 +        PC_CPU_MODEL_IDS("2.0.0")
-+        { "virtio-scsi-pci", "any_layout", "off" },
-+        { "PIIX4_PM", "memory-hotplug-support", "off" },
-+        { "apic", "version", "0x11" },
-+        { "nec-usb-xhci", "superspeed-ports-first", "off" },
-+        { "nec-usb-xhci", "force-pcie-endcap", "on" },
 +        { "pci-serial", "prog_if", "0" },
 +        { "pci-serial-2x", "prog_if", "0" },
 +        { "pci-serial-4x", "prog_if", "0" },
-+        { "virtio-net-pci", "guest_announce", "off" },
-+        { "ICH9-LPC", "memory-hotplug-support", "off" },
-+        { "xio3130-downstream", COMPAT_PROP_PCP, "off" },
-+        { "ioh3420", COMPAT_PROP_PCP, "off" },
 +
 +        PC_CPU_MODEL_IDS("1.7.0")
 +        { TYPE_USB_DEVICE, "msos-desc", "no" },
@@ -138,20 +56,9 @@ index 05111e890764..b2231a40e4c6 100644
 +        { "hpet", HPET_INTCAP, "4" },
 +
 +        PC_CPU_MODEL_IDS("1.6.0")
-+        { "qemu64-" TYPE_X86_CPU, "model", "2" },
-+        { "qemu32-" TYPE_X86_CPU, "model", "3" },
 +
 +        PC_CPU_MODEL_IDS("1.5.0")
-+        { "Conroe-" TYPE_X86_CPU, "model", "2" },
-+        { "Conroe-" TYPE_X86_CPU, "min-level", "2" },
-+        { "Penryn-" TYPE_X86_CPU, "model", "2" },
-+        { "Penryn-" TYPE_X86_CPU, "min-level", "2" },
-+        { "Nehalem-" TYPE_X86_CPU, "model", "2" },
-+        { "Nehalem-" TYPE_X86_CPU, "min-level", "2" },
-+        { "virtio-net-pci", "any_layout", "off" },
-+        { TYPE_X86_CPU, "pmu", "on" },
 +        { "i440FX-pcihost", "short_root_bus", "0" },
-+        { "q35-pcihost", "short_root_bus", "0" },
 +
 +        PC_CPU_MODEL_IDS("1.4.0")
 +        { "scsi-hd", "discard_granularity", "0" },
@@ -160,49 +67,36 @@ index 05111e890764..b2231a40e4c6 100644
 +        { "ide-hd", "discard_granularity", "0" },
 +        { "ide-cd", "discard_granularity", "0" },
 +        { "ide-drive", "discard_granularity", "0" },
-+        { "virtio-blk-pci", "discard_granularity", "0" },
-+        /* DEV_NVECTORS_UNSPECIFIED as a uint32_t string: */
-+        { "virtio-serial-pci", "vectors", "0xFFFFFFFF" },
-+        { "virtio-net-pci", "ctrl_guest_offloads", "off" },
-+        { "ne2k_pci", "romfile", "pxe-ne2k_pci.rom" },
 +        { "pcnet", "romfile", "pxe-pcnet.rom" },
 +        { "rtl8139", "romfile", "pxe-rtl8139.rom" },
-+        { "virtio-net-pci", "romfile", "pxe-virtio.rom" },
-+        { "486-" TYPE_X86_CPU, "model", "0" },
-+        { "n270" "-" TYPE_X86_CPU, "movbe", "off" },
-+        { "Westmere" "-" TYPE_X86_CPU, "pclmulqdq", "off" },
 +
 +        PC_CPU_MODEL_IDS("1.3.0")
 +        { "usb-tablet", "usb_version", "1" },
-+        { "virtio-net-pci", "ctrl_mac_addr", "off" },
-+        { "virtio-net-pci", "mq", "off" },
 +
 +        PC_CPU_MODEL_IDS("1.2.0")
-+        { "nec-usb-xhci", "msi", "off" },
-+        { "nec-usb-xhci", "msix", "off" },
 +        { "qxl", "revision", "3" },
 +        { "qxl-vga", "revision", "3" },
 +        { "VGA", "mmio", "off" },
 +
 +        PC_CPU_MODEL_IDS("1.1.0")
-+        { "virtio-scsi-pci", "hotplug", "off" },
-+        { "virtio-scsi-pci", "param_change", "off" },
 +        { "VGA", "vgamem_mb", "8" },
-+        { "vmware-svga", "vgamem_mb", "8" },
 +        { "qxl-vga", "vgamem_mb", "8" },
 +        { "qxl", "vgamem_mb", "8" },
-+        { "virtio-blk-pci", "config-wce", "off" },
 +
 +        PC_CPU_MODEL_IDS("1.0")
 +        { TYPE_ISA_FDC, "check_media_rate", "off" },
-+        { "virtio-balloon-pci", "class", stringify(PCI_CLASS_MEMORY_RAM) },
-+        { "apic-common", "vapic", "off" },
 +        { TYPE_USB_DEVICE, "full-path", "no" },
 +
          PC_CPU_MODEL_IDS("0.11")
          {
-             .driver   = "virtio-blk-pci",
-@@ -913,14 +1095,28 @@ static void pc_i440fx_0_11_machine_options(MachineClass *m)
+-            .driver   = "virtio-blk-pci",
+-            .property = "vectors",
+-            .value    = stringify(0),
+-        },{
+             .driver   = TYPE_PCI_DEVICE,
+             .property = "rombar",
+             .value    = stringify(0),
+@@ -913,32 +979,24 @@ static void pc_i440fx_0_11_machine_options(MachineClass *m)
      };
  
      pc_i440fx_machine_2_6_options(m);
@@ -214,30 +108,38 @@ index 05111e890764..b2231a40e4c6 100644
 -DEFINE_LEGACY_I440FX_MACHINE(v0_11, "pc-0.11", pc_compat_0_13,
 -                             pc_i440fx_0_11_machine_options);
 +    x86mc->save_tsc_khz = false;
-+    m->legacy_fw_cfg_order = 1;
 +    pcmc->broken_reserved_end = true;
-+    pcmc->rsdp_in_ram = false;
 +    m->default_display = NULL;
-+    pcmc->smbios_uuid_encoded = false;
-+    pcmc->enforce_aligned_dimm = false;
-+    pcmc->smbios_legacy_mode = true;
 +    pcmc->has_reserved_memory = false;
-+    pcmc->acpi_data_size = 0x10000;
 +    m->option_rom_has_mr = true;
 +    m->default_machine_opts = NULL;
-+    pcmc->smbios_defaults = false;
 +    pcmc->gigabyte_align = false;
-+    pcmc->legacy_acpi_table_size = 6414;
 +    m->rom_file_has_mr = false;
-+    pcmc->has_acpi_build = false;
-+    x86mc->compat_apic_id_mode = true;
  
 +    compat_props_add(m->compat_props, compat, G_N_ELEMENTS(compat));
 +}
  
  static void pc_i440fx_0_10_machine_options(MachineClass *m)
  {
-@@ -949,7 +1145,7 @@ static void pc_i440fx_0_10_machine_options(MachineClass *m)
+     static GlobalProperty compat[] = {
+         PC_CPU_MODEL_IDS("0.10")
+         {
+-            .driver   = "virtio-blk-pci",
+-            .property = "class",
+-            .value    = stringify(PCI_CLASS_STORAGE_OTHER),
+-        },{
+-            .driver   = "virtio-serial-pci",
+-            .property = "class",
+-            .value    = stringify(PCI_CLASS_DISPLAY_OTHER),
+-        },{
+-            .driver   = "virtio-net-pci",
+-            .property = "vectors",
+-            .value    = "0.10",
+-        },{
+             .driver   = "ide_drive",
+             .property = "ver",
+             .value    = "0.10",
+@@ -949,7 +1007,7 @@ static void pc_i440fx_0_10_machine_options(MachineClass *m)
          },
      };
  
