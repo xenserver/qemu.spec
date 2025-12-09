@@ -105,7 +105,7 @@ do_not_register_xen_backend_for_qdisk.patch
 # Small change to qemu emulation part which adds an IDE
 # read cache to improve performance of sequential short reads
 # (e.g. windows boot)
-#add-an-ide-read-cache.patch
+add-an-ide-read-cache.patch
 #
 # Disable dirty VRAM tracking as it's CPU consuming and doesn't
 # reduce VNC updates a significantly. Still keep it enabled during
