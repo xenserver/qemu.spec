@@ -88,7 +88,8 @@ usb-batch-frames.patch
 allocate-guest-ram-reserved.patch
 
 # Remove once PV frontends unplug NVME devices
-#unplug-nvme-devices.patch
+fix-nvme-pci-exit.patch
+unplug-nvme-devices.patch
 
 #
 # qemu-dp patches
