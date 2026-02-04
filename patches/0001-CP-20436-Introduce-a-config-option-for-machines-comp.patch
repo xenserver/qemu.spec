@@ -11,7 +11,7 @@ parameter from XAPI later.
 
 Signed-off-by: Igor Druzhinin <igor.druzhinin@citrix.com>
 diff --git a/hw/i386/pc.c b/hw/i386/pc.c
-index 6e6d9d534f31..accec5999bfd 100644
+index f42169288b86..d971ee2314f5 100644
 --- a/hw/i386/pc.c
 +++ b/hw/i386/pc.c
 @@ -1658,6 +1658,19 @@ static void pc_machine_set_max_fw_size(Object *obj, Visitor *v,
@@ -41,8 +41,8 @@ index 6e6d9d534f31..accec5999bfd 100644
 +    pcms->is_trad_compat = false;
  
      pc_system_flash_create(pcms);
- 
-@@ -1846,7 +1860,8 @@ static void pc_machine_class_init(ObjectClass *oc, const void *data)
+ #ifdef CONFIG_PCSPK
+@@ -1844,7 +1858,8 @@ static void pc_machine_class_init(ObjectClass *oc, const void *data)
                                            "Set IGVM configuration");
  #endif
  

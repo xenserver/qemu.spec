@@ -76,6 +76,18 @@ index bc0479a7e0a3..6cd4e06e5bd8 100644
 +CONFIG_USB_HID=y
 +CONFIG_VGA_CIRRUS=y
 +CONFIG_VGA_PCI=y
+diff --git a/hw/i386/Kconfig b/hw/i386/Kconfig
+index 3a0e2b8ebbb6..7a988b88a675 100644
+--- a/hw/i386/Kconfig
++++ b/hw/i386/Kconfig
+@@ -42,7 +42,6 @@ config PC
+     select I8259
+     select I8254
+     select PCKBD
+-    select PCSPK
+     select I8257
+     select MC146818RTC
+     # For ACPI builder:
 diff --git a/hw/meson.build b/hw/meson.build
 index 791ce21ab42a..993a407ee543 100644
 --- a/hw/meson.build
