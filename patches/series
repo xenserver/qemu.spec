@@ -80,7 +80,7 @@ support_machines_pc-0.10.patch
 0001-CP-17697-Initial-port-of-NVIDIA-VGPU-support-from-QEMU-trad.patch
 usb-batch-frames.patch
 0001-CP-23753-Talk-to-new-clipboard-daemon.patch
-0001-Revert-hw-cxl-Make-the-CXL-fixed-memory-windows-devi.patch
+0001-CA-420826-hw-cxl-add-fmws-stub.patch
 
 #
 # Technical debt to unblock further development.  Needs removing
