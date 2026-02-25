@@ -1,5 +1,5 @@
 %global package_srccommit v4.2.1
-%{!?xsrel: %global xsrel 10}
+%{!?xsrel: %global xsrel 11}
 
 # submodule ui/keycodemapdb
 %define keycodemapdb_cset 22b8996dba9041874845c7446ce89ec4ae2b713d
@@ -103,6 +103,9 @@ cp -r scripts/qmp %{buildroot}%{_datarootdir}/qemu
 %{?_cov_results_package}
 
 %changelog
+* Thu Feb 26 2026 Frediano Ziglio <frediano.ziglio@citrix.com> - 4.2.1-11
+- CA-422649: xen: mapcache: Fix finding matching entry
+
 * Wed Jan 07 2026 Ross Lagerwall <ross.lagerwall@citrix.com> - 4.2.1-10
 - CA-407410: qmp: Fix race causing events to be sent during negotiation
 
