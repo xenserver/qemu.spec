@@ -89,6 +89,8 @@
 0001-block-qdict-Fix-Werror-maybe-uninitialized.patch
 # 236d15222e06750d6b889030ed04c849b1dc279e (v7.1.0)
 0001-pc-bios-optionrom-compile-with-Wno-array-bounds.patch
+# a4b20f737cda06bb8706a83e27f7fa89863ae689 (10.1.0-rc1)
+0001-xen-mapcache-Fix-finding-matching-entry.patch
 
 #
 # CP-46102: Backport bugfixes for PCI passthrough using multifunction devices
