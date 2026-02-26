@@ -1,26 +1,30 @@
-#! /usr/bin/python
-import exceptions
+#!/usr/bin/env python3
+
+# Copyright (c) 2026. Citrix Systems, Inc. All Rights Reserved. Confidential & Proprietary
+
 import optparse
 import os
 import re
 import subprocess
 import sys
+from functools import total_ordering
 
 def call(args):
     try:
-        return subprocess.check_output(args, stderr=subprocess.STDOUT)
-    except OSError, (errno, strerror):
-        sys.stderr.write("%s: `%s': %s\n" % (sys.argv[0], args[0], strerror))
+        return subprocess.check_output(args, stderr=subprocess.STDOUT, text=True)
+    except OSError as e:
+        sys.stderr.write("%s: `%s': %s\n" % (sys.argv[0], args[0], e.strerror))
         sys.exit(2)
-    except subprocess.CalledProcessError, (e):
+    except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         sys.stderr.write("%s: `%s': returned %d\n" % (sys.argv[0], args[0], e.returncode))
         sys.exit(2)
 
+@total_ordering
 class version(object):
     version_regex = re.compile("^(\\d+)\\.(\\d+)(\\.(\\d+))?(-rc(\\d+))?$")
 
-    class bad_version(exceptions.Exception):
+    class bad_version(Exception):
         pass
 
     def __init__(self, ver_str):
@@ -41,66 +45,70 @@ class version(object):
         else:
             self.rc = None
 
-    def __cmp__(self, v):
+    def __lt__(self, v):
         if self.major > v.major:
-            return 1
+            return False
         if self.major < v.major:
-            return -1
+            return True
         if self.minor > v.minor:
-            return 1
+            return False
         if self.minor < v.minor:
-            return -1
+            return True
         if self.micro > v.micro:
-            return 1
+            return False
         if self.micro < v.micro:
-            return -1
+            return True
 
         # major.minor.micro match -- check rc
         if self.rc and not v.rc:
-            return -1
+            return True
         if not self.rc and v.rc:
-            return 1
-        return cmp(self.rc, v.rc)
+            return False
+        if not self.rc and not v.rc:
+            return False
+        return self.rc < v.rc
+
+    def __eq__(self, v):
+        return self.major == v.major and self.minor == v.minor and self.micro == v.micro and self.rc == v.rc
 
     def __str__(self):
         return self.str
 
     @staticmethod
     def test():
-        test_data = [ ( "3.9", "3.9", 0 ),
-                      ( "3.9", "3.10", -1 ),
-                      ( "3.11", "3.10", 1 ),
-                      ( "3.10.25", "3.10.25", 0 ),
-                      ( "3.10.25", "3.10.26", -1 ),
-                      ( "3.10.25", "3.10.24", 1 ),
-                      ( "3.10-rc3", "3.10-rc3", 0 ),
-                      ( "3.10-rc3", "3.10-rc4", -1 ),
-                      ( "3.10-rc3", "3.10-rc2", 1 ),
-                      ( "3.10-rc3", "3.10", -1 ),
-                      ( "3.10", "3.10-rc3", 1 ),
-                      ( "3.9", "3.10-rc3", -1 ),
-                      ( "3.10-rc2", "3.9", 1 ),
-                      ( "3.10-rc2", "3.11-rc2", -1 ),
-                      ( "3.11-rc2", "3.10-rc2", 1 ),
+        test_data = [ ( "3.9", "3.9", False ),
+                      ( "3.9", "3.10", True ),
+                      ( "3.11", "3.10", False ),
+                      ( "3.10.25", "3.10.25", False ),
+                      ( "3.10.25", "3.10.26", True ),
+                      ( "3.10.25", "3.10.24", False ),
+                      ( "3.10-rc3", "3.10-rc3", False ),
+                      ( "3.10-rc3", "3.10-rc4", True ),
+                      ( "3.10-rc3", "3.10-rc2", False ),
+                      ( "3.10-rc3", "3.10", True ),
+                      ( "3.10", "3.10-rc3", False ),
+                      ( "3.9", "3.10-rc3", True ),
+                      ( "3.10-rc2", "3.9", False ),
+                      ( "3.10-rc2", "3.11-rc2", True ),
+                      ( "3.11-rc2", "3.10-rc2", False ),
+                      ( "3.10", "4.9", True ),
                       ]
 
 
-        ok = False
         try:
             v = version("bad")
-        except version.bad_version, e:
-            ok = True
-        if not ok:
-            print("no exception")
+            raise Exception('Expected exception')
+        except version.bad_version as e:
+            pass
 
         for d in test_data:
             a = version(d[0])
             b = version(d[1])
             expected = d[2]
 
-            result = a.__cmp__(b)
+            result = a < b
             if result != expected:
-                print("%s, %s != %d (was %d)" % (a, b, expected, result))
+                raise Exception(f"{a}, {b} != {expected} (was {result})")
 
 class patch(object):
     def __init__(self, commit, patch_file, ver):
@@ -162,7 +170,6 @@ repo = options.repo + "/.git"
 current_branch = call(["git", "--git-dir", repo, "rev-parse", "--abbrev-ref", "HEAD"]).strip().replace("guilt/", "", 1)
 patch_dir = os.path.realpath(".git/patches/" + current_branch)
 patch_base = patch_dir + "/../"
-# planex symlinks .git/patches/planex/v4.19.19 to ../linux.pg/master
 patch_repo = os.path.realpath(patch_base + "/.git")
 
 if not os.path.isdir(repo):
@@ -209,8 +216,8 @@ for commit in commits:
 #
 
 for p in patches:
-    call(["git", "--git-dir", patch_repo, "--work-tree", patch_base,
-          "add", "master/" + p.patch_file])
+    call(["git", "--git-dir", patch_repo, "-C", patch_base,
+          "add", "patches/" + p.patch_file])
 
 #
 # Add patch files to series file in approximately the right places.
@@ -239,5 +246,5 @@ if state < 2:
 series.close()
 
 os.rename(patch_dir + "/series.new", patch_dir + "/series")
-call(["git", "--git-dir", patch_repo, "--work-tree", patch_base,
-      "add", "master/series"])
+call(["git", "--git-dir", patch_repo, "-C", patch_base,
+      "add", "patches/series"])
