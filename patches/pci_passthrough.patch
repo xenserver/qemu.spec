@@ -1,8 +1,16 @@
 diff --git a/hw/xen/xen-host-pci-device.c b/hw/xen/xen-host-pci-device.c
-index eaf32f27107b..af5d86d3cf81 100644
+index eaf32f27107b..31c54558dd65 100644
 --- a/hw/xen/xen-host-pci-device.c
 +++ b/hw/xen/xen-host-pci-device.c
-@@ -260,10 +260,33 @@ static bool xen_host_pci_dev_is_virtfn(XenHostPCIDevice *d)
+@@ -9,6 +9,7 @@
+ #include "qemu/osdep.h"
+ #include "qapi/error.h"
+ #include "qemu/cutils.h"
++#include "hw/xen/xen_native.h"
+ #include "hw/xen/xen-legacy-backend.h"
+ #include "hw/xen/xen-bus-helper.h"
+ #include "xen-host-pci-device.h"
+@@ -260,10 +261,33 @@ static bool xen_host_pci_dev_is_virtfn(XenHostPCIDevice *d)
      return !stat(path, &buf);
  }
  
@@ -36,7 +44,7 @@ index eaf32f27107b..af5d86d3cf81 100644
      xen_host_pci_sysfs_path(d, "config", path, sizeof(path));
  
      d->config_fd = open(path, O_RDWR);
-@@ -276,14 +299,31 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
+@@ -276,14 +300,31 @@ static int xen_host_pci_config_read(XenHostPCIDevice *d,
                                      int pos, void *buf, int len)
  {
      int rc;
@@ -73,7 +81,7 @@ index eaf32f27107b..af5d86d3cf81 100644
  }
  
  static int xen_host_pci_config_write(XenHostPCIDevice *d,
-@@ -291,13 +331,26 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
+@@ -291,13 +332,26 @@ static int xen_host_pci_config_write(XenHostPCIDevice *d,
  {
      int rc;
  
@@ -106,7 +114,7 @@ index eaf32f27107b..af5d86d3cf81 100644
  }
  
  
-@@ -458,8 +511,8 @@ error:
+@@ -458,8 +512,8 @@ error:
  
      if (d->config_fd >= 0) {
          close(d->config_fd);
@@ -116,7 +124,7 @@ index eaf32f27107b..af5d86d3cf81 100644
  }
  
  bool xen_host_pci_device_closed(XenHostPCIDevice *d)
-@@ -471,6 +524,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
+@@ -471,6 +525,6 @@ void xen_host_pci_device_put(XenHostPCIDevice *d)
  {
      if (d->config_fd >= 0) {
          close(d->config_fd);
