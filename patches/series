@@ -119,6 +119,7 @@ add-an-ide-read-cache.patch
 disable-dirty-vram-tracking.patch
 
 # Build configuration
+reduce-defined-machines.patch
 hw-nvme-guard-spdm.patch
 crypto-stubs.patch
 build-configuration.patch
