@@ -84,6 +84,7 @@ usb-batch-frames.patch
 CA-423610-avoid-shareable-memory-file-descriptors.patch
 0001-Revert-hw-block-fdc-Remove-the-check_media_rate-prop.patch
 CA-424241-Handle-strings-for-usb-hostbus-property.patch
+0001-Revert-vnc-increase-max-display-size.patch
 
 #
 # Technical debt to unblock further development.  Needs removing
@@ -116,8 +117,14 @@ add-an-ide-read-cache.patch
 # live migration to avoid downtime increase.
 #
 disable-dirty-vram-tracking.patch
+#
+# Use the default QEMU console instead of creating a new placeholder
+# which is never freed.
+#
+use-default-console.patch
 
 # Build configuration
+reduce-defined-machines.patch
 hw-nvme-guard-spdm.patch
 crypto-stubs.patch
 build-configuration.patch
