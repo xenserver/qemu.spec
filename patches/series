@@ -123,6 +123,8 @@ disable-dirty-vram-tracking.patch
 #
 use-default-console.patch
 
+fix-mapcache-invalidate-performance.patch
+
 # Build configuration
 reduce-defined-machines.patch
 hw-nvme-guard-spdm.patch
