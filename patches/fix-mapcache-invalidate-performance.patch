@@ -13,7 +13,7 @@ one go.
 
 Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 diff --git a/hw/xen/xen-mapcache.c b/hw/xen/xen-mapcache.c
-index e31d3797025f..b083050ba5fa 100644
+index e31d3797025f..77b01db2c67d 100644
 --- a/hw/xen/xen-mapcache.c
 +++ b/hw/xen/xen-mapcache.c
 @@ -74,10 +74,18 @@ typedef struct MapCache {
@@ -70,8 +70,8 @@ index e31d3797025f..b083050ba5fa 100644
 -    aio_co_wake(data->co);
 +    while ((data = QTAILQ_FIRST(&inval_queue)) != NULL) {
 +        QTAILQ_REMOVE(&inval_queue, data, next);
-+        xen_invalidate_map_cache_entry_all(data->buffer);
 +        qemu_mutex_unlock(&inval_lock);
++        xen_invalidate_map_cache_entry_all(data->buffer);
 +        aio_co_wake(data->co);
 +        qemu_mutex_lock(&inval_lock);
 +    }
